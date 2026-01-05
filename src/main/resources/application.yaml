@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: dkdk
+
+  datasource:
+    hikari:
+      maximum-pool-size: 20  # 최대 커넥션 수
+      minimum-idle: 5       # 최소 유휴 커넥션
+      connection-timeout: 30000  # 커넥션 대기 시간 (30초)
+      idle-timeout: 600000   # 유휴 커넥션 유지 시간 (10분)
+      max-lifetime: 1800000  # 커넥션 최대 수명 (30분)
+      leak-detection-threshold: 60000  # 커넥션 누수 감지 (1분)
+
+server:
+  forward-headers-strategy: framework  # Nginx X-Forwarded 헤더 인식
+  servlet:
+    session:
+      cookie:
+        same-site: none  # 크로스 오리진 요청에서 쿠키 전송 허용
+        secure: true     # HTTPS에서만 쿠키 전송 (same-site=none일 때 필수)

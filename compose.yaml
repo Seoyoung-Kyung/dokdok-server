@@ -1,0 +1,50 @@
+name: dkdk
+
+services:
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dokdok-app
+    environment:
+      TZ: Asia/Seoul
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE}
+      SPRING_DATASOURCE_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/dokdok}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+      - '8080:8080'
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    volumes:
+      - app_logs:/app/logs
+    networks:
+      - dokdok-network
+
+  postgres:
+    profiles: ["app"]
+    image: 'postgres:latest'
+    container_name: dokdok-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dokdok}
+      POSTGRES_USER: ${POSTGRES_USER:-dokdok}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Seoul
+    ports:
+      - '5432:5432'
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dokdok-network
+
+volumes:
+  app_logs:
+  postgres_data:
+
+networks:
+  dokdok-network:
+    driver: bridge
