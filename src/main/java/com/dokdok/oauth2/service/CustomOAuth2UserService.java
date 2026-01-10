@@ -63,7 +63,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return userRepository.findByKakaoId(oAuth2UserInfo.getId())
                 .orElseGet(() -> {
                     // 신규 사용자 정보 저장
-                    User newUser = User.from(oAuth2UserInfo);
+                    User newUser = User.of(oAuth2UserInfo);
 
                     log.info("신규 사용자 생성 : kakao_id = {}",  oAuth2UserInfo.getId());
                     return userRepository.save(newUser);

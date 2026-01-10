@@ -8,8 +8,6 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.util.function.Supplier;
-
 @Entity
 @Table(name = "users")
 @Getter
@@ -40,7 +38,7 @@ public class User extends BaseTimeEntity {
     @Column(name = "kakao_id", nullable = false)
     private Long kakaoId;
 
-    public static User from(OAuth2UserInfo oAuth2UserInfo) {
+    public static User of(OAuth2UserInfo oAuth2UserInfo) {
 
         return User.builder()
                 .kakaoId(oAuth2UserInfo.getId())
