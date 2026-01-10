@@ -2,12 +2,16 @@ package com.dokdok.topic.entity;
 
 import com.dokdok.global.BaseTimeEntity;
 import com.dokdok.meeting.entity.Meeting;
+import com.dokdok.topic.enums.TopicStatus;
+import com.dokdok.topic.enums.TopicType;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+
+import static com.dokdok.topic.enums.TopicStatus.PROPOSED;
 
 @Entity
 @Table(name = "topic")
@@ -39,13 +43,31 @@ public class Topic extends BaseTimeEntity {
     private String description;
 
     @Column(name = "topic_type", nullable = false, length = 30)
-    private String topicType;
+    @Enumerated(EnumType.STRING)
+    private TopicType topicType;
 
     @Column(name = "topic_status", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String topicStatus = "PROPOSED";
+    private TopicStatus topicStatus = PROPOSED;
 
     @Column(name = "vote_count", nullable = false)
     @Builder.Default
     private Integer voteCount = 0;
+
+    public static Topic create(
+            Meeting meeting,
+            User user,
+            String title,
+            String description,
+            TopicType topicType
+    ) {
+        Topic topic = new Topic();
+        topic.meeting = meeting;
+        topic.proposedBy = user;
+        topic.title = title;
+        topic.description = description;
+        topic.topicType = topicType;
+        return topic;
+    }
 }
