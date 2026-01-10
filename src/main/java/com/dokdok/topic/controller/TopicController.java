@@ -1,7 +1,6 @@
 package com.dokdok.topic.controller;
 
 import com.dokdok.global.response.ApiResponse;
-import com.dokdok.topic.api.TopicApi;
 import com.dokdok.topic.dto.SuggestTopicRequest;
 import com.dokdok.topic.dto.SuggestTopicResponse;
 import com.dokdok.topic.service.TopicService;
@@ -13,12 +12,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/gatherings/{gatheringId}/meetings/{meetingId}")
-public class TopicController implements TopicApi {
+public class TopicController {
 
     private final TopicService topicService;
 
     @PostMapping("/topics")
-    @Override
     public ResponseEntity<ApiResponse<SuggestTopicResponse>> createTopic(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
