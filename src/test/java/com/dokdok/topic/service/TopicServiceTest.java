@@ -1,6 +1,6 @@
 package com.dokdok.topic.service;
 
-import com.dokdok.gathering.repository.GatheringMemberRepository;
+import com.dokdok.gathering.service.GatheringMemberValidator;
 import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
 import com.dokdok.meeting.entity.Meeting;
@@ -42,7 +42,7 @@ class TopicServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private GatheringMemberRepository gatheringMemberRepository;
+    private GatheringMemberValidator gatheringMemberValidator;
 
     @InjectMocks
     private TopicService topicService;
@@ -54,7 +54,6 @@ class TopicServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Given: 테스트 데이터 준비
         testUser = User.builder()
                 .id(1L)
                 .userName("김독서")
@@ -87,30 +86,30 @@ class TopicServiceTest {
     @Test
     @DisplayName("정상적으로 주제를 생성한다")
     void createTopic_Success() {
-        // Given
         Long gatheringId = 1L;
         Long meetingId = 1L;
         Long userId = 1L;
 
-        given(gatheringMemberRepository.existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId))
-                .willReturn(true);
-        given(meetingRepository.findById(meetingId))
+        // 멤버 검증은 통과 (아무 동작 안 함)
+        doNothing().when(gatheringMemberValidator)
+                .validateMembership(gatheringId, userId);
+
+        given(meetingRepository.findByIdAndGatheringId(meetingId, gatheringId))
                 .willReturn(Optional.of(testMeeting));
         given(userRepository.findById(userId))
                 .willReturn(Optional.of(testUser));
         given(topicRepository.save(any(Topic.class)))
                 .willReturn(testTopic);
 
-        // When
-        SuggestTopicResponse response = topicService.createTopic(gatheringId, meetingId, userId, testRequest);
+        SuggestTopicResponse response =
+                topicService.createTopic(gatheringId, meetingId, userId, testRequest);
 
-        // Then
         assertThat(response).isNotNull();
         assertThat(response.title()).isEqualTo("의미 있는 이름 짓기");
         assertThat(response.topicType()).isEqualTo(TopicType.DISCUSSION);
 
-        verify(gatheringMemberRepository).existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId);
-        verify(meetingRepository).findById(meetingId);
+        verify(gatheringMemberValidator).validateMembership(gatheringId, userId);
+        verify(meetingRepository).findByIdAndGatheringId(meetingId, gatheringId);
         verify(userRepository).findById(userId);
         verify(topicRepository).save(any(Topic.class));
     }
@@ -118,93 +117,68 @@ class TopicServiceTest {
     @Test
     @DisplayName("모임 멤버가 아닌 경우 예외가 발생한다")
     void createTopic_NotGatheringMember_ThrowsException() {
-        // Given
         Long gatheringId = 1L;
         Long meetingId = 1L;
         Long userId = 1L;
 
-        given(gatheringMemberRepository.existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId))
-                .willReturn(false);
+        doThrow(new GlobalException(GlobalErrorCode.NOT_GATHERING_MEMBER))
+                .when(gatheringMemberValidator)
+                .validateMembership(gatheringId, userId);
 
-        // When & Then
-        assertThatThrownBy(() -> topicService.createTopic(gatheringId, meetingId, userId, testRequest))
+        assertThatThrownBy(() ->
+                topicService.createTopic(gatheringId, meetingId, userId, testRequest))
                 .isInstanceOf(GlobalException.class)
-                .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.NOT_GATHERING_MEMBER);
+                .hasFieldOrPropertyWithValue("errorCode",
+                        GlobalErrorCode.NOT_GATHERING_MEMBER);
 
-        verify(gatheringMemberRepository).existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId);
-        verify(meetingRepository, never()).findById(anyLong());
-        verify(userRepository, never()).findById(anyLong());
-        verify(topicRepository, never()).save(any(Topic.class));
+        verify(meetingRepository, never()).findByIdAndGatheringId(any(), any());
+        verify(topicRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("존재하지 않는 미팅인 경우 예외가 발생한다")
     void createTopic_MeetingNotFound_ThrowsException() {
-        // Given
         Long gatheringId = 1L;
         Long meetingId = 999L;
         Long userId = 1L;
 
-        given(gatheringMemberRepository.existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId))
-                .willReturn(true);
-        given(meetingRepository.findById(meetingId))
+        doNothing().when(gatheringMemberValidator)
+                .validateMembership(gatheringId, userId);
+
+        given(meetingRepository.findByIdAndGatheringId(meetingId, gatheringId))
                 .willReturn(Optional.empty());
 
-        // When & Then
-        assertThatThrownBy(() -> topicService.createTopic(gatheringId, meetingId, userId, testRequest))
+        assertThatThrownBy(() ->
+                topicService.createTopic(gatheringId, meetingId, userId, testRequest))
                 .isInstanceOf(GlobalException.class)
-                .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode",
+                        GlobalErrorCode.NOT_FOUND);
 
-        verify(gatheringMemberRepository).existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId);
-        verify(meetingRepository).findById(meetingId);
-        verify(userRepository, never()).findById(anyLong());
-        verify(topicRepository, never()).save(any(Topic.class));
+        verify(userRepository, never()).findById(any());
+        verify(topicRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("존재하지 않는 사용자인 경우 예외가 발생한다")
     void createTopic_UserNotFound_ThrowsException() {
-        // Given
         Long gatheringId = 1L;
         Long meetingId = 1L;
         Long userId = 999L;
 
-        given(gatheringMemberRepository.existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId))
-                .willReturn(true);
-        given(meetingRepository.findById(meetingId))
+        doNothing().when(gatheringMemberValidator)
+                .validateMembership(gatheringId, userId);
+
+        given(meetingRepository.findByIdAndGatheringId(meetingId, gatheringId))
                 .willReturn(Optional.of(testMeeting));
         given(userRepository.findById(userId))
                 .willReturn(Optional.empty());
 
-        // When & Then
-        assertThatThrownBy(() -> topicService.createTopic(gatheringId, meetingId, userId, testRequest))
+        assertThatThrownBy(() ->
+                topicService.createTopic(gatheringId, meetingId, userId, testRequest))
                 .isInstanceOf(GlobalException.class)
-                .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode",
+                        GlobalErrorCode.NOT_FOUND);
 
-        verify(gatheringMemberRepository).existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId);
-        verify(meetingRepository).findById(meetingId);
-        verify(userRepository).findById(userId);
-        verify(topicRepository, never()).save(any(Topic.class));
-    }
-
-    @Test
-    @DisplayName("삭제된(removed) 모임 멤버는 주제를 생성할 수 없다")
-    void createTopic_RemovedMember_ThrowsException() {
-        // Given
-        Long gatheringId = 1L;
-        Long meetingId = 1L;
-        Long userId = 1L;
-
-        // removedAt이 NULL이 아닌 경우 false 반환
-        given(gatheringMemberRepository.existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId))
-                .willReturn(false);
-
-        // When & Then
-        assertThatThrownBy(() -> topicService.createTopic(gatheringId, meetingId, userId, testRequest))
-                .isInstanceOf(GlobalException.class)
-                .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.NOT_GATHERING_MEMBER);
-
-        verify(gatheringMemberRepository).existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId);
-        verify(topicRepository, never()).save(any(Topic.class));
+        verify(topicRepository, never()).save(any());
     }
 }
