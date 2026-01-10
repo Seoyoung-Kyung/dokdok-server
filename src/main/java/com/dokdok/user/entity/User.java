@@ -1,11 +1,14 @@
 package com.dokdok.user.entity;
 
 import com.dokdok.global.BaseTimeEntity;
+import com.dokdok.oauth2.OAuth2UserInfo;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+
+import java.util.function.Supplier;
 
 @Entity
 @Table(name = "users")
@@ -36,4 +39,12 @@ public class User extends BaseTimeEntity {
 
     @Column(name = "kakao_id", nullable = false)
     private Long kakaoId;
+
+    public static User from(OAuth2UserInfo oAuth2UserInfo) {
+
+        return User.builder()
+                .kakaoId(oAuth2UserInfo.getId())
+                .userEmail(oAuth2UserInfo.getEmail())
+                .build();
+    }
 }
