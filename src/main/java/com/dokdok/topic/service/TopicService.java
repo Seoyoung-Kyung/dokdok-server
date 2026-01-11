@@ -38,7 +38,7 @@ public class TopicService {
 
         User user = getUser(userId);
 
-        Topic topic = Topic.create(
+        Topic topic = Topic.of(
                 meeting,
                 user,
                 request.title(),
