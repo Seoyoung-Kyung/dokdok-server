@@ -57,7 +57,7 @@ public class GatheringMember {
      */
     public Integer getDaysFromJoined(){
         if(this.joinedAt == null){
-            return 1;
+            return 0;
         }
         return (int) ChronoUnit.DAYS.between(
                 this.joinedAt.toLocalDate(),
