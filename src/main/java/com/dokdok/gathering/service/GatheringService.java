@@ -32,7 +32,7 @@ public class GatheringService {
 
                     return GatheringSimpleResponse.from(gatheringMember, totalMembers);
                 })
-                .collect(Collectors.toUnmodifiableList());
+                .collect(Collectors.toList());
 
         return MyGatheringListResponse.from(
                 gatheringResponses,
