@@ -217,8 +217,9 @@ esac
 MAIN_CHANGES=""
 
 if [ -n "$NUMSTAT" ]; then
-    # 폴더별로 변경 사항 그룹화
-    declare -A folder_stats
+    # 폴더별로 변경 사항 그룹화 (bash 3.2 호환)
+    # 1. 폴더 추출 및 통계와 함께 임시 파일 생성
+    temp_stats=$(mktemp)
 
     while IFS=$'\t' read -r added deleted file; do
         if [ -z "$file" ]; then
@@ -232,34 +233,63 @@ if [ -n "$NUMSTAT" ]; then
             folder=$(echo "$file" | cut -d'/' -f1)
         fi
 
-        # 통계 누적
-        if [ -z "${folder_stats[$folder]}" ]; then
-            folder_stats[$folder]="$added:$deleted:1"
-        else
-            IFS=':' read -r old_added old_deleted old_count <<< "${folder_stats[$folder]}"
-            new_added=$((old_added + added))
-            new_deleted=$((old_deleted + deleted))
-            new_count=$((old_count + 1))
-            folder_stats[$folder]="$new_added:$new_deleted:$new_count"
-        fi
+        # 폴더:added:deleted 형태로 저장
+        echo "${folder}:${added}:${deleted}" >> "$temp_stats"
     done <<< "$NUMSTAT"
 
-    # 변경 사항 포맷팅
-    for folder in "${!folder_stats[@]}"; do
-        IFS=':' read -r added deleted count <<< "${folder_stats[$folder]}"
+    # 2. 폴더별로 정렬 및 합산
+    if [ -s "$temp_stats" ]; then
+        sorted_stats=$(sort "$temp_stats")
 
-        # 커밋 메시지에서 요약 추출
-        summary="요구사항 반영"
-        if [ -n "$COMMIT_MESSAGES" ]; then
-            # 첫 번째 커밋에서 간단한 요약 추출
-            commit_summary=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))?:\s*//')
-            if [ ${#commit_summary} -lt 50 ]; then
-                summary="$commit_summary"
+        prev_folder=""
+        total_added=0
+        total_deleted=0
+        file_count=0
+
+        while IFS=':' read -r folder added deleted; do
+            if [ "$folder" = "$prev_folder" ] || [ -z "$prev_folder" ]; then
+                # 같은 폴더면 누적
+                total_added=$((total_added + added))
+                total_deleted=$((total_deleted + deleted))
+                file_count=$((file_count + 1))
+                prev_folder="$folder"
+            else
+                # 다른 폴더면 이전 폴더 출력 후 초기화
+                # 커밋 메시지에서 요약 추출
+                summary="요구사항 반영"
+                if [ -n "$COMMIT_MESSAGES" ]; then
+                    commit_summary=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))?:\s*//')
+                    if [ ${#commit_summary} -lt 50 ]; then
+                        summary="$commit_summary"
+                    fi
+                fi
+
+                MAIN_CHANGES="${MAIN_CHANGES}- \`${prev_folder}\`: +${total_added}/-${total_deleted} (${file_count} files) — ${summary}\n"
+
+                # 새 폴더로 초기화
+                prev_folder="$folder"
+                total_added=$added
+                total_deleted=$deleted
+                file_count=1
             fi
-        fi
+        done <<< "$sorted_stats"
 
-        MAIN_CHANGES="${MAIN_CHANGES}- \`${folder}\`: +${added}/-${deleted} (${count} files) — ${summary}\n"
-    done
+        # 마지막 폴더 출력
+        if [ -n "$prev_folder" ]; then
+            summary="요구사항 반영"
+            if [ -n "$COMMIT_MESSAGES" ]; then
+                commit_summary=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))?:\s*//')
+                if [ ${#commit_summary} -lt 50 ]; then
+                    summary="$commit_summary"
+                fi
+            fi
+
+            MAIN_CHANGES="${MAIN_CHANGES}- \`${prev_folder}\`: +${total_added}/-${total_deleted} (${file_count} files) — ${summary}\n"
+        fi
+    fi
+
+    # 임시 파일 삭제
+    rm -f "$temp_stats"
 else
     MAIN_CHANGES="- 변경 사항 없음"
 fi
@@ -308,11 +338,14 @@ EOF
 # 파일 저장
 # ============================================
 
-echo "$PR_TITLE" > PR_TITLE.txt
-echo "$PR_BODY" > PR_BODY.md
+# 스크립트 디렉토리 경로
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-print_success "PR 제목이 PR_TITLE.txt에 저장되었습니다."
-print_success "PR 본문이 PR_BODY.md에 저장되었습니다."
+echo "$PR_TITLE" > "${SCRIPT_DIR}/PR_TITLE.txt"
+echo "$PR_BODY" > "${SCRIPT_DIR}/PR_BODY.md"
+
+print_success "PR 제목이 scripts/PR_TITLE.txt에 저장되었습니다."
+print_success "PR 본문이 scripts/PR_BODY.md에 저장되었습니다."
 
 # ============================================
 # PR 생성
@@ -326,7 +359,7 @@ if command -v gh &> /dev/null; then
         --base "$BASE_BRANCH" \
         --head "$CURRENT_BRANCH" \
         --title "$PR_TITLE" \
-        --body-file PR_BODY.md; then
+        --body-file "${SCRIPT_DIR}/PR_BODY.md"; then
         print_success "PR이 성공적으로 생성되었습니다!"
     else
         print_error "PR 생성에 실패했습니다."
@@ -336,6 +369,6 @@ else
     print_warning "gh CLI가 설치되어 있지 않습니다."
     print_info "다음 명령어로 수동으로 PR을 생성할 수 있습니다:"
     echo ""
-    echo "gh pr create --base $BASE_BRANCH --head $CURRENT_BRANCH --title \"$PR_TITLE\" --body-file PR_BODY.md"
+    echo "gh pr create --base $BASE_BRANCH --head $CURRENT_BRANCH --title \"$PR_TITLE\" --body-file scripts/PR_BODY.md"
     echo ""
 fi
