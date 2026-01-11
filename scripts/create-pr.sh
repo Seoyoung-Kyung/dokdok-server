@@ -104,52 +104,137 @@ CHANGED_FILES=$(git diff --name-only origin/${BASE_BRANCH}...HEAD 2>/dev/null ||
 NUMSTAT=$(git diff --numstat origin/${BASE_BRANCH}...HEAD 2>/dev/null || echo "")
 
 # ============================================
-# PR 타입 추론
+# PR 타입 추론 (다수결 또는 우선순위)
 # ============================================
 
 if [ -z "$PR_TYPE" ]; then
     print_info "PR 타입을 커밋 메시지에서 추론 중..."
 
-    # 첫 번째 커밋의 prefix 확인
-    FIRST_COMMIT=$(echo "$COMMIT_MESSAGES" | head -n 1)
+    # 모든 커밋의 타입 카운트
+    feat_count=0
+    fix_count=0
+    refactor_count=0
+    docs_count=0
+    chore_count=0
 
-    if [[ "$FIRST_COMMIT" =~ ^feat ]]; then
-        PR_TYPE="FEAT"
-    elif [[ "$FIRST_COMMIT" =~ ^fix ]]; then
-        PR_TYPE="FIX"
-    elif [[ "$FIRST_COMMIT" =~ ^refactor ]]; then
-        PR_TYPE="REFACTOR"
-    elif [[ "$FIRST_COMMIT" =~ ^docs ]]; then
-        PR_TYPE="DOCS"
-    elif [[ "$FIRST_COMMIT" =~ ^(chore|test) ]]; then
+    while IFS= read -r commit; do
+        if [[ "$commit" =~ ^feat ]]; then
+            feat_count=$((feat_count + 1))
+        elif [[ "$commit" =~ ^fix ]]; then
+            fix_count=$((fix_count + 1))
+        elif [[ "$commit" =~ ^refactor ]]; then
+            refactor_count=$((refactor_count + 1))
+        elif [[ "$commit" =~ ^docs ]]; then
+            docs_count=$((docs_count + 1))
+        elif [[ "$commit" =~ ^(chore|test) ]]; then
+            chore_count=$((chore_count + 1))
+        fi
+    done <<< "$COMMIT_MESSAGES"
+
+    # 가장 많은 타입 선택 (우선순위: feat > fix > refactor > docs > chore)
+    max_count=0
+    PR_TYPE="CHORE"
+
+    if [ $chore_count -ge $max_count ] && [ $chore_count -gt 0 ]; then
+        max_count=$chore_count
         PR_TYPE="CHORE"
-    else
-        PR_TYPE="CHORE"
-        print_warning "PR 타입을 추론할 수 없어 CHORE로 설정합니다."
     fi
 
-    print_info "추론된 PR 타입: ${PR_TYPE}"
+    if [ $docs_count -ge $max_count ] && [ $docs_count -gt 0 ]; then
+        max_count=$docs_count
+        PR_TYPE="DOCS"
+    fi
+
+    if [ $refactor_count -ge $max_count ] && [ $refactor_count -gt 0 ]; then
+        max_count=$refactor_count
+        PR_TYPE="REFACTOR"
+    fi
+
+    if [ $fix_count -ge $max_count ] && [ $fix_count -gt 0 ]; then
+        max_count=$fix_count
+        PR_TYPE="FIX"
+    fi
+
+    if [ $feat_count -ge $max_count ] && [ $feat_count -gt 0 ]; then
+        max_count=$feat_count
+        PR_TYPE="FEAT"
+    fi
+
+    if [ $max_count -eq 0 ]; then
+        print_warning "PR 타입을 추론할 수 없어 CHORE로 설정합니다."
+    else
+        print_info "추론된 PR 타입: ${PR_TYPE} (feat:${feat_count} fix:${fix_count} refactor:${refactor_count} docs:${docs_count} chore:${chore_count})"
+    fi
 else
     print_info "PR 타입: ${PR_TYPE} (사용자 지정)"
 fi
 
 # ============================================
-# PR 제목 생성
+# PR 제목 생성 (여러 커밋 종합 요약)
 # ============================================
 
-# SUMMARY 생성: 대표 커밋 제목에서 prefix와 scope 제거
-if [ -n "$COMMIT_MESSAGES" ]; then
-    # 첫 번째 커밋에서 prefix 제거 (feat:, fix:, feat(scope): 등)
-    SUMMARY=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))?:\s*//')
+SUMMARY=""
 
-    # 35자 제한
-    if [ ${#SUMMARY} -gt 35 ]; then
-        SUMMARY="${SUMMARY:0:32}..."
+if [ -n "$COMMIT_MESSAGES" ]; then
+    # 커밋 개수 확인
+    COMMIT_COUNT=$(echo "$COMMIT_MESSAGES" | wc -l | tr -d ' ')
+
+    if [ "$COMMIT_COUNT" -eq 1 ]; then
+        # 커밋 1개: 그대로 사용
+        SUMMARY=$(echo "$COMMIT_MESSAGES" | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
+    else
+        # 커밋 2개 이상: 종합 요약 생성
+        print_info "커밋 ${COMMIT_COUNT}개를 종합 요약 중..."
+
+        # prefix 제거한 커밋 메시지들 수집
+        cleaned_messages=""
+        while IFS= read -r commit; do
+            cleaned=$(echo "$commit" | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
+            cleaned_messages="${cleaned_messages}${cleaned} "
+        done <<< "$COMMIT_MESSAGES"
+
+        # 공통 키워드 추출 및 요약 생성
+        # 1. 가장 많이 나오는 명사구 찾기
+        # 2. 폴더명 기반 요약
+        # 3. 첫 번째와 마지막 커밋 조합
+
+        if [ "$COMMIT_COUNT" -le 3 ]; then
+            # 2-3개: 첫 번째 커밋 기반 + "및 개선/수정"
+            first_cleaned=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
+
+            # 첫 커밋에 이미 개선/수정/추가/구현이 있는지 확인
+            if echo "$first_cleaned" | grep -q "개선\|수정\|추가\|구현"; then
+                # 이미 포함되어 있으면 그대로 사용
+                SUMMARY="${first_cleaned}"
+            else
+                # 없으면 "및 개선" 추가
+                SUMMARY="${first_cleaned} 및 개선"
+            fi
+        else
+            # 4개 이상: 변경 파일의 주요 폴더 기반 요약
+            if [ -n "$CHANGED_FILES" ]; then
+                main_folder=$(echo "$CHANGED_FILES" | head -n 1 | cut -d'/' -f1-2)
+                SUMMARY="${main_folder} 기능 구현 및 개선"
+            else
+                SUMMARY="다중 기능 구현"
+            fi
+        fi
+    fi
+
+    # 50자 제한 (자연스럽게 끊기)
+    if [ ${#SUMMARY} -gt 50 ]; then
+        # 45자까지 자르고 마지막 공백에서 끊기
+        SUMMARY_SHORT="${SUMMARY:0:45}"
+        # 마지막 공백 찾기
+        if [[ "$SUMMARY_SHORT" =~ (.*)\ (.*)$ ]]; then
+            SUMMARY="${BASH_REMATCH[1]}"
+        else
+            SUMMARY="${SUMMARY:0:47}..."
+        fi
     fi
 else
     # 커밋이 없으면 변경 파일 기반으로 요약 생성
     if [ -n "$CHANGED_FILES" ]; then
-        # 상위 디렉토리 추출
         TOP_DIR=$(echo "$CHANGED_FILES" | head -n 1 | cut -d'/' -f1-2)
         SUMMARY="${TOP_DIR} 변경"
     else
@@ -258,7 +343,7 @@ if [ -n "$NUMSTAT" ]; then
                 # 커밋 메시지에서 요약 추출
                 summary="요구사항 반영"
                 if [ -n "$COMMIT_MESSAGES" ]; then
-                    commit_summary=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))?:\s*//')
+                    commit_summary=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
                     if [ ${#commit_summary} -lt 50 ]; then
                         summary="$commit_summary"
                     fi
@@ -278,7 +363,7 @@ if [ -n "$NUMSTAT" ]; then
         if [ -n "$prev_folder" ]; then
             summary="요구사항 반영"
             if [ -n "$COMMIT_MESSAGES" ]; then
-                commit_summary=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))?:\s*//')
+                commit_summary=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
                 if [ ${#commit_summary} -lt 50 ]; then
                     summary="$commit_summary"
                 fi
