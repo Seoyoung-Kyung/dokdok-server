@@ -38,8 +38,9 @@ public class GatheringMember {
     private Boolean isFavorite = false;
 
     @Column(name = "role", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String role = "MEMBER";
+    private GatheringRole role = GatheringRole.MEMBER;
 
     @CreatedDate
     @Column(name = "joined_at", nullable = false, updatable = false)
