@@ -10,5 +10,5 @@ import java.util.Optional;
 @Repository
 public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
-    Optional<Meeting> findByIdAndGatheringId(Long meetingId, Long gatheringId);
+    boolean existsByIdAndGatheringId(Long meetingId, Long gatheringId);
 }

@@ -28,6 +28,8 @@ public enum GlobalErrorCode {
     EXPIRED_TOKEN("G104", "만료된 토큰입니다."),
     REFRESH_TOKEN_NOT_FOUND("G105", "리프레시 토큰을 찾을 수 없습니다."),
     NOT_GATHERING_MEMBER("G106", "해당 모임의 멤버가 아닙니다."),
+    NOT_MEETING_MEMBER("G107", "해당 약속의 멤버가 아닙니다."),
+    NOT_GATHERING_MEETING("G108", "해당 모임의 약속이 아닙니다."),
 
     // 파일 처리 (G2xx)
     FILE_UPLOAD_FAILED("G201", "파일 업로드에 실패했습니다."),

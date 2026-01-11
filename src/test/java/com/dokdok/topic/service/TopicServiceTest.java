@@ -1,17 +1,18 @@
 package com.dokdok.topic.service;
 
-import com.dokdok.gathering.service.GatheringMemberValidator;
+import com.dokdok.gathering.service.GatheringMemberService;
 import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
 import com.dokdok.meeting.entity.Meeting;
-import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.meeting.entity.MeetingMember;
+import com.dokdok.meeting.service.MeetingMemberService;
+import com.dokdok.meeting.service.MeetingService;
 import com.dokdok.topic.dto.SuggestTopicRequest;
 import com.dokdok.topic.dto.SuggestTopicResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.enums.TopicType;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
-import com.dokdok.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,8 +20,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,19 +35,20 @@ class TopicServiceTest {
     private TopicRepository topicRepository;
 
     @Mock
-    private MeetingRepository meetingRepository;
+    private MeetingService meetingService;
 
     @Mock
-    private UserRepository userRepository;
+    private MeetingMemberService meetingMemberService;
 
     @Mock
-    private GatheringMemberValidator gatheringMemberValidator;
+    private GatheringMemberService gatheringMemberService;
 
     @InjectMocks
     private TopicService topicService;
 
     private User testUser;
     private Meeting testMeeting;
+    private MeetingMember testMeetingMember;
     private Topic testTopic;
     private SuggestTopicRequest testRequest;
 
@@ -65,6 +65,13 @@ class TopicServiceTest {
         testMeeting = Meeting.builder()
                 .id(1L)
                 .meetingName("클린 코드 1회차")
+                .build();
+
+        testMeetingMember = MeetingMember.builder()
+                .id(1L)
+                .meeting(testMeeting)
+                .user(testUser)
+                .attendanceStatus("ATTENDING")
                 .build();
 
         testTopic = Topic.builder()
@@ -90,14 +97,19 @@ class TopicServiceTest {
         Long meetingId = 1L;
         Long userId = 1L;
 
-        // 멤버 검증은 통과 (아무 동작 안 함)
-        doNothing().when(gatheringMemberValidator)
+        // 모임 멤버 검증 통과
+        doNothing().when(gatheringMemberService)
                 .validateMembership(gatheringId, userId);
 
-        given(meetingRepository.findByIdAndGatheringId(meetingId, gatheringId))
-                .willReturn(Optional.of(testMeeting));
-        given(userRepository.findById(userId))
-                .willReturn(Optional.of(testUser));
+        // 회차 소속 검증 통과
+        doNothing().when(meetingService)
+                .validateMemberInGathering(meetingId, gatheringId);
+
+        // 회차 참석자 조회 성공
+        given(meetingMemberService.getMeetingMember(meetingId, userId))
+                .willReturn(testMeetingMember);
+
+        // Topic 저장 성공
         given(topicRepository.save(any(Topic.class)))
                 .willReturn(testTopic);
 
@@ -108,9 +120,9 @@ class TopicServiceTest {
         assertThat(response.title()).isEqualTo("의미 있는 이름 짓기");
         assertThat(response.topicType()).isEqualTo(TopicType.DISCUSSION);
 
-        verify(gatheringMemberValidator).validateMembership(gatheringId, userId);
-        verify(meetingRepository).findByIdAndGatheringId(meetingId, gatheringId);
-        verify(userRepository).findById(userId);
+        verify(gatheringMemberService).validateMembership(gatheringId, userId);
+        verify(meetingService).validateMemberInGathering(meetingId, gatheringId);
+        verify(meetingMemberService).getMeetingMember(meetingId, userId);
         verify(topicRepository).save(any(Topic.class));
     }
 
@@ -122,7 +134,7 @@ class TopicServiceTest {
         Long userId = 1L;
 
         doThrow(new GlobalException(GlobalErrorCode.NOT_GATHERING_MEMBER))
-                .when(gatheringMemberValidator)
+                .when(gatheringMemberService)
                 .validateMembership(gatheringId, userId);
 
         assertThatThrownBy(() ->
@@ -131,53 +143,56 @@ class TopicServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode",
                         GlobalErrorCode.NOT_GATHERING_MEMBER);
 
-        verify(meetingRepository, never()).findByIdAndGatheringId(any(), any());
+        verify(meetingService, never()).validateMemberInGathering(any(), any());
+        verify(meetingMemberService, never()).getMeetingMember(any(), any());
         verify(topicRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("존재하지 않는 미팅인 경우 예외가 발생한다")
+    @DisplayName("회차가 해당 모임에 속하지 않는 경우 예외가 발생한다")
     void createTopic_MeetingNotFound_ThrowsException() {
         Long gatheringId = 1L;
         Long meetingId = 999L;
         Long userId = 1L;
 
-        doNothing().when(gatheringMemberValidator)
+        doNothing().when(gatheringMemberService)
                 .validateMembership(gatheringId, userId);
 
-        given(meetingRepository.findByIdAndGatheringId(meetingId, gatheringId))
-                .willReturn(Optional.empty());
+        doThrow(new GlobalException(GlobalErrorCode.NOT_GATHERING_MEETING))
+                .when(meetingService)
+                .validateMemberInGathering(meetingId, gatheringId);
 
         assertThatThrownBy(() ->
                 topicService.createTopic(gatheringId, meetingId, userId, testRequest))
                 .isInstanceOf(GlobalException.class)
                 .hasFieldOrPropertyWithValue("errorCode",
-                        GlobalErrorCode.NOT_FOUND);
+                        GlobalErrorCode.NOT_GATHERING_MEETING);
 
-        verify(userRepository, never()).findById(any());
+        verify(meetingMemberService, never()).getMeetingMember(any(), any());
         verify(topicRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("존재하지 않는 사용자인 경우 예외가 발생한다")
-    void createTopic_UserNotFound_ThrowsException() {
+    @DisplayName("회차 참석자가 아닌 경우 예외가 발생한다")
+    void createTopic_NotMeetingParticipant_ThrowsException() {
         Long gatheringId = 1L;
         Long meetingId = 1L;
         Long userId = 999L;
 
-        doNothing().when(gatheringMemberValidator)
+        doNothing().when(gatheringMemberService)
                 .validateMembership(gatheringId, userId);
 
-        given(meetingRepository.findByIdAndGatheringId(meetingId, gatheringId))
-                .willReturn(Optional.of(testMeeting));
-        given(userRepository.findById(userId))
-                .willReturn(Optional.empty());
+        doNothing().when(meetingService)
+                .validateMemberInGathering(meetingId, gatheringId);
+
+        given(meetingMemberService.getMeetingMember(meetingId, userId))
+                .willThrow(new GlobalException(GlobalErrorCode.NOT_MEETING_MEMBER));
 
         assertThatThrownBy(() ->
                 topicService.createTopic(gatheringId, meetingId, userId, testRequest))
                 .isInstanceOf(GlobalException.class)
                 .hasFieldOrPropertyWithValue("errorCode",
-                        GlobalErrorCode.NOT_FOUND);
+                        GlobalErrorCode.NOT_MEETING_MEMBER);
 
         verify(topicRepository, never()).save(any());
     }
