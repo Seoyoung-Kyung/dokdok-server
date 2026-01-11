@@ -42,4 +42,13 @@ public class TopicAnswer extends BaseTimeEntity {
     @Column(name = "is_submitted", nullable = false)
     @Builder.Default
     private Boolean isSubmitted = false;
+
+    public static TopicAnswer create(Topic topic, User user, BigDecimal bookRating, String content) {
+        return TopicAnswer.builder()
+                .topic(topic)
+                .user(user)
+                .bookRating(bookRating)
+                .content(content)
+                .build();
+    }
 }
