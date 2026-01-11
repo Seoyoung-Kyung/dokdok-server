@@ -4,6 +4,7 @@ import com.dokdok.gathering.dto.GatheringSimpleResponse;
 import com.dokdok.gathering.dto.MyGatheringListResponse;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
+import com.dokdok.gathering.entity.GatheringRole;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +21,8 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.dokdok.gathering.entity.GatheringRole.LEADER;
+import static com.dokdok.gathering.entity.GatheringRole.MEMBER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -69,7 +72,7 @@ class GatheringServiceTest {
                 .gathering(gathering1)
                 .user(user)
                 .isFavorite(true)
-                .role("LEADER")
+                .role(LEADER)
                 .joinedAt(LocalDateTime.now().minusDays(10))
                 .build();
 
@@ -78,7 +81,7 @@ class GatheringServiceTest {
                 .gathering(gathering2)
                 .user(user)
                 .isFavorite(false)
-                .role("MEMBER")
+                .role(MEMBER)
                 .joinedAt(LocalDateTime.now().minusDays(5))
                 .build();
 
@@ -107,7 +110,7 @@ class GatheringServiceTest {
          assertThat(firstGathering.isFavorite()).isTrue();
          assertThat(firstGathering.gatheringStatus()).isEqualTo("ACTIVE");
          assertThat(firstGathering.totalMembers()).isEqualTo(1);
-         assertThat(firstGathering.currentUserRole()).isEqualTo("LEADER");
+         assertThat(firstGathering.currentUserRole()).isEqualTo(LEADER);
          assertThat(firstGathering.daysFromJoined()).isEqualTo(10);
 
          // 두 번째 모임 검증
@@ -117,7 +120,7 @@ class GatheringServiceTest {
          assertThat(secondGathering.isFavorite()).isFalse();
         assertThat(firstGathering.gatheringStatus()).isEqualTo("ACTIVE");
          assertThat(secondGathering.totalMembers()).isEqualTo(1);
-         assertThat(secondGathering.currentUserRole()).isEqualTo("MEMBER");
+         assertThat(secondGathering.currentUserRole()).isEqualTo(MEMBER);
 
          verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserId(eq(userId), any(Pageable.class));
          verify(gatheringMemberRepository, times(1)).countActiveMembers(1L);
