@@ -60,4 +60,22 @@ public class TopicAnswerService {
 
         return TopicAnswerDetailResponse.from(answer);
     }
+
+    @Transactional
+    public TopicAnswerResponse updateMyAnswer(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId,
+            Long userId,
+            TopicAnswerRequest request
+    ) {
+        // TODO: gatheringId/meetingId/topicId 관계 검증
+
+        TopicAnswer answer = topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
+                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+
+        answer.updateContent(request.content());
+
+        return TopicAnswerResponse.from(answer);
+    }
 }

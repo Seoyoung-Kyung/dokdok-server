@@ -46,4 +46,19 @@ public class TopicAnswerController implements TopicAnswerApi {
 
         return ApiResponse.success(response, "조회 성공");
     }
+
+    @Override
+    public ResponseEntity<ApiResponse<TopicAnswerResponse>> updateMyAnswer(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId,
+            TopicAnswerRequest request
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        TopicAnswerResponse response = topicAnswerService.updateMyAnswer(
+                gatheringId, meetingId, topicId, userId, request
+        );
+
+        return ApiResponse.updated(response, "답변이 수정되었습니다.");
+    }
 }
