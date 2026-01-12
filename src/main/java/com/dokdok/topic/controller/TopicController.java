@@ -44,6 +44,7 @@ public class TopicController implements TopicApi {
             @ParameterObject
             @PageableDefault(size = 10) Pageable pageable
     ) {
+
         TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
 
         return ApiResponse.success(response, "제안된 주제 조회를 완료했습니다.");
