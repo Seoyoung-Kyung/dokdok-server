@@ -39,7 +39,7 @@ public class Meeting extends BaseTimeEntity {
     @JoinColumn(name = "meeting_leader_id")
     private User meetingLeader;
 
-    @Column(name = "meeting_name", length = 100)
+    @Column(name = "meeting_name", length = 24)
     private String meetingName;
 
     @Column(name = "place", length = 255)
@@ -49,8 +49,9 @@ public class Meeting extends BaseTimeEntity {
     private Integer maxParticipants;
 
     @Column(name = "meeting_status", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String meetingStatus = "PENDING";
+    private MeetingStatus meetingStatus = MeetingStatus.PENDING;
 
     @Column(name = "meeting_start_date")
     private LocalDateTime meetingStartDate;
