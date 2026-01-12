@@ -1,24 +1,16 @@
 package com.dokdok.global.exception;
 
-import lombok.Getter;
-
-@Getter
-public class GlobalException extends RuntimeException {
-
-    private final GlobalErrorCode errorCode;
+public class GlobalException extends BaseException {
 
     public GlobalException(GlobalErrorCode errorCode) {
-        super(errorCode.getMessage());
-        this.errorCode = errorCode;
+        super(errorCode);
     }
 
     public GlobalException(GlobalErrorCode errorCode, String message) {
-        super(message);
-        this.errorCode = errorCode;
+        super(errorCode, message);
     }
 
     public GlobalException(GlobalErrorCode errorCode, Throwable cause) {
-        super(errorCode.getMessage(), cause);
-        this.errorCode = errorCode;
+        super(errorCode, cause);
     }
 }
