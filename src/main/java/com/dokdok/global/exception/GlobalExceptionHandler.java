@@ -26,14 +26,16 @@ public class GlobalExceptionHandler {
     /**
      * 공통 예외
      */
-    @ExceptionHandler(GlobalException.class)
-    protected ResponseEntity<ApiResponse<Void>> handleGlobalException(GlobalException e) {
-        log.warn("GlobalException: code={}, message={}",
-                e.getErrorCode().getCode(), e.getMessage());
+    @ExceptionHandler(BaseException.class)
+    protected ResponseEntity<ApiResponse<Void>> handleBaseException(BaseException e) {
+        BaseErrorCode errorCode = e.getErrorCode();
+        log.warn("BaseException: code={}, message={}",
+                errorCode.getCode(), e.getMessage());
 
         return ApiResponse.error(
-                e.getErrorCode().getCode(),
-                e.getErrorCode().getMessage()
+                errorCode.getStatus(),
+                errorCode.getCode(),
+                e.getMessage()
         );
     }
 

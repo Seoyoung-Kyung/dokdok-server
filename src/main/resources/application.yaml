@@ -1,7 +1,6 @@
 spring:
   application:
     name: dokdok
-
   datasource:
     hikari:
       maximum-pool-size: 20  # 최대 커넥션 수
