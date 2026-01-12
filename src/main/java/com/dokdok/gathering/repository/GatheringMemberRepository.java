@@ -9,15 +9,18 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface GatheringMemberRepository extends JpaRepository<GatheringMember, Long> {
-  
-    int countByGatheringIdAndRemovedAtIsNull(Long gatheringId);
 
     /**
      * 사용자가 특정 모임의 활성 멤버인지 확인
      */
     boolean existsByGatheringIdAndUserIdAndRemovedAtIsNull(Long gatheringId, Long userId);
+
+    int countByGatheringIdAndRemovedAtIsNull(Long gatheringId);
 
     /**
      * 사용자의 활성 모임 목록 조회
@@ -39,4 +42,25 @@ public interface GatheringMemberRepository extends JpaRepository<GatheringMember
             "AND gm.removedAt IS NULL")
     Integer countActiveMembers(@Param("gatheringId") Long gatheringId);
 
+    /**
+     * 특정 유저가 특정 모임의 멤버인지 확인
+     */
+    @Query("SELECT gm FROM GatheringMember gm " +
+            "WHERE gm.gathering.id = :gatheringId " +
+            "AND gm.user.id = :userId " +
+            "AND gm.removedAt IS NULL")
+    Optional<GatheringMember> findByGatheringIdAndUserId(
+            @Param("gatheringId") Long gatheringId,
+            @Param("userId") Long userId
+    );
+
+    /**
+     * 특정 모임의 모든 활성 멤버 조회 (User 정보 포함)
+     */
+    @Query("SELECT gm FROM GatheringMember gm " +
+            "JOIN FETCH gm.user u " +
+            "JOIN FETCH gm.gathering g " +
+            "WHERE gm.gathering.id = :gatheringId " +
+            "AND gm.removedAt IS NULL")
+    List<GatheringMember> findAllMembersByGatheringId(@Param("gatheringId") Long gatheringId);
 }
