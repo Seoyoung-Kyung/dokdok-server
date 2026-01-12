@@ -48,7 +48,6 @@ public interface TopicApi {
     ResponseEntity<ApiResponse<SuggestTopicResponse>> createTopic(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
-            @RequestParam Long userId,
             @Valid @RequestBody SuggestTopicRequest request
     );
 }

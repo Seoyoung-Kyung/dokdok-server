@@ -1,6 +1,9 @@
 package com.dokdok.topic.service;
 
 import com.dokdok.gathering.service.GatheringValidator;
+import com.dokdok.global.exception.GlobalErrorCode;
+import com.dokdok.global.exception.GlobalException;
+import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.service.MeetingValidator;
@@ -12,6 +15,8 @@ import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,9 +30,11 @@ public class TopicService {
     public SuggestTopicResponse createTopic(
             Long gatheringId,
             Long meetingId,
-            Long userId,
             SuggestTopicRequest request
     ) {
+        Long userId = SecurityUtil.getCurrentUserIdOptional()
+                .orElseThrow(() -> new GlobalException(GlobalErrorCode.UNAUTHORIZED));
+
         gatheringValidator.validateMembership(gatheringId, userId);
 
         meetingValidator.validateMemberInGathering(meetingId, gatheringId);

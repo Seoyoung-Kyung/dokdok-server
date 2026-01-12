@@ -19,10 +19,9 @@ public class TopicController implements TopicApi {
     public ResponseEntity<ApiResponse<SuggestTopicResponse>> createTopic(
             Long gatheringId,
             Long meetingId,
-            Long userId,
             SuggestTopicRequest request
     ) {
-        SuggestTopicResponse response = topicService.createTopic(gatheringId, meetingId, userId, request);
+        SuggestTopicResponse response = topicService.createTopic(gatheringId, meetingId, request);
 
         return ApiResponse.created(response, "주제 제안이 완료되었습니다.");
     }

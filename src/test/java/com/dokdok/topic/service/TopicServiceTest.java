@@ -3,6 +3,9 @@ package com.dokdok.topic.service;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.service.GatheringValidator;
+import com.dokdok.global.exception.GlobalErrorCode;
+import com.dokdok.global.exception.GlobalException;
+import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.exception.MeetingErrorCode;
@@ -20,7 +23,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -95,35 +101,64 @@ class TopicServiceTest {
         Long meetingId = 1L;
         Long userId = 1L;
 
-        // 모임 멤버 검증 통과
-        doNothing().when(gatheringValidator)
-                .validateMembership(gatheringId, userId);
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            // SecurityUtil에서 userId 가져오기
+            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
+                    .thenReturn(Optional.of(userId));
 
-        // 회차 소속 검증 통과
-        doNothing().when(meetingValidator)
-                .validateMemberInGathering(meetingId, gatheringId);
+            // 모임 멤버 검증 통과
+            doNothing().when(gatheringValidator)
+                    .validateMembership(gatheringId, userId);
 
-        // 회차 참석자 조회 성공
-        given(meetingValidator.getMeetingMember(meetingId, userId))
-                .willReturn(testMeetingMember);
+            // 회차 소속 검증 통과
+            doNothing().when(meetingValidator)
+                    .validateMemberInGathering(meetingId, gatheringId);
 
-        // Topic 저장 성공
-        given(topicRepository.save(any(Topic.class)))
-                .willReturn(testTopic);
+            // 회차 참석자 조회 성공
+            given(meetingValidator.getMeetingMember(meetingId, userId))
+                    .willReturn(testMeetingMember);
 
-        SuggestTopicResponse response =
-                topicService.createTopic(gatheringId, meetingId, userId, testRequest);
+            // Topic 저장 성공
+            given(topicRepository.save(any(Topic.class)))
+                    .willReturn(testTopic);
 
-        assertThat(response).isNotNull();
-        assertThat(response.title()).isEqualTo("의미 있는 이름 짓기");
-        assertThat(response.topicType()).isEqualTo(TopicType.DISCUSSION);
-        assertThat(response.createdBy().userId()).isEqualTo(1L);
-        assertThat(response.createdBy().nickname()).isEqualTo("책벌레김");
+            SuggestTopicResponse response =
+                    topicService.createTopic(gatheringId, meetingId, testRequest);
 
-        verify(gatheringValidator).validateMembership(gatheringId, userId);
-        verify(meetingValidator).validateMemberInGathering(meetingId, gatheringId);
-        verify(meetingValidator).getMeetingMember(meetingId, userId);
-        verify(topicRepository).save(any(Topic.class));
+            assertThat(response).isNotNull();
+            assertThat(response.title()).isEqualTo("의미 있는 이름 짓기");
+            assertThat(response.topicType()).isEqualTo(TopicType.DISCUSSION);
+            assertThat(response.createdBy().userId()).isEqualTo(1L);
+            assertThat(response.createdBy().nickname()).isEqualTo("책벌레김");
+
+            verify(gatheringValidator).validateMembership(gatheringId, userId);
+            verify(meetingValidator).validateMemberInGathering(meetingId, gatheringId);
+            verify(meetingValidator).getMeetingMember(meetingId, userId);
+            verify(topicRepository).save(any(Topic.class));
+        }
+    }
+
+    @Test
+    @DisplayName("인증되지 않은 사용자인 경우 예외가 발생한다")
+    void createTopic_Unauthorized_ThrowsException() {
+        Long gatheringId = 1L;
+        Long meetingId = 1L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() ->
+                    topicService.createTopic(gatheringId, meetingId, testRequest))
+                    .isInstanceOf(GlobalException.class)
+                    .hasFieldOrPropertyWithValue("errorCode",
+                            GlobalErrorCode.UNAUTHORIZED);
+
+            verify(gatheringValidator, never()).validateMembership(any(), any());
+            verify(meetingValidator, never()).validateMemberInGathering(any(), any());
+            verify(meetingValidator, never()).getMeetingMember(any(), any());
+            verify(topicRepository, never()).save(any());
+        }
     }
 
     @Test
@@ -133,19 +168,24 @@ class TopicServiceTest {
         Long meetingId = 1L;
         Long userId = 1L;
 
-        doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
-                .when(gatheringValidator)
-                .validateMembership(gatheringId, userId);
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
+                    .thenReturn(Optional.of(userId));
 
-        assertThatThrownBy(() ->
-                topicService.createTopic(gatheringId, meetingId, userId, testRequest))
-                .isInstanceOf(GatheringException.class)
-                .hasFieldOrPropertyWithValue("errorCode",
-                        GatheringErrorCode.NOT_GATHERING_MEMBER);
+            doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
+                    .when(gatheringValidator)
+                    .validateMembership(gatheringId, userId);
 
-        verify(meetingValidator, never()).validateMemberInGathering(any(), any());
-        verify(meetingValidator, never()).getMeetingMember(any(), any());
-        verify(topicRepository, never()).save(any());
+            assertThatThrownBy(() ->
+                    topicService.createTopic(gatheringId, meetingId, testRequest))
+                    .isInstanceOf(GatheringException.class)
+                    .hasFieldOrPropertyWithValue("errorCode",
+                            GatheringErrorCode.NOT_GATHERING_MEMBER);
+
+            verify(meetingValidator, never()).validateMemberInGathering(any(), any());
+            verify(meetingValidator, never()).getMeetingMember(any(), any());
+            verify(topicRepository, never()).save(any());
+        }
     }
 
     @Test
@@ -155,21 +195,26 @@ class TopicServiceTest {
         Long meetingId = 999L;
         Long userId = 1L;
 
-        doNothing().when(gatheringValidator)
-                .validateMembership(gatheringId, userId);
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
+                    .thenReturn(Optional.of(userId));
 
-        doThrow(new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING))
-                .when(meetingValidator)
-                .validateMemberInGathering(meetingId, gatheringId);
+            doNothing().when(gatheringValidator)
+                    .validateMembership(gatheringId, userId);
 
-        assertThatThrownBy(() ->
-                topicService.createTopic(gatheringId, meetingId, userId, testRequest))
-                .isInstanceOf(MeetingException.class)
-                .hasFieldOrPropertyWithValue("errorCode",
-                        MeetingErrorCode.NOT_GATHERING_MEETING);
+            doThrow(new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING))
+                    .when(meetingValidator)
+                    .validateMemberInGathering(meetingId, gatheringId);
 
-        verify(meetingValidator, never()).getMeetingMember(any(), any());
-        verify(topicRepository, never()).save(any());
+            assertThatThrownBy(() ->
+                    topicService.createTopic(gatheringId, meetingId, testRequest))
+                    .isInstanceOf(MeetingException.class)
+                    .hasFieldOrPropertyWithValue("errorCode",
+                            MeetingErrorCode.NOT_GATHERING_MEETING);
+
+            verify(meetingValidator, never()).getMeetingMember(any(), any());
+            verify(topicRepository, never()).save(any());
+        }
     }
 
     @Test
@@ -177,23 +222,28 @@ class TopicServiceTest {
     void createTopic_NotMeetingMember_ThrowsException() {
         Long gatheringId = 1L;
         Long meetingId = 1L;
-        Long userId = 999L;
+        Long userId = 1L;
 
-        doNothing().when(gatheringValidator)
-                .validateMembership(gatheringId, userId);
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
+                    .thenReturn(Optional.of(userId));
 
-        doNothing().when(meetingValidator)
-                .validateMemberInGathering(meetingId, gatheringId);
+            doNothing().when(gatheringValidator)
+                    .validateMembership(gatheringId, userId);
 
-        given(meetingValidator.getMeetingMember(meetingId, userId))
-                .willThrow(new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER));
+            doNothing().when(meetingValidator)
+                    .validateMemberInGathering(meetingId, gatheringId);
 
-        assertThatThrownBy(() ->
-                topicService.createTopic(gatheringId, meetingId, userId, testRequest))
-                .isInstanceOf(MeetingException.class)
-                .hasFieldOrPropertyWithValue("errorCode",
-                        MeetingErrorCode.NOT_MEETING_MEMBER);
+            given(meetingValidator.getMeetingMember(meetingId, userId))
+                    .willThrow(new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER));
 
-        verify(topicRepository, never()).save(any());
+            assertThatThrownBy(() ->
+                    topicService.createTopic(gatheringId, meetingId, testRequest))
+                    .isInstanceOf(MeetingException.class)
+                    .hasFieldOrPropertyWithValue("errorCode",
+                            MeetingErrorCode.NOT_MEETING_MEMBER);
+
+            verify(topicRepository, never()).save(any());
+        }
     }
 }
