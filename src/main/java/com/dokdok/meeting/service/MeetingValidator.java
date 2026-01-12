@@ -30,8 +30,8 @@ public class MeetingValidator {
         Meeting meeting = meetingRepository.findById(meetingId)
                 .orElseThrow(() -> new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND));
 
-        if (meeting.getMeetingStatus() == MeetingStatus.PENDING) {
-            throw new MeetingException(MeetingErrorCode.MEETING_NOT_CONFIRMED);
+        if (meeting.getMeetingStatus() != MeetingStatus.PENDING) {
+            throw new MeetingException(MeetingErrorCode.MEETING_ALREADY_CONFIRMED);
         }
     }
 

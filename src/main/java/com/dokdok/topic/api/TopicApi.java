@@ -28,8 +28,7 @@ public interface TopicApi {
             description = "약속에 대한 주제를 제안합니다.",
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "userId", description = "사용자 식별자", in = ParameterIn.QUERY, required = true)
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
