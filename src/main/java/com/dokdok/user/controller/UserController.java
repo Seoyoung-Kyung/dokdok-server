@@ -20,14 +20,15 @@ public class UserController implements UserApi {
 
     private final UserService userService;
 
+    @Override
     @PatchMapping("/onboarding")
     public ResponseEntity<ApiResponse<Void>> onboard(OnboardRequestDto request) {
         userService.onboard(request);
         return ApiResponse.success("온보딩 완료");
     }
 
-    @GetMapping(value = "/check-nickname")
     @Override
+    @GetMapping("/check-nickname")
     public ResponseEntity<ApiResponse<Void>> checkNickname(String nickname) {
         userService.checkNickname(nickname);
         return ApiResponse.success("사용 가능한 닉네임입니다.");
