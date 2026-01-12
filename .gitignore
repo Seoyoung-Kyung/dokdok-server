@@ -46,4 +46,4 @@ out/
 
 ### Local Configuration ###
 src/main/resources/application-local.yaml
-/logs/dokdok.log
+/logs/**
