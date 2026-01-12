@@ -13,6 +13,9 @@ public enum MeetingErrorCode implements BaseErrorCode {
     GATHERING_NOT_FOUND("M002", "모임을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     BOOK_NOT_FOUND("M003", "책을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     USER_NOT_FOUND("M004", "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    NOT_GATHERING_MEETING("M005", "모임에 속한 약속이 아닙니다.", HttpStatus.FORBIDDEN),
+    NOT_MEETING_MEMBER("M006", "약속의 멤버가 아닙니다.", HttpStatus.FORBIDDEN),
+    MEETING_ALREADY_CONFIRMED("M007", "약속이 확정된 경우에는 주제를 제안할 수 없습니다.", HttpStatus.BAD_REQUEST),
     INVALID_MEETING_STATUS_CHANGE("M005", "약속 상태 변경이 올바르지 않습니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
