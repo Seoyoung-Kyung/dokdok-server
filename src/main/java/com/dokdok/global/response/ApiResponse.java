@@ -99,6 +99,12 @@ public record ApiResponse<T>(
                 .body(new ApiResponse<>(code, message, null));
     }
 
+    public static <T> ResponseEntity<ApiResponse<T>> error(HttpStatus status, String code, String message) {
+        return ResponseEntity
+                .status(status)
+                .body(new ApiResponse<>(code, message, null));
+    }
+
     public static <T> ResponseEntity<ApiResponse<T>> error(String code, String message, T data) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)

@@ -6,10 +6,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Long> {
+
+    List<MeetingMember> findAllByMeetingId(Long meetingId);
 
     @Query("""                                                                                                                                                           
       SELECT mm FROM MeetingMember mm

@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface GatheringMemberRepository extends JpaRepository<GatheringMember, Long> {
 
+    int countByGatheringIdAndRemovedAtIsNull(Long gatheringId);
+
     /**
      * 사용자가 특정 모임의 활성 멤버인지 확인
      */
