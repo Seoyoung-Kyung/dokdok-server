@@ -51,5 +51,4 @@ src/main/resources/application-local.yaml
 scripts/PR_TITLE.txt
 scripts/PR_BODY.md
 
-
-/logs/dokdok.log
+/logs/**
