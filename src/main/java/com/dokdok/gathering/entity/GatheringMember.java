@@ -7,7 +7,9 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "gathering_member")
@@ -49,4 +51,17 @@ public class GatheringMember {
 
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
+
+    /**
+     * 가입일로부터 경과한 일수를 계산합니다.
+     */
+    public Integer getDaysFromJoined(){
+        if(this.joinedAt == null){
+            return 0;
+        }
+        return (int) ChronoUnit.DAYS.between(
+                this.joinedAt.toLocalDate(),
+                LocalDate.now()
+        );
+    }
 }
