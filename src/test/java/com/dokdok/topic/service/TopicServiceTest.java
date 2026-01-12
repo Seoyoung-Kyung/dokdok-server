@@ -8,6 +8,7 @@ import com.dokdok.global.exception.GlobalException;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
+import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.service.MeetingValidator;
@@ -67,6 +68,7 @@ class TopicServiceTest {
         testMeeting = Meeting.builder()
                 .id(1L)
                 .meetingName("클린 코드 1회차")
+                .meetingStatus(MeetingStatus.CONFIRMED)
                 .build();
 
         testMeetingMember = MeetingMember.builder()
@@ -238,7 +240,7 @@ class TopicServiceTest {
             doNothing().when(meetingValidator)
                     .validateMemberInGathering(meetingId, gatheringId);
 
-            doThrow(new MeetingException(MeetingErrorCode.MEETING_NOT_CONFIRMED))
+            doThrow(new MeetingException(MeetingErrorCode.MEETING_ALREADY_CONFIRMED))
                     .when(meetingValidator)
                     .validateMeetingStatus(meetingId);
 
@@ -246,7 +248,7 @@ class TopicServiceTest {
                     topicService.createTopic(gatheringId, meetingId, testRequest))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode",
-                            MeetingErrorCode.MEETING_NOT_CONFIRMED);
+                            MeetingErrorCode.MEETING_ALREADY_CONFIRMED);
 
             verify(meetingValidator, never()).getMeetingMember(any(), any());
             verify(topicRepository, never()).save(any());
