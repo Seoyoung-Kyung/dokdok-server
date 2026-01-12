@@ -1,7 +1,6 @@
 package com.dokdok.gathering.repository;
 
 import com.dokdok.gathering.entity.GatheringMember;
-<<<<<<< HEAD
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
