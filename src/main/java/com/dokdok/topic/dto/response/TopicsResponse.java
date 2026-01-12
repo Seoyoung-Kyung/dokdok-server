@@ -18,6 +18,7 @@ public record TopicsResponse(
             String title,
             String description,
             TopicType topicType,
+            String topicTypeLabel,
             TopicStatus topicStatus,
             Integer likeCount,
             CreatedByInfo createdByInfo
@@ -29,6 +30,7 @@ public record TopicsResponse(
                     .title(topic.getTitle())
                     .description(topic.getDescription())
                     .topicType(topic.getTopicType())
+                    .topicTypeLabel(topic.getTopicType().getDisplayName())
                     .topicStatus(topic.getTopicStatus())
                     .likeCount(topic.getLikeCount())
                     .createdByInfo(
