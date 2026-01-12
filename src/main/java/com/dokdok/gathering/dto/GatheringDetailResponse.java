@@ -20,13 +20,14 @@ public record GatheringDetailResponse(
         Integer totalMembers
 ) {
     public static GatheringDetailResponse from(
-            Gathering gathering,
-            GatheringRole currentUserRole,
-            List<GatheringMember> members
+            GatheringMember currentMember,
+            List<GatheringMember> allMember
     ){
-        List<MemberInfo> memberInfoList = members.stream()
+        List<MemberInfo> memberInfoList = allMember.stream()
                 .map(MemberInfo::from)
                 .toList();
+
+        Gathering gathering = currentMember.getGathering();
 
         return GatheringDetailResponse.builder()
                 .gatheringId(gathering.getId())
@@ -35,9 +36,9 @@ public record GatheringDetailResponse(
                 .gatheringStatus(gathering.getGatheringStatus())
                 .invitationLink(gathering.getInvitationLink())
                 .daysFromCreation(gathering.getDaysFromCreation())
-                .currentUserRole(currentUserRole)
+                .currentUserRole(currentMember.getRole())
                 .members(memberInfoList)
-                .totalMembers(members.size())
+                .totalMembers(allMember.size())
                 .build();
     }
 

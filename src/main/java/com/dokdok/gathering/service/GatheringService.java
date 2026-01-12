@@ -63,12 +63,11 @@ public class GatheringService {
                 .orElseThrow(()-> new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER));
 
         // 모임의 모든 멤버 조회
-        List<GatheringMember> allMembers = gatheringMemberRepository.findAllMembersByGatheringId(gatheringId);
+        List<GatheringMember> allMember = gatheringMemberRepository.findAllMembersByGatheringId(gatheringId);
 
         return GatheringDetailResponse.from(
-                currentMember.getGathering(),
-                currentMember.getRole(),
-                allMembers
+                currentMember,
+                allMember
         );
     }
 }
