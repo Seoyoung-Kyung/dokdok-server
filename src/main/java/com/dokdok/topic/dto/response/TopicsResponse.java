@@ -19,7 +19,7 @@ public record TopicsResponse(
             String description,
             TopicType topicType,
             TopicStatus topicStatus,
-            Integer voteCount,
+            Integer likeCount,
             CreatedByInfo createdByInfo
     ) {
         public static TopicDto from(Topic topic) {
@@ -30,7 +30,7 @@ public record TopicsResponse(
                     .description(topic.getDescription())
                     .topicType(topic.getTopicType())
                     .topicStatus(topic.getTopicStatus())
-                    .voteCount(topic.getLikeCount())
+                    .likeCount(topic.getLikeCount())
                     .createdByInfo(
                             CreatedByInfo.of(
                                     topic.getProposedBy().getId(),
