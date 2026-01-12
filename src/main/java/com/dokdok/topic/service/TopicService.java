@@ -1,8 +1,6 @@
 package com.dokdok.topic.service;
 
 import com.dokdok.gathering.service.GatheringValidator;
-import com.dokdok.global.exception.GlobalErrorCode;
-import com.dokdok.global.exception.GlobalException;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
@@ -15,8 +13,6 @@ import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
