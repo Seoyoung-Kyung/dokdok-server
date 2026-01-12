@@ -7,16 +7,16 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "topic_vote")
+@Table(name = "topic_like")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class TopicVote {
+public class Topiclike {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "topic_vote_id")
+    @Column(name = "topic_like_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -27,14 +27,14 @@ public class TopicVote {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "voted")
-    private Boolean voted;
+    @Column(name = "liked")
+    private Boolean liked;
 
-    @Column(name = "voted_at", nullable = false, updatable = false)
-    private LocalDateTime votedAt;
+    @Column(name = "liked_at", nullable = false, updatable = false)
+    private LocalDateTime likedAt;
 
     @PrePersist
     protected void onCreate() {
-        this.votedAt = LocalDateTime.now();
+        this.likedAt = LocalDateTime.now();
     }
 }
