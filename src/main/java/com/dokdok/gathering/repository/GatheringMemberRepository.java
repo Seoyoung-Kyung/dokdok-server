@@ -1,6 +1,7 @@
 package com.dokdok.gathering.repository;
 
 import com.dokdok.gathering.entity.GatheringMember;
+<<<<<<< HEAD
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GatheringMemberRepository extends JpaRepository<GatheringMember, Long> {
+
+    int countByGatheringIdAndRemovedAtIsNull(Long gatheringId);
 
     /**
      * 사용자의 활성 모임 목록 조회
@@ -43,7 +46,7 @@ public interface GatheringMemberRepository extends JpaRepository<GatheringMember
             @Param("gatheringId") Long gatheringId,
             @Param("userId") Long userId
     );
-
+    
     /**
      * 특정 모임의 모든 활성 멤버 조회 (User 정보 포함)
      */

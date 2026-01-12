@@ -36,6 +36,9 @@ out/
 ### VS Code ###
 .vscode/
 
+### macOS ###
+.DS_Store
+
 ### Environment Variables ###
 .env
 .env.local
@@ -43,3 +46,9 @@ out/
 
 ### Local Configuration ###
 src/main/resources/application-local.yaml
+
+### PR Scripts ###
+scripts/PR_TITLE.txt
+scripts/PR_BODY.md
+
+/logs/**
