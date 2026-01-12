@@ -1,5 +1,6 @@
 package com.dokdok.gathering.controller;
 
+import com.dokdok.gathering.api.UserGatheringApi;
 import com.dokdok.gathering.dto.MyGatheringListResponse;
 import com.dokdok.gathering.service.GatheringService;
 import com.dokdok.global.response.ApiResponse;
@@ -14,13 +15,12 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/users/{userId}/gatherings")
 @RequiredArgsConstructor
-public class UserGatheringController {
+public class UserGatheringController implements UserGatheringApi {
 
     private final GatheringService gatheringService;
 
-    @GetMapping
+    @Override
     public ResponseEntity<ApiResponse<MyGatheringListResponse>> getUserGatherings(
             @PathVariable Long userId,
             @PageableDefault(size = 10, sort = "joinedAt", direction = Sort.Direction.DESC)
