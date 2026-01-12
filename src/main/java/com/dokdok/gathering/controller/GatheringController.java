@@ -5,7 +5,6 @@ import com.dokdok.gathering.dto.GatheringDetailResponse;
 import com.dokdok.gathering.dto.MyGatheringListResponse;
 import com.dokdok.gathering.service.GatheringService;
 import com.dokdok.global.response.ApiResponse;
-import com.dokdok.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -20,19 +19,14 @@ public class GatheringController implements GatheringApi {
 
     @Override
     public ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(Pageable pageable) {
-        Long userId = SecurityUtil.getCurrentUserId();
+        MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
 
-        MyGatheringListResponse response = gatheringService.getMyGatherings(userId, pageable);
         return ApiResponse.success(response, "모임 리스트 조회 성공");
     }
 
     @Override
-    public ResponseEntity<ApiResponse<GatheringDetailResponse>> getGatheringDetail(
-            @PathVariable Long gatheringId
-    ){
-        Long userId = SecurityUtil.getCurrentUserId();
-
-        GatheringDetailResponse response = gatheringService.getGatheringDetail(gatheringId,userId);
+    public ResponseEntity<ApiResponse<GatheringDetailResponse>> getGatheringDetail(@PathVariable Long gatheringId){
+        GatheringDetailResponse response = gatheringService.getGatheringDetail(gatheringId);
 
         return ApiResponse.success(response,"모임 상세정보 조회 성공");
     }

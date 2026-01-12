@@ -8,12 +8,16 @@ import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
+import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.entity.User;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -24,8 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GatheringDetailService 테스트")
@@ -39,12 +42,26 @@ public class GatheringDetailServiceTest {
     @Mock
     private GatheringRepository gatheringRepository;
 
+    private MockedStatic<SecurityUtil> securityUtilMock;
+
+    @BeforeEach
+    void setUp() {
+        securityUtilMock = mockStatic(SecurityUtil.class);
+    }
+
+    @AfterEach
+    void tearDown() {
+        securityUtilMock.close();
+    }
+
     @Test
     @DisplayName("모임 상세 조회 성공 - 일반 멤버")
     void getGatheringDetail_Success_AsMember() {
         // given
         Long gatheringId = 1L;
         Long userId = 2L;
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
         User leader = User.builder()
                 .id(1L)
@@ -92,7 +109,7 @@ public class GatheringDetailServiceTest {
                 .willReturn(allMembers);
 
         // when
-        GatheringDetailResponse response = gatheringService.getGatheringDetail(gatheringId, userId);
+        GatheringDetailResponse response = gatheringService.getGatheringDetail(gatheringId);
 
         // then
         assertThat(response).isNotNull();
@@ -123,6 +140,7 @@ public class GatheringDetailServiceTest {
         assertThat(memberInfo.nickname()).isEqualTo("멤버닉네임");
         assertThat(memberInfo.role()).isEqualTo(GatheringRole.MEMBER);
 
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(gatheringRepository, times(1)).findById(gatheringId);
         verify(gatheringMemberRepository, times(1)).findByGatheringIdAndUserId(gatheringId, userId);
         verify(gatheringMemberRepository, times(1)).findAllMembersByGatheringId(gatheringId);
@@ -135,13 +153,16 @@ public class GatheringDetailServiceTest {
         Long gatheringId = 999L;
         Long userId = 1L;
 
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
         given(gatheringRepository.findById(gatheringId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> gatheringService.getGatheringDetail(gatheringId, userId))
+        assertThatThrownBy(() -> gatheringService.getGatheringDetail(gatheringId))
                 .isInstanceOf(GatheringException.class)
                 .hasMessage(GatheringErrorCode.GATHERING_NOT_FOUND.getMessage());
 
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(gatheringRepository, times(1)).findById(gatheringId);
         verify(gatheringMemberRepository, times(0)).findByGatheringIdAndUserId(any(), any());
     }
@@ -152,6 +173,8 @@ public class GatheringDetailServiceTest {
         // given
         Long gatheringId = 1L;
         Long userId = 999L;
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
         User leader = User.builder()
                 .id(1L)
@@ -169,10 +192,11 @@ public class GatheringDetailServiceTest {
                 .willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> gatheringService.getGatheringDetail(gatheringId, userId))
+        assertThatThrownBy(() -> gatheringService.getGatheringDetail(gatheringId))
                 .isInstanceOf(GatheringException.class)
                 .hasMessage(GatheringErrorCode.NOT_GATHERING_MEMBER.getMessage());
 
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(gatheringRepository, times(1)).findById(gatheringId);
         verify(gatheringMemberRepository, times(1)).findByGatheringIdAndUserId(gatheringId, userId);
         verify(gatheringMemberRepository, times(0)).findAllMembersByGatheringId(any());

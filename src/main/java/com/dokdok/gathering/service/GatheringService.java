@@ -9,6 +9,7 @@ import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
+import com.dokdok.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +27,8 @@ public class GatheringService {
     private final GatheringMemberRepository gatheringMemberRepository;
     private final GatheringRepository gatheringRepository;
 
-    public MyGatheringListResponse getMyGatherings(Long userId, Pageable pageable){
+    public MyGatheringListResponse getMyGatherings(Pageable pageable){
+        Long userId = SecurityUtil.getCurrentUserId();
 
         Page<GatheringMember> gatheringMemberPage = gatheringMemberRepository.findActiveGatheringsByUserId(userId, pageable);
 
@@ -48,7 +50,9 @@ public class GatheringService {
     /**
      * 모임 상세 정보 조회 - 모임 멤버만 조회 가능
      */
-    public GatheringDetailResponse getGatheringDetail(Long gatheringId, Long userId){
+    public GatheringDetailResponse getGatheringDetail(Long gatheringId){
+        Long userId = SecurityUtil.getCurrentUserId();
+
         // 모임 존재 여부 확인
         Gathering gathering = gatheringRepository.findById(gatheringId)
                 .orElseThrow(()-> new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND));
