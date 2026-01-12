@@ -5,6 +5,7 @@ import com.dokdok.global.exception.GlobalException;
 import com.dokdok.oauth2.CustomOAuth2User;
 import com.dokdok.user.entity.User;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -108,5 +109,33 @@ public class SecurityUtil {
      */
     public static Optional<Long> getCurrentUserIdOptional() {
         return getCurrentUserOptional().map(CustomOAuth2User::getUserId);
+    }
+
+    /**
+     * SecurityContext의 인증 정보를 업데이트
+     * User 엔티티가 업데이트된 경우 SecurityContext도 함께 갱신하기 위해 사용
+     *
+     * @param updatedUser 업데이트된 User 엔티티
+     * @throws GlobalException 현재 인증되지 않은 경우
+     */
+    public static void updateCurrentUserInContext(User updatedUser) {
+        CustomOAuth2User currentOAuth2User = getCurrentUser();
+
+        // 기존 attributes를 유지하면서 업데이트된 User로 새 CustomOAuth2User 생성
+        CustomOAuth2User updatedOAuth2User = CustomOAuth2User.builder()
+                .user(updatedUser)
+                .attributes(currentOAuth2User.getAttributes())
+                .build();
+
+        // SecurityContext에 새로운 Authentication 설정
+        Authentication newAuth = new UsernamePasswordAuthenticationToken(
+                updatedOAuth2User,
+                null,
+                updatedOAuth2User.getAuthorities()
+        );
+        SecurityContextHolder.getContext().setAuthentication(newAuth);
+
+        log.info("SecurityContext 업데이트 완료: userId={}, nickname={}",
+                updatedUser.getId(), updatedUser.getNickname());
     }
 }

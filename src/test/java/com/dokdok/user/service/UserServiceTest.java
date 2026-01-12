@@ -1,5 +1,7 @@
 package com.dokdok.user.service;
 
+import com.dokdok.global.util.SecurityUtil;
+import com.dokdok.user.dto.request.OnboardRequestDto;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.exception.UserErrorCode;
 import com.dokdok.user.exception.UserException;
@@ -10,13 +12,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -257,5 +262,218 @@ class UserServiceTest {
         // when & then
         assertDoesNotThrow(() -> userService.checkNickname(mixedNickname));
         verify(userRepository, times(1)).findByNickname(mixedNickname);
+    }
+
+    @Test
+    @DisplayName("온보딩 - 정상적인 닉네임으로 성공")
+    void onboard_Success() {
+        // given
+        Long userId = 1L;
+        String newNickname = "새로운닉네임";
+        OnboardRequestDto request = new OnboardRequestDto(newNickname);
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByNickname(newNickname)).thenReturn(Optional.empty());
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            userService.onboard(request);
+
+            // then
+            assertThat(user.getNickname()).isEqualTo(newNickname);
+            verify(userRepository, times(1)).findById(userId);
+            verify(userRepository, times(1)).findByNickname(newNickname);
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(user), times(1));
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - 공백 포함 닉네임 trim 처리 후 성공")
+    void onboard_WithWhitespace_TrimAndSuccess() {
+        // given
+        Long userId = 1L;
+        String nicknameWithWhitespace = "  새로운닉네임  ";
+        String trimmedNickname = "새로운닉네임";
+        OnboardRequestDto request = new OnboardRequestDto(nicknameWithWhitespace);
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByNickname(trimmedNickname)).thenReturn(Optional.empty());
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            userService.onboard(request);
+
+            // then
+            assertThat(user.getNickname()).isEqualTo(trimmedNickname);
+            verify(userRepository, times(1)).findByNickname(trimmedNickname);
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(user), times(1));
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - 중복된 닉네임으로 실패")
+    void onboard_DuplicateNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String duplicateNickname = "기존닉네임";
+        OnboardRequestDto request = new OnboardRequestDto(duplicateNickname);
+
+        when(userRepository.findByNickname(duplicateNickname)).thenReturn(Optional.of(mockUser));
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.onboard(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_ALREADY_EXISTS);
+
+            verify(userRepository, never()).findById(anyLong());
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - null 닉네임으로 실패")
+    void onboard_NullNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        OnboardRequestDto request = new OnboardRequestDto(null);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.onboard(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_EMPTY);
+
+            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, never()).findByNickname(anyString());
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - 빈 닉네임으로 실패")
+    void onboard_EmptyNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String emptyNickname = "";
+        OnboardRequestDto request = new OnboardRequestDto(emptyNickname);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.onboard(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_EMPTY);
+
+            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, never()).findByNickname(anyString());
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - 길이가 짧은 닉네임으로 실패")
+    void onboard_TooShortNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String shortNickname = "a";
+        OnboardRequestDto request = new OnboardRequestDto(shortNickname);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.onboard(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_LENGTH_INVALID);
+
+            verify(userRepository, never()).findById(anyLong());
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - 길이가 긴 닉네임으로 실패")
+    void onboard_TooLongNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String longNickname = "a".repeat(21);
+        OnboardRequestDto request = new OnboardRequestDto(longNickname);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.onboard(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_LENGTH_INVALID);
+
+            verify(userRepository, never()).findById(anyLong());
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - 특수문자 포함 닉네임으로 실패")
+    void onboard_InvalidFormat_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String invalidNickname = "닉네임!@#";
+        OnboardRequestDto request = new OnboardRequestDto(invalidNickname);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.onboard(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_FORMAT_INVALID);
+
+            verify(userRepository, never()).findById(anyLong());
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - 존재하지 않는 사용자로 실패")
+    void onboard_UserNotFound_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String validNickname = "새로운닉네임";
+        OnboardRequestDto request = new OnboardRequestDto(validNickname);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.findByNickname(validNickname)).thenReturn(Optional.empty());
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.onboard(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
+
+            verify(userRepository, times(1)).findById(userId);
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
+        }
     }
 }
