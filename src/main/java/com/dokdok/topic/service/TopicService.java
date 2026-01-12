@@ -32,8 +32,7 @@ public class TopicService {
             Long meetingId,
             SuggestTopicRequest request
     ) {
-        Long userId = SecurityUtil.getCurrentUserIdOptional()
-                .orElseThrow(() -> new GlobalException(GlobalErrorCode.UNAUTHORIZED));
+        Long userId = SecurityUtil.getCurrentUserId();
 
         gatheringValidator.validateMembership(gatheringId, userId);
 
