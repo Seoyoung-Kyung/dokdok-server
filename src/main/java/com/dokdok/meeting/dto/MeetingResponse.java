@@ -7,8 +7,6 @@ import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.user.entity.User;
-import lombok.Builder;
-import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,155 +14,102 @@ import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 
-@Getter
-@Builder
-public class MeetingResponse {
-
-    private final Long meetingId;
-    private final String meetingName;
-    private final MeetingStatus meetingStatus;
-    private final GatheringInfo gathering;
-    private final BookInfo book;
-    private final ScheduleInfo schedule;
-    private final String place;
-    private final ParticipantsInfo participants;
-    private final List<TopicInfo> topics;
+public record MeetingResponse(
+        Long meetingId,
+        String meetingName,
+        MeetingStatus meetingStatus,
+        GatheringInfo gathering,
+        BookInfo book,
+        ScheduleInfo schedule,
+        String place,
+        ParticipantsInfo participants,
+        List<TopicInfo> topics
+) {
 
     public static MeetingResponse from(Meeting meeting, List<MeetingMember> meetingMembers, List<Topic> topics) {
         List<MeetingMember> safeMembers = meetingMembers == null ? Collections.emptyList() : meetingMembers;
         List<Topic> safeTopics = topics == null ? Collections.emptyList() : topics;
 
-        return MeetingResponse.builder()
-                .meetingId(meeting.getId())
-                .meetingName(meeting.getMeetingName())
-                .meetingStatus(meeting.getMeetingStatus())
-                .gathering(GatheringInfo.from(meeting.getGathering()))
-                .book(BookInfo.from(meeting.getBook()))
-                .schedule(ScheduleInfo.from(meeting.getMeetingStartDate(), meeting.getMeetingEndDate()))
-                .place(meeting.getPlace())
-                .participants(ParticipantsInfo.from(safeMembers, meeting.getMaxParticipants()))
-                .topics(safeTopics.stream().map(TopicInfo::from).toList())
-                .build();
+        return new MeetingResponse(
+                meeting.getId(),
+                meeting.getMeetingName(),
+                meeting.getMeetingStatus(),
+                GatheringInfo.from(meeting.getGathering()),
+                BookInfo.from(meeting.getBook()),
+                ScheduleInfo.from(meeting.getMeetingStartDate(), meeting.getMeetingEndDate()),
+                meeting.getPlace(),
+                ParticipantsInfo.from(safeMembers, meeting.getMaxParticipants()),
+                safeTopics.stream().map(TopicInfo::from).toList()
+        );
     }
 
-    @Getter
-    @Builder
-    public static class GatheringInfo {
-
-        private final Long gatheringId;
-        private final String gatheringName;
-
+    public record GatheringInfo(Long gatheringId, String gatheringName) {
         public static GatheringInfo from(Gathering gathering) {
             if (gathering == null) {
                 return null;
             }
-            return GatheringInfo.builder()
-                    .gatheringId(gathering.getId())
-                    .gatheringName(gathering.getGatheringName())
-                    .build();
+            return new GatheringInfo(gathering.getId(), gathering.getGatheringName());
         }
     }
 
-    @Getter
-    @Builder
-    public static class BookInfo {
-
-        private final Long bookId;
-        private final String bookName;
-
+    public record BookInfo(Long bookId, String bookName) {
         public static BookInfo from(Book book) {
             if (book == null) {
                 return null;
             }
-            return BookInfo.builder()
-                    .bookId(book.getId())
-                    .bookName(book.getBookName())
-                    .build();
+            return new BookInfo(book.getId(), book.getBookName());
         }
     }
 
-    @Getter
-    @Builder
-    public static class ScheduleInfo {
-
-        private final LocalDate date;
-        private final LocalTime time;
-        private final LocalDateTime startDateTime;
-        private final LocalDateTime endDateTime;
-
+    public record ScheduleInfo(
+            LocalDate date,
+            LocalTime time,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
+    ) {
         public static ScheduleInfo from(LocalDateTime start, LocalDateTime end) {
             if (start == null && end == null) {
                 return null;
             }
             LocalDate date = start != null ? start.toLocalDate() : null;
             LocalTime time = start != null ? start.toLocalTime() : null;
-            return ScheduleInfo.builder()
-                    .date(date)
-                    .time(time)
-                    .startDateTime(start)
-                    .endDateTime(end)
-                    .build();
+            return new ScheduleInfo(date, time, start, end);
         }
     }
 
-    @Getter
-    @Builder
-    public static class ParticipantsInfo {
-
-        private final Integer currentCount;
-        private final Integer maxCount;
-        private final List<MemberInfo> members;
-
+    public record ParticipantsInfo(Integer currentCount, Integer maxCount, List<MemberInfo> members) {
         public static ParticipantsInfo from(List<MeetingMember> meetingMembers, Integer maxCount) {
             List<MemberInfo> members = meetingMembers.stream()
                     .filter(member -> member.getCanceledAt() == null)
                     .map(MemberInfo::from)
                     .toList();
 
-            return ParticipantsInfo.builder()
-                    .currentCount(members.size())
-                    .maxCount(maxCount)
-                    .members(members)
-                    .build();
+            return new ParticipantsInfo(members.size(), maxCount, members);
         }
     }
 
-    @Getter
-    @Builder
-    public static class MemberInfo {
-
-        private final Long userId;
-        private final String nickname;
-        private final String profileImageUrl;
-
+    public record MemberInfo(Long userId, String nickname, String profileImageUrl) {
         public static MemberInfo from(MeetingMember meetingMember) {
             User user = meetingMember.getUser();
-            return MemberInfo.builder()
-                    .userId(user.getId())
-                    .nickname(user.getNickname())
-                    .profileImageUrl(user.getProfileImageUrl())
-                    .build();
+            return new MemberInfo(user.getId(), user.getNickname(), user.getProfileImageUrl());
         }
     }
 
-    @Getter
-    @Builder
-    public static class TopicInfo {
-
-        private final Long topicId;
-        private final String title;
-        private final String topicType;
-        private final String topicStatus;
-        private final Integer voteCount;
-
+    public record TopicInfo(
+            Long topicId,
+            String title,
+            String topicType,
+            String topicStatus,
+            Integer voteCount
+    ) {
         public static TopicInfo from(Topic topic) {
-            return TopicInfo.builder()
-                    .topicId(topic.getId())
-                    .title(topic.getTitle())
-                    .topicType(topic.getTopicType())
-                    .topicStatus(topic.getTopicStatus())
-                    .voteCount(topic.getVoteCount())
-                    .build();
+            return new TopicInfo(
+                    topic.getId(),
+                    topic.getTitle(),
+                    topic.getTopicType(),
+                    topic.getTopicStatus(),
+                    topic.getVoteCount()
+            );
         }
     }
 }
