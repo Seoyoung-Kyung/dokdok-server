@@ -14,7 +14,7 @@ import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.entity.Topic;
-import com.dokdok.topic.enums.TopicType;
+import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;

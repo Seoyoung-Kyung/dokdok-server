@@ -1,4 +1,4 @@
-package com.dokdok.topic.enums;
+package com.dokdok.topic.entity;
 
 import lombok.Getter;
 

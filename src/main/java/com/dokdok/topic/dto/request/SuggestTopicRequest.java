@@ -1,6 +1,6 @@
 package com.dokdok.topic.dto.request;
 
-import com.dokdok.topic.enums.TopicType;
+import com.dokdok.topic.entity.TopicType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

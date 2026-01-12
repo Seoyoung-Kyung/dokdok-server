@@ -6,8 +6,8 @@ import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.topic.entity.Topic;
-import com.dokdok.topic.enums.TopicStatus;
-import com.dokdok.topic.enums.TopicType;
+import com.dokdok.topic.entity.TopicStatus;
+import com.dokdok.topic.entity.TopicType;
 import com.dokdok.user.entity.User;
 
 import java.time.LocalDate;

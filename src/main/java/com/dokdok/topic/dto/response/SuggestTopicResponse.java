@@ -1,7 +1,7 @@
 package com.dokdok.topic.dto.response;
 
 import com.dokdok.topic.entity.Topic;
-import com.dokdok.topic.enums.TopicType;
+import com.dokdok.topic.entity.TopicType;
 import com.dokdok.user.entity.User;
 import lombok.Builder;
 
