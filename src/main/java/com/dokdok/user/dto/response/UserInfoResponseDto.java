@@ -1,4 +1,4 @@
-package com.dokdok.user.dto;
+package com.dokdok.user.dto.response;
 
 import com.dokdok.user.entity.User;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -6,16 +6,16 @@ import lombok.Builder;
 
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record UserInfoResponse(
+public record UserInfoResponseDto(
         Long userId,
         String nickname,
         String profileImageUrl,
         Boolean needsOnboarding
 ) {
-    public static UserInfoResponse from(User user) {
+    public static UserInfoResponseDto from(User user) {
         boolean needsOnboarding = user.getNickname() == null || user.getNickname().isBlank();
 
-        return UserInfoResponse.builder()
+        return UserInfoResponseDto.builder()
                 .userId(user.getId())
                 .nickname(user.getNickname())
                 .profileImageUrl(user.getProfileImageUrl())
