@@ -4,7 +4,6 @@ import com.dokdok.gathering.dto.GatheringSimpleResponse;
 import com.dokdok.gathering.dto.MyGatheringListResponse;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
-import com.dokdok.gathering.entity.GatheringRole;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
