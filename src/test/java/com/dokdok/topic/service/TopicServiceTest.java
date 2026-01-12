@@ -26,8 +26,6 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -103,8 +101,8 @@ class TopicServiceTest {
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             // SecurityUtil에서 userId 가져오기
-            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
-                    .thenReturn(Optional.of(userId));
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenReturn(userId);
 
             // 모임 멤버 검증 통과
             doNothing().when(gatheringValidator)
@@ -145,8 +143,8 @@ class TopicServiceTest {
         Long meetingId = 1L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
-            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
-                    .thenReturn(Optional.empty());
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
 
             assertThatThrownBy(() ->
                     topicService.createTopic(gatheringId, meetingId, testRequest))
@@ -169,8 +167,8 @@ class TopicServiceTest {
         Long userId = 1L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
-            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
-                    .thenReturn(Optional.of(userId));
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenReturn(userId);
 
             doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
                     .when(gatheringValidator)
@@ -196,8 +194,8 @@ class TopicServiceTest {
         Long userId = 1L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
-            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
-                    .thenReturn(Optional.of(userId));
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenReturn(userId);
 
             doNothing().when(gatheringValidator)
                     .validateMembership(gatheringId, userId);
@@ -225,8 +223,8 @@ class TopicServiceTest {
         Long userId = 1L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
-            securityUtilMock.when(SecurityUtil::getCurrentUserIdOptional)
-                    .thenReturn(Optional.of(userId));
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenReturn(userId);
 
             doNothing().when(gatheringValidator)
                     .validateMembership(gatheringId, userId);
