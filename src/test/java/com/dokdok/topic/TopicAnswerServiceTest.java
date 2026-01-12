@@ -107,4 +107,44 @@ class TopicAnswerServiceTest {
 
         verifyNoInteractions(topicAnswerRepository);
     }
+
+    @Test
+    @DisplayName("내 토픽 답변 수정 시 내용이 갱신되고 응답 DTO를 반환한다")
+    void updateMyAnswer_updatesContentAndReturnsResponse() {
+        Topic topic = Topic.builder().id(12L).build();
+        User user = User.builder().id(1L).build();
+        TopicAnswer answer = TopicAnswer.builder()
+                .id(100L)
+                .topic(topic)
+                .user(user)
+                .content("기존 내용")
+                .isSubmitted(false)
+                .build();
+
+        given(topicAnswerRepository.findByTopicIdAndUserId(12L, 1L))
+                .willReturn(Optional.of(answer));
+
+        TopicAnswerRequest request = new TopicAnswerRequest("수정된 내용");
+
+        TopicAnswerResponse response = topicAnswerService.updateMyAnswer(
+                1L, 1L, 12L, 1L, request
+        );
+
+        assertThat(answer.getContent()).isEqualTo("수정된 내용");
+        assertThat(response.topicId()).isEqualTo(12L);
+        assertThat(response.isSubmitted()).isFalse();
+    }
+
+    @Test
+    @DisplayName("내 토픽 답변이 없으면 수정 시 예외가 발생한다")
+    void updateMyAnswer_throwsWhenAnswerMissing() {
+        given(topicAnswerRepository.findByTopicIdAndUserId(12L, 1L))
+                .willReturn(Optional.empty());
+
+        TopicAnswerRequest request = new TopicAnswerRequest("수정된 내용");
+
+        assertThatThrownBy(() -> topicAnswerService.updateMyAnswer(
+                1L, 1L, 12L, 1L, request
+        )).isInstanceOf(TopicException.class);
+    }
 }
