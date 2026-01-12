@@ -1,14 +1,14 @@
 package com.dokdok.gathering.service;
 
+import com.dokdok.gathering.exception.GatheringErrorCode;
+import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
-import com.dokdok.global.exception.GlobalErrorCode;
-import com.dokdok.global.exception.GlobalException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component
 @RequiredArgsConstructor
-public class GatheringMemberService {
+public class GatheringValidator {
 
     private final GatheringMemberRepository gatheringMemberRepository;
 
@@ -16,9 +16,9 @@ public class GatheringMemberService {
         boolean isMember = gatheringMemberRepository
                 .existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId);
 
-        // TODO: 예의 코드 상의 후 수정 예정
         if (!isMember) {
-            throw new GlobalException(GlobalErrorCode.NOT_GATHERING_MEMBER);
+            throw new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER);
         }
     }
+
 }

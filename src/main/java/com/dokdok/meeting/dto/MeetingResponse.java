@@ -6,6 +6,8 @@ import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.enums.TopicStatus;
+import com.dokdok.topic.enums.TopicType;
 import com.dokdok.user.entity.User;
 
 import java.time.LocalDate;
@@ -98,8 +100,8 @@ public record MeetingResponse(
     public record TopicInfo(
             Long topicId,
             String title,
-            String topicType,
-            String topicStatus,
+            TopicType topicType,
+            TopicStatus topicStatus,
             Integer voteCount
     ) {
         public static TopicInfo from(Topic topic) {

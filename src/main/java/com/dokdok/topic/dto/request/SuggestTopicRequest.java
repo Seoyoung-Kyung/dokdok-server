@@ -1,4 +1,4 @@
-package com.dokdok.topic.dto;
+package com.dokdok.topic.dto.request;
 
 import com.dokdok.topic.enums.TopicType;
 import jakarta.validation.constraints.NotBlank;

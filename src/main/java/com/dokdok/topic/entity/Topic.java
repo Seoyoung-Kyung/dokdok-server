@@ -62,12 +62,12 @@ public class Topic extends BaseTimeEntity {
             String description,
             TopicType topicType
     ) {
-        Topic topic = new Topic();
-        topic.meeting = meeting;
-        topic.proposedBy = user;
-        topic.title = title;
-        topic.description = description;
-        topic.topicType = topicType;
-        return topic;
+        return Topic.builder()
+                .meeting(meeting)
+                .proposedBy(user)
+                .title(title)
+                .description(description)
+                .topicType(topicType)
+                .build();
     }
 }
