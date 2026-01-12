@@ -1,6 +1,8 @@
 package com.dokdok.gathering.api;
 
 import com.dokdok.gathering.dto.GatheringDetailResponse;
+import com.dokdok.gathering.dto.GatheringUpdateRequest;
+import com.dokdok.gathering.dto.GatheringUpdateResponse;
 import com.dokdok.gathering.dto.MyGatheringListResponse;
 import com.dokdok.global.response.ApiResponse;
 
@@ -15,9 +17,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import jakarta.validation.Valid;
 
 @Tag(name = "모임", description = "모임 관련 API")
 @RequestMapping("/api/gatherings")
@@ -101,5 +106,60 @@ public interface GatheringApi {
                     example = "1"
             )
             @PathVariable Long gatheringId
+    );
+
+    @Operation(
+            summary = "모임 정보 수정",
+            description = """
+              모임의 기본 정보(모임명, 설명)를 수정합니다.
+              - 모임의 리더만 수정할 수 있습니다.
+              - 모임명과 설명을 부분 수정할 수 있습니다 (원하는 필드만 전송).
+              - 모임명은 필수이며, 공백일 수 없고 최대 255자까지 가능합니다.
+              """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "수정 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GatheringUpdateResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 - 유효성 검증 실패 (모임명이 공백이거나 255자 초과)"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 모임의 리더만 수정할 수 있습니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임을 찾을 수 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @PatchMapping("/{gatheringId}")
+    ResponseEntity<ApiResponse<GatheringUpdateResponse>> updateGathering(
+            @Parameter(
+                    description = "수정할 모임 ID",
+                    required = true,
+                    example = "123"
+            )
+            @PathVariable Long gatheringId,
+
+            @Parameter(
+                    description = "수정할 모임 정보",
+                    required = true
+            )
+            @Valid @RequestBody GatheringUpdateRequest request
     );
 }

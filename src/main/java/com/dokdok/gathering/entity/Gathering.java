@@ -54,4 +54,16 @@ public class Gathering extends BaseTimeEntity {
                 this.getCreatedAt().toLocalDate(), LocalDate.now()
         );
     }
+
+    /**
+     * 모임 정보를 수정합니다.
+     */
+    public void updateGatheringInfo(String gatheringName, String description){
+        if(gatheringName != null){
+            this.gatheringName = gatheringName;
+        }
+        if(description != null){
+            this.description = description;
+        }
+    }
 }

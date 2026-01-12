@@ -1,8 +1,6 @@
 package com.dokdok.gathering.service;
 
-import com.dokdok.gathering.dto.GatheringDetailResponse;
-import com.dokdok.gathering.dto.GatheringSimpleResponse;
-import com.dokdok.gathering.dto.MyGatheringListResponse;
+import com.dokdok.gathering.dto.*;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.exception.GatheringErrorCode;
@@ -26,6 +24,7 @@ public class GatheringService {
 
     private final GatheringMemberRepository gatheringMemberRepository;
     private final GatheringRepository gatheringRepository;
+    private final GatheringValidator gatheringValidator;
 
     public MyGatheringListResponse getMyGatherings(Pageable pageable){
         Long userId = SecurityUtil.getCurrentUserId();
@@ -69,5 +68,26 @@ public class GatheringService {
                 currentMember,
                 allMember
         );
+    }
+
+    /**
+     * 모임 정보 수정 - 리더만 가능
+     */
+    @Transactional
+    public GatheringUpdateResponse updateGathering(Long gatheringId, GatheringUpdateRequest request){
+        // 현재 사용자 조회
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+
+        // 모임 조회
+        Gathering gathering = gatheringRepository.findById(gatheringId)
+                .orElseThrow(() -> new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND));
+
+        // 리더 권한 검증
+        gatheringValidator.validateLeader(gatheringId,currentUserId);
+
+        //모임 정보 수정
+        gathering.updateGatheringInfo(request.gatheringName(), request.description());
+
+        return GatheringUpdateResponse.from(gathering);
     }
 }
