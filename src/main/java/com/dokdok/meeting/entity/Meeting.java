@@ -3,6 +3,7 @@ package com.dokdok.meeting.entity;
 import com.dokdok.book.entity.Book;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.global.BaseTimeEntity;
+import com.dokdok.meeting.dto.MeetingCreateRequest;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -58,4 +59,23 @@ public class Meeting extends BaseTimeEntity {
 
     @Column(name = "meeting_end_date")
     private LocalDateTime meetingEndDate;
+
+    public static Meeting create(MeetingCreateRequest request, Gathering gathering, Book book, User user,
+                                 Integer maxParticipants) {
+        String meetingName = request.meetingName();
+        if (meetingName == null || meetingName.isBlank()) {
+            meetingName = book.getBookName();
+        }
+
+        return Meeting.builder()
+                .gathering(gathering)
+                .book(book)
+                .meetingLeader(user)
+                .meetingName(meetingName)
+                .place(request.place())
+                .maxParticipants(maxParticipants)
+                .meetingStartDate(request.meetingStartDate())
+                .meetingEndDate(request.meetingEndDate())
+                .build();
+    }
 }
