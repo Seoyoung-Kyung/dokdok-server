@@ -160,11 +160,11 @@ class MeetingServiceTest {
         MeetingResponse response = meetingService.createMeeting(request, userId);
 
         // then
-        assertThat(response.getMeetingId()).isEqualTo(savedMeeting.getId());
-        assertThat(response.getMeetingStatus()).isEqualTo(MeetingStatus.PENDING);
-        assertThat(response.getMeetingName()).isEqualTo(book.getBookName());
-        assertThat(response.getSchedule().getStartDateTime()).isEqualTo(startDate);
-        assertThat(response.getParticipants().getMaxCount()).isEqualTo(memberCount);
+        assertThat(response.meetingId()).isEqualTo(savedMeeting.getId());
+        assertThat(response.meetingStatus()).isEqualTo(MeetingStatus.PENDING);
+        assertThat(response.meetingName()).isEqualTo(book.getBookName());
+        assertThat(response.schedule().startDateTime()).isEqualTo(startDate);
+        assertThat(response.participants().maxCount()).isEqualTo(memberCount);
     }
 
     @Test
