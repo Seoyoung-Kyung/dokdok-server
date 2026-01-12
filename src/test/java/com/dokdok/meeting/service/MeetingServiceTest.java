@@ -78,8 +78,8 @@ class MeetingServiceTest {
         MeetingResponse findMeeting = meetingService.findMeeting(meetingId);
 
         // then
-        assertThat(findMeeting.getMeetingName()).isEqualTo(meeting.getMeetingName());
-        assertThat(findMeeting.getMeetingStatus()).isEqualTo(meeting.getMeetingStatus());
+        assertThat(findMeeting.meetingName()).isEqualTo(meeting.getMeetingName());
+        assertThat(findMeeting.meetingStatus()).isEqualTo(meeting.getMeetingStatus());
 
     }
 
