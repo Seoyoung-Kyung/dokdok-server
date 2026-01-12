@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface GatheringMemberRepository extends JpaRepository<GatheringMember, Long> {
+  
+    int countByGatheringIdAndRemovedAtIsNull(Long gatheringId);
 
     /**
      * 사용자의 활성 모임 목록 조회

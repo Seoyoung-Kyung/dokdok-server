@@ -3,6 +3,7 @@ package com.dokdok.meeting.entity;
 import com.dokdok.book.entity.Book;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.global.BaseTimeEntity;
+import com.dokdok.meeting.dto.MeetingCreateRequest;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -39,7 +40,7 @@ public class Meeting extends BaseTimeEntity {
     @JoinColumn(name = "meeting_leader_id")
     private User meetingLeader;
 
-    @Column(name = "meeting_name", length = 100)
+    @Column(name = "meeting_name", length = 24)
     private String meetingName;
 
     @Column(name = "place", length = 255)
@@ -49,12 +50,32 @@ public class Meeting extends BaseTimeEntity {
     private Integer maxParticipants;
 
     @Column(name = "meeting_status", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String meetingStatus = "PENDING";
+    private MeetingStatus meetingStatus = MeetingStatus.PENDING;
 
     @Column(name = "meeting_start_date")
     private LocalDateTime meetingStartDate;
 
     @Column(name = "meeting_end_date")
     private LocalDateTime meetingEndDate;
+
+    public static Meeting create(MeetingCreateRequest request, Gathering gathering, Book book, User user,
+                                 Integer maxParticipants) {
+        String meetingName = request.meetingName();
+        if (meetingName == null || meetingName.isBlank()) {
+            meetingName = book.getBookName();
+        }
+
+        return Meeting.builder()
+                .gathering(gathering)
+                .book(book)
+                .meetingLeader(user)
+                .meetingName(meetingName)
+                .place(request.place())
+                .maxParticipants(maxParticipants)
+                .meetingStartDate(request.meetingStartDate())
+                .meetingEndDate(request.meetingEndDate())
+                .build();
+    }
 }
