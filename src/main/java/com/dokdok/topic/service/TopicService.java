@@ -38,6 +38,8 @@ public class TopicService {
 
         meetingValidator.validateMemberInGathering(meetingId, gatheringId);
 
+        meetingValidator.validateMeetingStatus(meetingId);
+
         MeetingMember meetingMember = meetingValidator.getMeetingMember(meetingId, userId);
 
         Meeting meeting = meetingMember.getMeeting();

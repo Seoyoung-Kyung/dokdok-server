@@ -112,6 +112,10 @@ class TopicServiceTest {
             doNothing().when(meetingValidator)
                     .validateMemberInGathering(meetingId, gatheringId);
 
+            // 회차 상태 검증 통과
+            doNothing().when(meetingValidator)
+                    .validateMeetingStatus(meetingId);
+
             // 회차 참석자 조회 성공
             given(meetingValidator.getMeetingMember(meetingId, userId))
                     .willReturn(testMeetingMember);
@@ -131,6 +135,7 @@ class TopicServiceTest {
 
             verify(gatheringValidator).validateMembership(gatheringId, userId);
             verify(meetingValidator).validateMemberInGathering(meetingId, gatheringId);
+            verify(meetingValidator).validateMeetingStatus(meetingId);
             verify(meetingValidator).getMeetingMember(meetingId, userId);
             verify(topicRepository).save(any(Topic.class));
         }
@@ -210,6 +215,39 @@ class TopicServiceTest {
                     .hasFieldOrPropertyWithValue("errorCode",
                             MeetingErrorCode.NOT_GATHERING_MEETING);
 
+            verify(meetingValidator, never()).validateMeetingStatus(any());
+            verify(meetingValidator, never()).getMeetingMember(any(), any());
+            verify(topicRepository, never()).save(any());
+        }
+    }
+
+    @Test
+    @DisplayName("약속 상태가 PENDING인 경우 예외가 발생한다")
+    void createTopic_MeetingStatusPending_ThrowsException() {
+        Long gatheringId = 1L;
+        Long meetingId = 1L;
+        Long userId = 1L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenReturn(userId);
+
+            doNothing().when(gatheringValidator)
+                    .validateMembership(gatheringId, userId);
+
+            doNothing().when(meetingValidator)
+                    .validateMemberInGathering(meetingId, gatheringId);
+
+            doThrow(new MeetingException(MeetingErrorCode.MEETING_NOT_CONFIRMED))
+                    .when(meetingValidator)
+                    .validateMeetingStatus(meetingId);
+
+            assertThatThrownBy(() ->
+                    topicService.createTopic(gatheringId, meetingId, testRequest))
+                    .isInstanceOf(MeetingException.class)
+                    .hasFieldOrPropertyWithValue("errorCode",
+                            MeetingErrorCode.MEETING_NOT_CONFIRMED);
+
             verify(meetingValidator, never()).getMeetingMember(any(), any());
             verify(topicRepository, never()).save(any());
         }
@@ -231,6 +269,9 @@ class TopicServiceTest {
 
             doNothing().when(meetingValidator)
                     .validateMemberInGathering(meetingId, gatheringId);
+
+            doNothing().when(meetingValidator)
+                    .validateMeetingStatus(meetingId);
 
             given(meetingValidator.getMeetingMember(meetingId, userId))
                     .willThrow(new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER));
