@@ -43,11 +43,10 @@ public class TopicAnswer extends BaseTimeEntity {
     @Builder.Default
     private Boolean isSubmitted = false;
 
-    public static TopicAnswer create(Topic topic, User user, BigDecimal bookRating, String content) {
+    public static TopicAnswer create(Topic topic, User user, String content) {
         return TopicAnswer.builder()
                 .topic(topic)
                 .user(user)
-                .bookRating(bookRating)
                 .content(content)
                 .build();
     }
