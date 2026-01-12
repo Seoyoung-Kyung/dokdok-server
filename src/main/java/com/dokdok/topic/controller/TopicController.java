@@ -26,7 +26,6 @@ public class TopicController implements TopicApi {
     private final TopicService topicService;
 
     @Override
-    @PostMapping(value = "/topics")
     public ResponseEntity<ApiResponse<SuggestTopicResponse>> createTopic(
             Long gatheringId,
             Long meetingId,

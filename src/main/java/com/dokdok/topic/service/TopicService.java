@@ -8,7 +8,6 @@ import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicsPageResponse;
-import com.dokdok.topic.dto.response.TopicsResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
@@ -19,9 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
