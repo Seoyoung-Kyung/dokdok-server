@@ -1,6 +1,6 @@
 package com.dokdok.book.service;
 
-import com.dokdok.book.dto.request.PersonalBookCreateRequest;
+import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.response.PersonalBookCreateResponse;
 import com.dokdok.book.entity.Book;
 import com.dokdok.book.entity.BookReadingStatus;
@@ -29,14 +29,14 @@ public class PersonalBookService {
 
     // 생성
     @Transactional
-    public PersonalBookCreateResponse createBook(PersonalBookCreateRequest personalBookCreateRequest) {
+    public PersonalBookCreateResponse createBook(BookCreateRequest bookCreateRequest) {
         // 사용자 유효성 검증
         User userEntity = userRepository.findById(SecurityUtil.getCurrentUserId())
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-        // 책 유효성 검증
-        Book entity = bookRepository.findByIsbn(personalBookCreateRequest.isbn())
-                .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_FOUND));
+        // 책 유효성 검증 && 없으면 book entity에 저장
+        Book entity = bookRepository.findByIsbn(bookCreateRequest.isbn())
+                .orElseGet(() -> bookRepository.save(bookCreateRequest.of()));
 
         validateDuplicatePersonalBook(userEntity.getId(), entity.getId());
         PersonalBook personalBookEntity = PersonalBook.create(userEntity, entity, BookReadingStatus.READING);

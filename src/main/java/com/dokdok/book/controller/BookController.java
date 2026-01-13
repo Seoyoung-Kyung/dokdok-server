@@ -1,7 +1,7 @@
 package com.dokdok.book.controller;
 
 import com.dokdok.book.api.BookApi;
-import com.dokdok.book.dto.request.PersonalBookCreateRequest;
+import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.response.KakaoBookResponse;
 import com.dokdok.book.dto.response.PersonalBookCreateResponse;
 import com.dokdok.book.service.BookService;
@@ -22,14 +22,14 @@ public class BookController implements BookApi {
 
     @Override
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<KakaoBookResponse>> searchBook(@RequestParam String title) {
-        return ApiResponse.success(bookService.searchBook(title), "책 정보 조회 성공");
+    public ResponseEntity<ApiResponse<KakaoBookResponse>> searchBook(@RequestParam String query) {
+        return ApiResponse.success(bookService.searchBook(query), "책 정보 조회 성공");
     }
 
     @Override
     @PostMapping
-    public ResponseEntity<ApiResponse<PersonalBookCreateResponse>> createBook(@Valid @RequestBody PersonalBookCreateRequest personalBookCreateRequest) {
-        PersonalBookCreateResponse book = personalBookService.createBook(personalBookCreateRequest);
+    public ResponseEntity<ApiResponse<PersonalBookCreateResponse>> createBook(@Valid @RequestBody BookCreateRequest bookCreateRequest) {
+        PersonalBookCreateResponse book = personalBookService.createBook(bookCreateRequest);
         return ApiResponse.created(book, "내 책장에 책 등록 성공");
     }
 }

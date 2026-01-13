@@ -1,6 +1,6 @@
 package com.dokdok.book.api;
 
-import com.dokdok.book.dto.request.PersonalBookCreateRequest;
+import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.response.KakaoBookResponse;
 import com.dokdok.book.dto.response.PersonalBookCreateResponse;
 import com.dokdok.global.response.ApiResponse;
@@ -39,7 +39,7 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @GetMapping("/search")
-    ResponseEntity<ApiResponse<KakaoBookResponse>> searchBook(@RequestParam String title);
+    ResponseEntity<ApiResponse<KakaoBookResponse>> searchBook(@RequestParam String query);
 
 
     @Operation(
@@ -58,5 +58,5 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping
-    ResponseEntity<ApiResponse<PersonalBookCreateResponse>> createBook(@RequestBody PersonalBookCreateRequest personalBookCreateRequest);
+    ResponseEntity<ApiResponse<PersonalBookCreateResponse>> createBook(@RequestBody BookCreateRequest bookCreateRequest);
 }
