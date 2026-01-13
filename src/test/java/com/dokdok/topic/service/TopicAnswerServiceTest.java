@@ -1,4 +1,4 @@
-package com.dokdok.topic;
+package com.dokdok.topic.service;
 
 import com.dokdok.topic.dto.request.TopicAnswerRequest;
 import com.dokdok.topic.dto.response.TopicAnswerResponse;
@@ -8,8 +8,6 @@ import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
-import com.dokdok.topic.service.TopicAnswerService;
-import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.entity.User;
 import com.dokdok.global.exception.GlobalException;
 import org.junit.jupiter.api.DisplayName;
