@@ -183,41 +183,27 @@ if [ -n "$COMMIT_MESSAGES" ]; then
         # 커밋 1개: 그대로 사용
         SUMMARY=$(echo "$COMMIT_MESSAGES" | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
     else
-        # 커밋 2개 이상: 종합 요약 생성
+        # 커밋 2개 이상: 메시지 일부를 조합해 요약
         print_info "커밋 ${COMMIT_COUNT}개를 종합 요약 중..."
 
-        # prefix 제거한 커밋 메시지들 수집
-        cleaned_messages=""
+        # prefix 제거 후 중복 제거한 메시지 수집 (최신순)
+        cleaned_list=""
+        unique_count=0
         while IFS= read -r commit; do
             cleaned=$(echo "$commit" | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
-            cleaned_messages="${cleaned_messages}${cleaned} "
+            if ! echo "$cleaned_list" | grep -Fxq "$cleaned"; then
+                cleaned_list="${cleaned_list}${cleaned}\n"
+                unique_count=$((unique_count + 1))
+            fi
         done <<< "$COMMIT_MESSAGES"
 
-        # 공통 키워드 추출 및 요약 생성
-        # 1. 가장 많이 나오는 명사구 찾기
-        # 2. 폴더명 기반 요약
-        # 3. 첫 번째와 마지막 커밋 조합
+        first_cleaned=$(echo -e "$cleaned_list" | head -n 1)
+        second_cleaned=$(echo -e "$cleaned_list" | head -n 2 | tail -n 1)
 
-        if [ "$COMMIT_COUNT" -le 3 ]; then
-            # 2-3개: 첫 번째 커밋 기반 + "및 개선/수정"
-            first_cleaned=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
-
-            # 첫 커밋에 이미 개선/수정/추가/구현이 있는지 확인
-            if echo "$first_cleaned" | grep -q "개선\|수정\|추가\|구현"; then
-                # 이미 포함되어 있으면 그대로 사용
-                SUMMARY="${first_cleaned}"
-            else
-                # 없으면 "및 개선" 추가
-                SUMMARY="${first_cleaned} 및 개선"
-            fi
+        if [ "$unique_count" -eq 2 ]; then
+            SUMMARY="${first_cleaned}, ${second_cleaned}"
         else
-            # 4개 이상: 변경 파일의 주요 폴더 기반 요약
-            if [ -n "$CHANGED_FILES" ]; then
-                main_folder=$(echo "$CHANGED_FILES" | head -n 1 | cut -d'/' -f1-2)
-                SUMMARY="${main_folder} 기능 구현 및 개선"
-            else
-                SUMMARY="다중 기능 구현"
-            fi
+            SUMMARY="${first_cleaned} 외 $((unique_count - 1))건"
         fi
     fi
 
@@ -311,11 +297,23 @@ if [ -n "$NUMSTAT" ]; then
             continue
         fi
 
-        # 상위 1-2 레벨 폴더 추출
-        if [[ "$file" == */* ]]; then
+        # 상위 폴더 추출 (src/main/java, src/test/java는 더 깊게)
+        if [[ "$file" == src/main/java/* ]] || [[ "$file" == src/test/java/* ]]; then
+            folder=$(echo "$file" | cut -d'/' -f1-6)  # com/dokdok/meeting 레벨까지
+        elif [[ "$file" == src/main/* ]] || [[ "$file" == src/test/* ]]; then
+            folder=$(echo "$file" | cut -d'/' -f1-3)
+        elif [[ "$file" == */* ]]; then
             folder=$(echo "$file" | cut -d'/' -f1-2)
         else
             folder=$(echo "$file" | cut -d'/' -f1)
+        fi
+
+        # numstat에서 바이너리 파일은 "-"가 들어올 수 있음
+        if ! [[ "$added" =~ ^[0-9]+$ ]]; then
+            added=0
+        fi
+        if ! [[ "$deleted" =~ ^[0-9]+$ ]]; then
+            deleted=0
         fi
 
         # 폴더:added:deleted 형태로 저장
@@ -343,9 +341,13 @@ if [ -n "$NUMSTAT" ]; then
                 # 커밋 메시지에서 요약 추출
                 summary="요구사항 반영"
                 if [ -n "$COMMIT_MESSAGES" ]; then
-                    commit_summary=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
-                    if [ ${#commit_summary} -lt 50 ]; then
-                        summary="$commit_summary"
+                    commit_summary=$(git log origin/${BASE_BRANCH}..HEAD --pretty=format:"%s" -- "$prev_folder" 2>/dev/null | head -n 2 | \
+                        sed -E 's/^[a-z]+(\([^)]+\))? *: *//' || true)
+                    commit_count=$(git log origin/${BASE_BRANCH}..HEAD --pretty=format:"%s" -- "$prev_folder" 2>/dev/null | wc -l | tr -d ' ')
+                    if [ "$commit_count" -eq 1 ]; then
+                        summary=$(echo "$commit_summary" | head -n 1)
+                    elif [ "$commit_count" -gt 1 ]; then
+                        summary="$(echo "$commit_summary" | head -n 1) 외 $((commit_count - 1))건"
                     fi
                 fi
 
@@ -363,9 +365,13 @@ if [ -n "$NUMSTAT" ]; then
         if [ -n "$prev_folder" ]; then
             summary="요구사항 반영"
             if [ -n "$COMMIT_MESSAGES" ]; then
-                commit_summary=$(echo "$COMMIT_MESSAGES" | head -n 1 | sed -E 's/^[a-z]+(\([^)]+\))? *: *//')
-                if [ ${#commit_summary} -lt 50 ]; then
-                    summary="$commit_summary"
+                commit_summary=$(git log origin/${BASE_BRANCH}..HEAD --pretty=format:"%s" -- "$prev_folder" 2>/dev/null | head -n 2 | \
+                    sed -E 's/^[a-z]+(\([^)]+\))? *: *//' || true)
+                commit_count=$(git log origin/${BASE_BRANCH}..HEAD --pretty=format:"%s" -- "$prev_folder" 2>/dev/null | wc -l | tr -d ' ')
+                if [ "$commit_count" -eq 1 ]; then
+                    summary=$(echo "$commit_summary" | head -n 1)
+                elif [ "$commit_count" -gt 1 ]; then
+                    summary="$(echo "$commit_summary" | head -n 1) 외 $((commit_count - 1))건"
                 fi
             fi
 
