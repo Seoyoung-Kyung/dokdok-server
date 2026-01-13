@@ -25,12 +25,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import jakarta.validation.Valid;
 
 @Tag(name = "모임", description = "모임 관련 API")
-@RequestMapping("/api/gatherings")
 public interface GatheringApi {
-
     @Operation(
-        summary = "모임 상세 정보 조회",
-        description = """
+            summary = "모임 상세 정보 조회",
+            description = """
               현재 로그인한 사용자가 속한 모임 목록을 조회합니다.
               - 가입일 최신순으로 정렬됩니다.
               - 페이징을 지원합니다 (기본 10개씩).
@@ -55,7 +53,6 @@ public interface GatheringApi {
                     description = "서버 오류"
             )
     })
-    @GetMapping
     ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(
             @ParameterObject
             @Parameter(
@@ -65,6 +62,7 @@ public interface GatheringApi {
             @PageableDefault(size = 10, sort = "joinedAt", direction = org.springframework.data.domain.Sort.Direction.DESC)
             Pageable pageable
     );
+
     @Operation(
             summary = "내 모임 리스트조회",
             description = """
@@ -98,7 +96,6 @@ public interface GatheringApi {
                     description = "서버 오류"
             )
     })
-    @GetMapping("/{gatheringId}")
     ResponseEntity<ApiResponse<GatheringDetailResponse>> getGatheringDetail(
             @Parameter(
                     description = "조회할 모임 ID",
@@ -147,7 +144,6 @@ public interface GatheringApi {
                     description = "서버 오류"
             )
     })
-    @PatchMapping("/{gatheringId}")
     ResponseEntity<ApiResponse<GatheringUpdateResponse>> updateGathering(
             @Parameter(
                     description = "수정할 모임 ID",

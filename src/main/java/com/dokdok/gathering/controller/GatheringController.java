@@ -21,6 +21,7 @@ public class GatheringController implements GatheringApi {
     private final GatheringService gatheringService;
 
     @Override
+    @GetMapping
     public ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(Pageable pageable) {
         MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
 
@@ -28,6 +29,7 @@ public class GatheringController implements GatheringApi {
     }
 
     @Override
+    @GetMapping("/{gatheringId}")
     public ResponseEntity<ApiResponse<GatheringDetailResponse>> getGatheringDetail(@PathVariable Long gatheringId){
         GatheringDetailResponse response = gatheringService.getGatheringDetail(gatheringId);
 
@@ -35,6 +37,7 @@ public class GatheringController implements GatheringApi {
     }
 
     @Override
+    @PatchMapping("/{gatheringId}")
     public ResponseEntity<ApiResponse<GatheringUpdateResponse>> updateGathering(
             @PathVariable Long gatheringId,
             @Valid @RequestBody GatheringUpdateRequest request
