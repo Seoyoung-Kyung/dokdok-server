@@ -30,7 +30,7 @@ public class GatheringService {
 		List<GatheringSimpleResponse> gatheringResponses = gatheringMemberPage.getContent()
 				.stream()
 				.map(gatheringMember -> {
-					Integer totalMembers = gatheringMemberRepository.countActiveMembers(gatheringMember.getGathering().getId());
+					int totalMembers = gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(gatheringMember.getGathering().getId());
 
 					return GatheringSimpleResponse.from(gatheringMember, totalMembers, gatheringMember.getRole());
 				})
