@@ -113,8 +113,8 @@ public interface GatheringApi {
             description = """
               모임의 기본 정보(모임명, 설명)를 수정합니다.
               - 모임의 리더만 수정할 수 있습니다.
-              - 모임명과 설명을 부분 수정할 수 있습니다 (원하는 필드만 전송).
-              - 모임명은 필수이며, 공백일 수 없고 최대 255자까지 가능합니다.
+              - 모임명은 필수이며, 공백만 포함할 수 없고 최대 12자까지 가능합니다.
+              - 설명은 선택사항이며, 최대 150자까지 가능합니다.
               """
     )
     @ApiResponses(value = {
@@ -128,7 +128,7 @@ public interface GatheringApi {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "잘못된 요청 - 유효성 검증 실패 (모임명이 공백이거나 255자 초과)"
+                    description = "잘못된 요청 - 유효성 검증 실패 (모임명이 필수이거나 공백만 포함, 또는 12자 초과)"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",

@@ -393,7 +393,7 @@ class GatheringServiceTest {
 		Long leaderId = 1L;
 		String originalName = gathering1.getGatheringName();
 		GatheringUpdateRequest request = GatheringUpdateRequest.builder()
-				.gatheringName(null)
+				.gatheringName(originalName)
 				.description("변경된 설명")
 				.build();
 
