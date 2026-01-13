@@ -30,7 +30,7 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("meetingId") Long meetingId,
             @Param("userId") Long userId
     );
-}
+
     @Query("SELECT t " +
             "FROM Topic t " +
             "JOIN FETCH t.proposedBy " +
@@ -42,5 +42,4 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("meetingId") Long meetingId,
             Pageable pageable
     );
-
 }
