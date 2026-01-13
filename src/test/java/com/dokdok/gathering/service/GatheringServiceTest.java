@@ -544,4 +544,80 @@ class GatheringServiceTest {
 		verify(gatheringValidator, times(1)).validateAndGetGathering(gatheringId);
 		verify(gatheringValidator, times(1)).validateLeader(gatheringId, memberId);
 	}
+
+	@Test
+	@DisplayName("모임원 강퇴 성공 - 리더가 일반 멤버 강퇴")
+	void removeMember_Success() {
+		// given
+		Long gatheringId = 1L;
+		Long leaderId = 1L;
+		Long targetUserId = 2L;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(leaderId);
+
+		given(gatheringValidator.validateAndGetGathering(gatheringId)).willReturn(gathering1);
+		given(gatheringValidator.validateAndGetMember(gatheringId, targetUserId)).willReturn(normalMember);
+
+		// when
+		gatheringService.removeMember(gatheringId, targetUserId);
+
+		// then
+		assertThat(normalMember.getRemovedAt()).isNotNull();
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+		verify(gatheringValidator, times(1)).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, leaderId);
+		verify(gatheringValidator, times(1)).validateAndGetMember(gatheringId, targetUserId);
+	}
+
+	@Test
+	@DisplayName("모임원 강퇴 실패 - 강퇴 대상이 리더")
+	void removeMember_Fail_TargetIsLeader() {
+		// given
+		Long gatheringId = 1L;
+		Long leaderId = 1L;
+		Long targetUserId = 1L;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(leaderId);
+
+		given(gatheringValidator.validateAndGetGathering(gatheringId)).willReturn(gathering1);
+		given(gatheringValidator.validateAndGetMember(gatheringId, targetUserId)).willReturn(leaderMember);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.removeMember(gatheringId, targetUserId))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.CANNOT_REMOVE_LEADER.getMessage());
+
+		assertThat(leaderMember.getRemovedAt()).isNull();
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+		verify(gatheringValidator, times(1)).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, leaderId);
+		verify(gatheringValidator, times(1)).validateAndGetMember(gatheringId, targetUserId);
+	}
+
+	@Test
+	@DisplayName("모임원 강퇴 실패 - 리더가 아닌 멤버")
+	void removeMember_Fail_NotLeader() {
+		// given
+		Long gatheringId = 1L;
+		Long memberId = 2L;
+		Long targetUserId = 3L;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(memberId);
+
+		given(gatheringValidator.validateAndGetGathering(gatheringId)).willReturn(gathering1);
+		doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_LEADER))
+				.when(gatheringValidator).validateLeader(gatheringId, memberId);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.removeMember(gatheringId, targetUserId))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.NOT_GATHERING_LEADER.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+		verify(gatheringValidator, times(1)).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, memberId);
+		verify(gatheringValidator, times(0)).validateAndGetMember(any(), any());
+	}
 }

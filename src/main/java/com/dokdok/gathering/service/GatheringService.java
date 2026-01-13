@@ -3,11 +3,11 @@ package com.dokdok.gathering.service;
 import com.dokdok.gathering.dto.*;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
+import com.dokdok.gathering.entity.GatheringRole;
 import com.dokdok.gathering.entity.GatheringStatus;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
-import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.repository.MeetingRepository;
@@ -27,7 +27,6 @@ public class GatheringService {
 
 	private final GatheringMemberRepository gatheringMemberRepository;
 	private final GatheringValidator gatheringValidator;
-	private final GatheringRepository gatheringRepository;
 	private final MeetingRepository meetingRepository;
 
 	public MyGatheringListResponse getMyGatherings(Pageable pageable) {
@@ -100,5 +99,27 @@ public class GatheringService {
 			throw new GatheringException(GatheringErrorCode.ALREADY_INACTIVE);
 		}
 		gathering.deleteGathering();
+	}
+
+	// 모임원 탈퇴 - 리더만 가능
+	@Transactional
+	public void removeMember(Long gatheringId, Long targetUserId) {
+		Long requestId = SecurityUtil.getCurrentUserId();
+
+		// 모임 존재 여부
+		gatheringValidator.validateAndGetGathering(gatheringId);
+
+		// 권한이 리더인지 검증
+		gatheringValidator.validateLeader(gatheringId,requestId);
+
+		// 강퇴 대상 멤버 조회 & 존재여부
+		GatheringMember targetMember = gatheringValidator.validateAndGetMember(gatheringId, targetUserId);
+
+		// 강퇴 대상이 리더인지 확인
+		if (targetMember.getRole() == GatheringRole.LEADER) {
+			throw new GatheringException(GatheringErrorCode.CANNOT_REMOVE_LEADER);
+		}
+
+		targetMember.remove();
 	}
 }

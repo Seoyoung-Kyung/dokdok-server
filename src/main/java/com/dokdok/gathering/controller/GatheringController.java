@@ -52,4 +52,13 @@ public class GatheringController implements GatheringApi {
         gatheringService.deleteGathering(gatheringId);
         return ApiResponse.deleted("모임 삭제 성공");
     }
+
+    @DeleteMapping("/{gatheringId}/members/{userId}")
+    public ResponseEntity<ApiResponse<Void>> removeMember(
+            @PathVariable Long gatheringId,
+            @PathVariable Long userId
+    ){
+        gatheringService.removeMember(gatheringId,userId);
+        return ApiResponse.deleted("모임원 강퇴 성공");
+    }
 }
