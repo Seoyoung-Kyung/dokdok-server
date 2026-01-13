@@ -11,32 +11,30 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/gatherings/{gatheringId}/meetings/{meetingId}")
+@RequestMapping("/api/gatherings/{gatheringId}/meetings/{meetingId}/topics")
 public class TopicController implements TopicApi {
 
     private final TopicService topicService;
 
     @Override
-    @PostMapping(value = "/topics")
+    @PostMapping
     public ResponseEntity<ApiResponse<SuggestTopicResponse>> createTopic(
             Long gatheringId,
             Long meetingId,
             SuggestTopicRequest request
     ) {
+
         SuggestTopicResponse response = topicService.createTopic(gatheringId, meetingId, request);
 
         return ApiResponse.created(response, "주제 제안이 완료되었습니다.");
     }
 
     @Override
-    @GetMapping(value = "/topics")
+    @GetMapping
     public ResponseEntity<ApiResponse<TopicsPageResponse>> getTopics(
             Long gatheringId,
             Long meetingId,
@@ -47,6 +45,18 @@ public class TopicController implements TopicApi {
         TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
 
         return ApiResponse.success(response, "제안된 주제 조회를 완료했습니다.");
+    }
+
+    @DeleteMapping(value = "/{topicId}")
+    public ResponseEntity<ApiResponse<Void>> deleteTopic(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId
+    ) {
+
+        topicService.deleteTopic(gatheringId, meetingId, topicId);
+
+        return ApiResponse.deleted("주제가 삭제되었습니다.");
     }
 
 }
