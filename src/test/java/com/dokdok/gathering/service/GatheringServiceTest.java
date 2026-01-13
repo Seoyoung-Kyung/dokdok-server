@@ -12,6 +12,8 @@ import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.global.util.SecurityUtil;
+import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +57,9 @@ class GatheringServiceTest {
 
 	@Mock
 	private GatheringValidator gatheringValidator;
+
+	@Mock
+	private MeetingRepository meetingRepository;
 
 	private MockedStatic<SecurityUtil> securityUtilMock;
 
@@ -157,8 +162,10 @@ class GatheringServiceTest {
 		Page<GatheringMember> memberPage = new PageImpl<>(members, pageable, members.size());
 
 		given(gatheringMemberRepository.findActiveGatheringsByUserId(userId, pageable)).willReturn(memberPage);
-		given(gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(1L)).willReturn(1);
-		given(gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(2L)).willReturn(1);
+		given(gatheringMemberRepository.countActiveMembers(1L)).willReturn(1);
+		given(gatheringMemberRepository.countActiveMembers(2L)).willReturn(1);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE)).willReturn(3);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE)).willReturn(5);
 
 		// when
 		MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
@@ -177,6 +184,7 @@ class GatheringServiceTest {
 		assertThat(firstGathering.isFavorite()).isTrue();
 		assertThat(firstGathering.gatheringStatus()).isEqualTo(ACTIVE);
 		assertThat(firstGathering.totalMembers()).isEqualTo(1);
+		assertThat(firstGathering.totalMeetings()).isEqualTo(3);
 		assertThat(firstGathering.currentUserRole()).isEqualTo(LEADER);
 		assertThat(firstGathering.daysFromJoined()).isEqualTo(10);
 
@@ -186,12 +194,15 @@ class GatheringServiceTest {
 		assertThat(secondGathering.isFavorite()).isFalse();
 		assertThat(secondGathering.gatheringStatus()).isEqualTo(ACTIVE);
 		assertThat(secondGathering.totalMembers()).isEqualTo(1);
+		assertThat(secondGathering.totalMeetings()).isEqualTo(5);
 		assertThat(secondGathering.currentUserRole()).isEqualTo(MEMBER);
 
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
 		verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserId(eq(userId), any(Pageable.class));
-		verify(gatheringMemberRepository, times(1)).countByGatheringIdAndRemovedAtIsNull(1L);
-		verify(gatheringMemberRepository, times(1)).countByGatheringIdAndRemovedAtIsNull(2L);
+		verify(gatheringMemberRepository, times(1)).countActiveMembers(1L);
+		verify(gatheringMemberRepository, times(1)).countActiveMembers(2L);
+		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE);
+		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE);
 	}
 
 	@Test
