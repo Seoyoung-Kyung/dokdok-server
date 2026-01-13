@@ -63,7 +63,7 @@ public class MeetingValidator {
         if (maxParticipants == null) {
             return;
         }
-        Integer currentCount = meetingMemberRepository.countActiveMembers(meetingId);
+        int currentCount = meetingMemberRepository.countActiveMembers(meetingId);
         if (currentCount >= maxParticipants) {
             throw new MeetingException(MeetingErrorCode.MEETING_FULL);
         }
