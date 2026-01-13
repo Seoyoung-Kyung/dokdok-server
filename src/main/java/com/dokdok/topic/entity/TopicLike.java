@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Topiclike {
+public class TopicLike {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

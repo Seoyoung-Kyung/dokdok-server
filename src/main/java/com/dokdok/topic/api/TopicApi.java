@@ -17,14 +17,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @Tag(name = "주제 관리", description = "주제 관련 API")
-@RequestMapping("/api/gatherings/{gatheringId}/meetings/{meetingId}")
 public interface TopicApi {
 
     @Operation(
@@ -47,7 +44,6 @@ public interface TopicApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임 또는 약속을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @PostMapping(value = "/topics", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<SuggestTopicResponse>> createTopic(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
@@ -80,7 +76,6 @@ public interface TopicApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임 또는 약속을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @GetMapping(value = "/topics", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<TopicsPageResponse>> getTopics(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
