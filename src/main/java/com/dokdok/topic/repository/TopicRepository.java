@@ -10,4 +10,6 @@ import java.util.List;
 public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     List<Topic> findAllByMeetingId(Long meetingId);
+
+    boolean existsByIdAndMeetingId(Long topicId, Long meetingId);
 }
