@@ -3,8 +3,10 @@ package com.dokdok.meeting.service;
 import com.dokdok.book.entity.Book;
 import com.dokdok.book.repository.BookRepository;
 import com.dokdok.gathering.entity.Gathering;
+import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
+import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.dto.MeetingCreateRequest;
 import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.dto.MeetingStatusResponse;
@@ -19,7 +21,7 @@ import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
-import com.dokdok.user.repository.UserRepository;
+import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,8 +37,10 @@ public class MeetingService {
     private final TopicRepository topicRepository;
     private final GatheringRepository gatheringRepository;
     private final GatheringMemberRepository gatheringMemberRepository;
+    private final GatheringValidator gatheringValidator;
+    private final MeetingValidator meetingValidator;
     private final BookRepository bookRepository;
-    private final UserRepository userRepository;
+    private final UserValidator userValidator;
 
     /**
      * 특정 약속의 정보를 확인할 수 있다.
@@ -72,8 +76,7 @@ public class MeetingService {
         Book book = bookRepository.findById(request.bookId())
                 .orElseThrow(() -> new MeetingException(MeetingErrorCode.BOOK_NOT_FOUND));
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new MeetingException(MeetingErrorCode.USER_NOT_FOUND));
+        User user = userValidator.findUserOrThrow(userId);
 
         Integer maxParticipants = request.maxParticipants();
         if (maxParticipants == null) {
@@ -148,6 +151,45 @@ public class MeetingService {
                         .build());
 
         meetingMember.changeRole(MeetingMemberRole.LEADER);
+        meetingMemberRepository.save(meetingMember);
+    }
+
+    /**
+     * 약속 참가를 신청한다.
+     * @param meetingId 약속 식별자
+     * @return 신청 완료된 약속 식별자
+     */
+    @Transactional
+    public Long joinMeeting(Long meetingId) {
+
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+
+        gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
+
+        if (meetingValidator.isMeetingMember(meetingId, userId)) {
+            return meetingId;
+        }
+
+        meetingValidator.validateCapacity(meetingId, meeting.getMaxParticipants());
+
+        User user = userValidator.findUserOrThrow(userId);
+
+        saveMeetingMember(meeting, user);
+
+        return meetingId;
+    }
+
+    /**
+     * 약속 참여 멤버를 생성 후 저장한다.
+     */
+    private void saveMeetingMember(Meeting meeting, User user) {
+        MeetingMember meetingMember = MeetingMember.builder()
+                .meeting(meeting)
+                .user(user)
+                .build();
+
         meetingMemberRepository.save(meetingMember);
     }
 }
