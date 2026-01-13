@@ -6,7 +6,7 @@ import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.oauth2.CustomOAuth2User;
 import com.dokdok.user.api.AuthApi;
-import com.dokdok.user.dto.response.UserInfoResponseDto;
+import com.dokdok.user.dto.response.UserInfoResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController implements AuthApi {
 
     @Override
-    public ResponseEntity<ApiResponse<UserInfoResponseDto>> getCurrentUser() {
+    public ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUser() {
         if (!SecurityUtil.isAuthenticated()) {
             throw new GlobalException(GlobalErrorCode.UNAUTHORIZED);
         }
@@ -27,7 +27,7 @@ public class AuthController implements AuthApi {
         log.info("인증된 사용자 정보 조회: userId={}, nickname={}",
                 currentUser.getUserId(), currentUser.getNickname());
 
-        UserInfoResponseDto userInfo = UserInfoResponseDto.from(currentUser.getUser());
+        UserInfoResponse userInfo = UserInfoResponse.from(currentUser.getUser());
         return ApiResponse.success(userInfo, "로그인 사용자 정보 조회 성공");
     }
 }

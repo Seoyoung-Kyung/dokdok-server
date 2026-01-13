@@ -20,7 +20,7 @@ jobs:
           host: ${{ secrets.EC2_DEV_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,DB_USERNAME,DB_PASSWORD,SPRING_PROFILE
+          envs: POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,DB_USERNAME,DB_PASSWORD,SPRING_PROFILE,KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,KAKAO_API_KEY,KAKAO_API_BASE_URL
           script: |
             set -e
             cd ${{ secrets.EC2_APP_DIR }}
@@ -40,6 +40,14 @@ jobs:
             # Application Database Connection
             DB_USERNAME=${DB_USERNAME}
             DB_PASSWORD=${DB_PASSWORD}
+
+            # Kakao OAuth
+            KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+            KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+
+            # Kakao book API
+            KAKAO_API_KEY=${KAKAO_API_KEY}
+            KAKAO_API_BASE_URL=${KAKAO_API_BASE_URL}
             EOF
 
             # 앱 프로필만 빌드/재시작 (모니터링 스택은 건드리지 않음)
@@ -53,3 +61,7 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          KAKAO_API_KEY: ${{ secrets.KAKAO_API_KEY }}
+          KAKAO_API_BASE_URL: ${{ secrets.KAKAO_API_BASE_URL }}
