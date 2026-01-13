@@ -62,4 +62,5 @@ public class MeetingController implements MeetingApi {
         Long response = meetingService.joinMeeting(meetingId);
         return ApiResponse.success(response, "약속 참가 신청에 성공했습니다.");
     }
+
 }
