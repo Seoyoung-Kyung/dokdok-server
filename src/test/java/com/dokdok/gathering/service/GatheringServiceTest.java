@@ -7,10 +7,13 @@ import com.dokdok.gathering.dto.GatheringUpdateResponse;
 import com.dokdok.gathering.dto.MyGatheringListResponse;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
+import com.dokdok.gathering.entity.GatheringStatus;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.global.util.SecurityUtil;
+import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,10 +31,10 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static com.dokdok.gathering.entity.GatheringRole.LEADER;
 import static com.dokdok.gathering.entity.GatheringRole.MEMBER;
+import static com.dokdok.gathering.entity.GatheringStatus.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,6 +57,9 @@ class GatheringServiceTest {
 
 	@Mock
 	private GatheringValidator gatheringValidator;
+
+	@Mock
+	private MeetingRepository meetingRepository;
 
 	private MockedStatic<SecurityUtil> securityUtilMock;
 
@@ -84,7 +90,7 @@ class GatheringServiceTest {
 				.id(1L)
 				.gatheringName("독서 모임")
 				.description("열심히 읽는 모임")
-				.gatheringStatus("ACTIVE")
+				.gatheringStatus(ACTIVE)
 				.invitationLink("https://invite.link/abc123")
 				.gatheringLeader(leader)
 				.createdAt(LocalDateTime.now().minusDays(30))
@@ -95,7 +101,7 @@ class GatheringServiceTest {
 				.id(2L)
 				.gatheringName("bookbook")
 				.description("test test")
-				.gatheringStatus("ACTIVE")
+				.gatheringStatus(ACTIVE)
 				.gatheringLeader(leader)
 				.createdAt(LocalDateTime.now().minusDays(20))
 				.updatedAt(LocalDateTime.now().minusDays(20))
@@ -156,8 +162,10 @@ class GatheringServiceTest {
 		Page<GatheringMember> memberPage = new PageImpl<>(members, pageable, members.size());
 
 		given(gatheringMemberRepository.findActiveGatheringsByUserId(userId, pageable)).willReturn(memberPage);
-		given(gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(1L)).willReturn(1);
-		given(gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(2L)).willReturn(1);
+		given(gatheringMemberRepository.countActiveMembers(1L)).willReturn(1);
+		given(gatheringMemberRepository.countActiveMembers(2L)).willReturn(1);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE)).willReturn(3);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE)).willReturn(5);
 
 		// when
 		MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
@@ -174,8 +182,9 @@ class GatheringServiceTest {
 		assertThat(firstGathering.gatheringId()).isEqualTo(1L);
 		assertThat(firstGathering.gatheringName()).isEqualTo("독서 모임");
 		assertThat(firstGathering.isFavorite()).isTrue();
-		assertThat(firstGathering.gatheringStatus()).isEqualTo("ACTIVE");
+		assertThat(firstGathering.gatheringStatus()).isEqualTo(ACTIVE);
 		assertThat(firstGathering.totalMembers()).isEqualTo(1);
+		assertThat(firstGathering.totalMeetings()).isEqualTo(3);
 		assertThat(firstGathering.currentUserRole()).isEqualTo(LEADER);
 		assertThat(firstGathering.daysFromJoined()).isEqualTo(10);
 
@@ -183,14 +192,17 @@ class GatheringServiceTest {
 		assertThat(secondGathering.gatheringId()).isEqualTo(2L);
 		assertThat(secondGathering.gatheringName()).isEqualTo("bookbook");
 		assertThat(secondGathering.isFavorite()).isFalse();
-		assertThat(secondGathering.gatheringStatus()).isEqualTo("ACTIVE");
+		assertThat(secondGathering.gatheringStatus()).isEqualTo(ACTIVE);
 		assertThat(secondGathering.totalMembers()).isEqualTo(1);
+		assertThat(secondGathering.totalMeetings()).isEqualTo(5);
 		assertThat(secondGathering.currentUserRole()).isEqualTo(MEMBER);
 
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
 		verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserId(eq(userId), any(Pageable.class));
-		verify(gatheringMemberRepository, times(1)).countByGatheringIdAndRemovedAtIsNull(1L);
-		verify(gatheringMemberRepository, times(1)).countByGatheringIdAndRemovedAtIsNull(2L);
+		verify(gatheringMemberRepository, times(1)).countActiveMembers(1L);
+		verify(gatheringMemberRepository, times(1)).countActiveMembers(2L);
+		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE);
+		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE);
 	}
 
 	@Test
@@ -243,7 +255,7 @@ class GatheringServiceTest {
 		assertThat(response.gatheringId()).isEqualTo(1L);
 		assertThat(response.gatheringName()).isEqualTo("독서 모임");
 		assertThat(response.description()).isEqualTo("열심히 읽는 모임");
-		assertThat(response.gatheringStatus()).isEqualTo("ACTIVE");
+		assertThat(response.gatheringStatus()).isEqualTo(ACTIVE);
 		assertThat(response.invitationLink()).isEqualTo("https://invite.link/abc123");
 		assertThat(response.currentUserRole()).isEqualTo(MEMBER);
 		assertThat(response.totalMembers()).isEqualTo(2);
@@ -457,6 +469,74 @@ class GatheringServiceTest {
 
 		// when & then
 		assertThatThrownBy(() -> gatheringService.updateGathering(gatheringId, request))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.NOT_GATHERING_LEADER.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+		verify(gatheringValidator, times(1)).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, memberId);
+	}
+
+	@Test
+	@DisplayName("모임 삭제 성공 - 리더가 삭제")
+	void deleteGathering_Success() {
+		// given
+		Long gatheringId = 1L;
+		Long leaderId = 1L;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(leaderId);
+
+		given(gatheringValidator.validateAndGetGathering(gatheringId)).willReturn(gathering1);
+
+		// when
+		gatheringService.deleteGathering(gatheringId);
+
+		// then
+		assertThat(gathering1.getDeletedAt()).isNotNull();
+		assertThat(gathering1.getGatheringStatus()).isEqualTo(GatheringStatus.INACTIVE);
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+		verify(gatheringValidator, times(1)).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator,times(1)).validateLeader(gatheringId,leaderId);
+	}
+
+	@Test
+	@DisplayName("모임 삭제 실패 - 모임이 존재하지 않음")
+	void deleteGathering_Fail_GatheringNotFound() {
+		// given
+		Long gatheringId = 999L;
+		Long leaderId = 1L;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(leaderId);
+
+		doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
+				.when(gatheringValidator).validateAndGetGathering(gatheringId);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.deleteGathering(gatheringId))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.GATHERING_NOT_FOUND.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+		verify(gatheringValidator, times(1)).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator, times(0)).validateLeader(any(), any());
+	}
+
+	@Test
+	@DisplayName("모임 삭제 실패 - 리더가 아닌 일반 멤버")
+	void deleteGathering_Fail_NotLeader() {
+		// given
+		Long gatheringId = 1L;
+		Long memberId = 2L;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(memberId);
+
+		given(gatheringValidator.validateAndGetGathering(gatheringId)).willReturn(gathering1);
+		doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_LEADER))
+				.when(gatheringValidator).validateLeader(gatheringId, memberId);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.deleteGathering(gatheringId))
 				.isInstanceOf(GatheringException.class)
 				.hasMessage(GatheringErrorCode.NOT_GATHERING_LEADER.getMessage());
 

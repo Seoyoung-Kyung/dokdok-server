@@ -45,4 +45,11 @@ public class GatheringController implements GatheringApi {
         GatheringUpdateResponse response = gatheringService.updateGathering(gatheringId, request);
         return ApiResponse.updated(response, "모임 정보 수정 성공");
     }
+
+    @Override
+    @DeleteMapping("/{gatheringId}")
+    public ResponseEntity<ApiResponse<Void>> deleteGathering(@PathVariable Long gatheringId) {
+        gatheringService.deleteGathering(gatheringId);
+        return ApiResponse.deleted("모임 삭제 성공");
+    }
 }

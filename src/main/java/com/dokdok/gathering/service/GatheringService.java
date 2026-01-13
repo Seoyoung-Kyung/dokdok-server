@@ -3,8 +3,14 @@ package com.dokdok.gathering.service;
 import com.dokdok.gathering.dto.*;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
+import com.dokdok.gathering.entity.GatheringStatus;
+import com.dokdok.gathering.exception.GatheringErrorCode;
+import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
+import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.global.util.SecurityUtil;
+import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.meeting.repository.MeetingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +27,8 @@ public class GatheringService {
 
 	private final GatheringMemberRepository gatheringMemberRepository;
 	private final GatheringValidator gatheringValidator;
+	private final GatheringRepository gatheringRepository;
+	private final MeetingRepository meetingRepository;
 
 	public MyGatheringListResponse getMyGatherings(Pageable pageable) {
 		Long userId = SecurityUtil.getCurrentUserId();
@@ -30,9 +38,10 @@ public class GatheringService {
 		List<GatheringSimpleResponse> gatheringResponses = gatheringMemberPage.getContent()
 				.stream()
 				.map(gatheringMember -> {
-					int totalMembers = gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(gatheringMember.getGathering().getId());
+					int totalMembers = gatheringMemberRepository.countActiveMembers(gatheringMember.getGathering().getId());
+					int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gatheringMember.getGathering().getId(), MeetingStatus.DONE);
 
-					return GatheringSimpleResponse.from(gatheringMember, totalMembers, gatheringMember.getRole());
+					return GatheringSimpleResponse.from(gatheringMember, totalMembers,totalMeetings, gatheringMember.getRole());
 				})
 				.collect(Collectors.toList());
 
@@ -76,5 +85,20 @@ public class GatheringService {
 		gathering.updateGatheringInfo(request.gatheringName(), request.description());
 
 		return GatheringUpdateResponse.from(gathering);
+	}
+
+	// 모임 삭제 - 리더만 가능
+	@Transactional
+	public void deleteGathering(Long gatheringId) {
+		Long userId = SecurityUtil.getCurrentUserId();
+
+		// 모임 존재 여부 & 리더 권한 검증
+		Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
+		gatheringValidator.validateLeader(gatheringId, userId);
+
+		if (gathering.getGatheringStatus().equals(GatheringStatus.INACTIVE)) {
+			throw new GatheringException(GatheringErrorCode.ALREADY_INACTIVE);
+		}
+		gathering.deleteGathering();
 	}
 }

@@ -1,5 +1,7 @@
 package com.dokdok.gathering.entity;
 
+import com.dokdok.gathering.exception.GatheringErrorCode;
+import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.global.BaseTimeEntity;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
@@ -17,7 +19,7 @@ import java.time.temporal.ChronoUnit;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @SuperBuilder
-@SQLDelete(sql = "UPDATE gathering SET deleted_at = CURRENT_TIMESTAMP WHERE gathering_id = ?")
+@SQLDelete(sql = "UPDATE gathering SET deleted_at = CURRENT_TIMESTAMP, gathering_status = 'INACTIVE' WHERE gathering_id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Gathering extends BaseTimeEntity {
 
@@ -40,8 +42,9 @@ public class Gathering extends BaseTimeEntity {
     private String invitationLink;
 
     @Column(name = "gathering_status", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String gatheringStatus = "ACTIVE";
+    private GatheringStatus gatheringStatus = GatheringStatus.ACTIVE;
 
     /**
      * 생성일일로부터 경과한 일수를 계산합니다.
@@ -63,5 +66,10 @@ public class Gathering extends BaseTimeEntity {
         if(description != null){
             this.description = description;
         }
+    }
+
+    public void deleteGathering() {
+        this.gatheringStatus = GatheringStatus.INACTIVE;
+        this.markDeletedNow();
     }
 }
