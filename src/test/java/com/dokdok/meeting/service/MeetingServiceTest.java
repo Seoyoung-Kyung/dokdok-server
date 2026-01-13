@@ -106,8 +106,8 @@ class MeetingServiceTest {
     @Test
     void givenMeetingId_whenFindMeeting_thenMeetingResponse() {
         // given
-        given(meetingRepository.findById(meetingId))
-                .willReturn(Optional.of(meeting));
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
         given(meetingMemberRepository.findAllByMeetingId(meetingId))
                 .willReturn(java.util.Collections.emptyList());
         given(topicRepository.findAllByMeetingId(meetingId))
@@ -128,8 +128,8 @@ class MeetingServiceTest {
         // given
         Long meetingId = 999L;
 
-        given(meetingRepository.findById(meetingId))
-                .willReturn(Optional.empty());
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willThrow(new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND));
 
         // when + then
         assertThatThrownBy(() -> meetingService.findMeeting(meetingId))
@@ -263,7 +263,7 @@ class MeetingServiceTest {
         Long meetingId = 1L;
         MeetingStatus meetingStatus = MeetingStatus.CONFIRMED;
 
-        given(meetingRepository.findById(meetingId)).willReturn(Optional.of(meeting));
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
         given(meetingRepository.existsByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.CONFIRMED))
                 .willReturn(false);
         given(meetingMemberRepository.findByMeetingIdAndUserId(meetingId, leader.getId()))
@@ -286,7 +286,7 @@ class MeetingServiceTest {
     void givenConfirmedMeetingExists_whenConfirm_thenThrowMeetingException() {
         // given
         Long meetingId = 1L;
-        given(meetingRepository.findById(meetingId)).willReturn(Optional.of(meeting));
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
         given(meetingRepository.existsByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.CONFIRMED))
                 .willReturn(true);
 
@@ -308,7 +308,7 @@ class MeetingServiceTest {
                 .meetingStatus(MeetingStatus.PENDING)
                 .gathering(gathering)
                 .build();
-        given(meetingRepository.findById(meetingId)).willReturn(Optional.of(missingLeaderMeeting));
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(missingLeaderMeeting);
         given(meetingRepository.existsByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.CONFIRMED))
                 .willReturn(false);
 
@@ -331,7 +331,7 @@ class MeetingServiceTest {
                 .gathering(gathering)
                 .meetingLeader(leader)
                 .build();
-        given(meetingRepository.findById(meetingId)).willReturn(Optional.of(confirmedMeeting));
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(confirmedMeeting);
 
         // when + then
         assertThatThrownBy(() -> meetingService.changeMeetingStatus(meetingId, MeetingStatus.PENDING))
@@ -362,8 +362,8 @@ class MeetingServiceTest {
 
         given(meetingValidator.findMeetingOrThrow(meetingId))
                 .willReturn(meeting);
-        given(meetingValidator.isMeetingMember(meetingId, userId))
-                .willReturn(false);
+        given(meetingMemberRepository.findAnyByMeetingIdAndUserId(meetingId, userId))
+                .willReturn(Optional.empty());
         given(userValidator.findUserOrThrow(userId))
                 .willReturn(user);
 
@@ -375,14 +375,15 @@ class MeetingServiceTest {
 
             // then
             assertThat(response).isEqualTo(meetingId);
+            verify(meetingValidator).validateCapacity(meetingId, meeting.getMaxParticipants());
             verify(meetingMemberRepository).save(any());
         }
 
     }
 
-    @DisplayName("이미 약속 멤버면 참가 신청은 멱등 처리된다.")
+    @DisplayName("이미 약속 멤버면 참가 신청이 실패한다.")
     @Test
-    void givenExistingMember_whenJoinMeeting_thenReturnMeetingId() {
+    void givenExistingMember_whenJoinMeeting_thenThrowException() {
         // given
         Long meetingId = 3L;
         Long userId = 7L;
@@ -397,8 +398,51 @@ class MeetingServiceTest {
 
         given(meetingValidator.findMeetingOrThrow(meetingId))
                 .willReturn(meeting);
-        given(meetingValidator.isMeetingMember(meetingId, userId))
-                .willReturn(true);
+        given(meetingMemberRepository.findAnyByMeetingIdAndUserId(meetingId, userId))
+                .willReturn(Optional.of(MeetingMember.builder()
+                        .meeting(meeting)
+                        .user(User.builder().id(userId).build())
+                        .build()));
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            // then
+            assertThatThrownBy(() -> meetingService.joinMeeting(meetingId))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.MEETING_ALREADY_JOINED);
+            verify(meetingValidator, never()).validateCapacity(any(), any());
+            verify(userValidator, never()).findUserOrThrow(any());
+            verify(meetingMemberRepository, never()).save(any());
+        }
+    }
+
+    @DisplayName("취소 이력이 있는 멤버는 재참여 처리된다.")
+    @Test
+    void givenCanceledMember_whenJoinMeeting_thenRestore() {
+        // given
+        Long meetingId = 3L;
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .gathering(Gathering.builder()
+                        .id(1L)
+                        .gatheringName("gathering")
+                        .invitationLink("link")
+                        .build())
+                .build();
+        MeetingMember canceledMember = MeetingMember.builder()
+                .meeting(meeting)
+                .user(User.builder().id(userId).build())
+                .canceledAt(LocalDateTime.now().minusDays(1))
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+        given(meetingMemberRepository.findAnyByMeetingIdAndUserId(meetingId, userId))
+                .willReturn(Optional.of(canceledMember));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -408,6 +452,7 @@ class MeetingServiceTest {
 
             // then
             assertThat(response).isEqualTo(meetingId);
+            assertThat(canceledMember.getCanceledAt()).isNull();
             verify(meetingValidator, never()).validateCapacity(any(), any());
             verify(userValidator, never()).findUserOrThrow(any());
             verify(meetingMemberRepository, never()).save(any());
@@ -463,8 +508,8 @@ class MeetingServiceTest {
 
         given(meetingValidator.findMeetingOrThrow(meetingId))
                 .willReturn(meeting);
-        given(meetingValidator.isMeetingMember(meetingId, userId))
-                .willReturn(false);
+        given(meetingMemberRepository.findAnyByMeetingIdAndUserId(meetingId, userId))
+                .willReturn(Optional.empty());
         doThrow(new MeetingException(MeetingErrorCode.MEETING_FULL))
                 .when(meetingValidator).validateCapacity(meetingId, meeting.getMaxParticipants());
 
@@ -477,5 +522,117 @@ class MeetingServiceTest {
                     .extracting("errorCode")
                     .isEqualTo(MeetingErrorCode.MEETING_FULL);
         }
+    }
+
+    @DisplayName("약속 참가 신청을 취소할 수 있다.")
+    @Test
+    void givenMeetingId_whenMeetingCancel_thenSuccess() {
+        // given
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingStartDate(LocalDateTime.now().plusDays(2))
+                .build();
+        MeetingMember meetingMember = MeetingMember.builder()
+                .meeting(meeting)
+                .user(User.builder().id(userId).build())
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
+        given(meetingValidator.getAnyMeetingMember(meetingId, userId))
+                .willReturn(meetingMember);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            Long response = meetingService.cancelMeeting(meetingId);
+
+            // then
+            assertThat(response).isEqualTo(meetingId);
+            assertThat(meetingMember.getCanceledAt()).isNotNull();
+            verify(topicRepository).softDeleteByMeetingIdAndProposedById(meetingId, userId);
+        }
+
+    }
+
+    @DisplayName("약속에 참가하지 않은 사람은 취소할 수 없다.")
+    @Test
+    void givenMeetingId_whenMeetingCancel_thenException() {
+        // given
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingStartDate(LocalDateTime.now().plusDays(2))
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
+        given(meetingValidator.getAnyMeetingMember(meetingId, userId))
+                .willThrow(new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER));
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.cancelMeeting(meetingId))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.NOT_MEETING_MEMBER);
+        }
+
+    }
+
+    @DisplayName("신청 마감 기한 전까지만 취소 가능하다.")
+    @Test
+    void givenMeetingId_whenMeetingCancel_thenThrowException() {
+        // given
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingStartDate(LocalDateTime.now().plusHours(1))
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.cancelMeeting(meetingId))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.MEETING_CANCEL_NOT_ALLOWED);
+        }
+
+    }
+
+    @DisplayName("주제를 등록했던 사람이 참가 취소하면 주제까지 삭제된다.")
+    @Test
+    void givenMeetingId_whenMeetingCancel_thenDeleteWithTopics() {
+        // given
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingStartDate(LocalDateTime.now().plusDays(2))
+                .build();
+        MeetingMember meetingMember = MeetingMember.builder()
+                .meeting(meeting)
+                .user(User.builder().id(userId).build())
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
+        given(meetingValidator.getAnyMeetingMember(meetingId, userId))
+                .willReturn(meetingMember);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            meetingService.cancelMeeting(meetingId);
+
+            // then
+            verify(topicRepository).softDeleteByMeetingIdAndProposedById(meetingId, userId);
+        }
+
     }
 }
