@@ -12,12 +12,16 @@ import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.service.MeetingValidator;
+import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
+import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicsPageResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
+import com.dokdok.topic.exception.TopicErrorCode;
+import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,6 +106,86 @@ class TopicServiceTest {
                 "변수명, 함수명, 클래스명을 짓는 원칙에 대해 토론합니다.",
                 TopicType.DISCUSSION
         );
+    }
+
+    @Test
+    @DisplayName("선택한 주제를 확정 상태로 변경한다")
+    void confirmTopics_Success() {
+        Long gatheringId = 1L;
+        Long meetingId = 1L;
+        Long userId = 1L;
+        List<Long> topicIds = List.of(12L, 13L);
+        ConfirmTopicsRequest request = new ConfirmTopicsRequest(topicIds);
+
+        Topic topic1 = Topic.builder()
+                .id(12L)
+                .meeting(testMeeting)
+                .topicStatus(TopicStatus.PROPOSED)
+                .build();
+        Topic topic2 = Topic.builder()
+                .id(13L)
+                .meeting(testMeeting)
+                .topicStatus(TopicStatus.VOTING)
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenReturn(userId);
+
+            doNothing().when(gatheringValidator)
+                    .validateMembership(gatheringId, userId);
+            doNothing().when(meetingValidator)
+                    .validateMemberInGathering(meetingId, gatheringId);
+            given(topicRepository.findAllByIdInAndMeetingId(topicIds, meetingId))
+                    .willReturn(List.of(topic1, topic2));
+
+            ConfirmTopicsResponse response =
+                    topicService.confirmTopics(gatheringId, meetingId, request);
+
+            assertThat(response.meetingId()).isEqualTo(meetingId);
+            assertThat(response.topicStatus()).isEqualTo(TopicStatus.CONFIRMED);
+            assertThat(topic1.getTopicStatus()).isEqualTo(TopicStatus.CONFIRMED);
+            assertThat(topic2.getTopicStatus()).isEqualTo(TopicStatus.CONFIRMED);
+            assertThat(topic1.getConfirmOrder()).isEqualTo(1);
+            assertThat(topic2.getConfirmOrder()).isEqualTo(2);
+
+            verify(gatheringValidator).validateMembership(gatheringId, userId);
+            verify(meetingValidator).validateMemberInGathering(meetingId, gatheringId);
+            verify(topicRepository).findAllByIdInAndMeetingId(topicIds, meetingId);
+        }
+    }
+
+    @Test
+    @DisplayName("선택한 주제가 존재하지 않으면 예외가 발생한다")
+    void confirmTopics_ThrowsWhenTopicMissing() {
+        Long gatheringId = 1L;
+        Long meetingId = 1L;
+        Long userId = 1L;
+        List<Long> topicIds = List.of(12L, 13L);
+        ConfirmTopicsRequest request = new ConfirmTopicsRequest(topicIds);
+
+        Topic topic1 = Topic.builder()
+                .id(12L)
+                .meeting(testMeeting)
+                .topicStatus(TopicStatus.PROPOSED)
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenReturn(userId);
+
+            doNothing().when(gatheringValidator)
+                    .validateMembership(gatheringId, userId);
+            doNothing().when(meetingValidator)
+                    .validateMemberInGathering(meetingId, gatheringId);
+            given(topicRepository.findAllByIdInAndMeetingId(topicIds, meetingId))
+                    .willReturn(List.of(topic1));
+
+            assertThatThrownBy(() ->
+                    topicService.confirmTopics(gatheringId, meetingId, request))
+                    .isInstanceOf(TopicException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_NOT_FOUND);
+        }
     }
 
     @Test
