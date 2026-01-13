@@ -1,7 +1,5 @@
 package com.dokdok.gathering.entity;
 
-import com.dokdok.gathering.exception.GatheringErrorCode;
-import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
