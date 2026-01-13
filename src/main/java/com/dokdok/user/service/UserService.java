@@ -76,6 +76,14 @@ public class UserService {
         return UserDetailResponse.from(user);
     }
 
+    @Transactional
+    public void deleteCurrentUser() {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+
+        User user = getUserById(currentUserId);
+        user.delete();
+    }
+
     /**
      * 닉네임 유효성을 검사합니다.
      * @param nickname trim된 닉네임
@@ -103,5 +111,4 @@ public class UserService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
     }
-
 }
