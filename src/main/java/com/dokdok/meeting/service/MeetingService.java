@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -51,8 +52,7 @@ public class MeetingService {
     public MeetingResponse findMeeting(Long meetingId) {
 
         // todo : 모임에 속해있는 사용자만 확일할 수 있는 제약 사항 추가 -> 시큐리티 role로 확인할지, 따로 메서드로 만들지
-        Meeting meeting = meetingRepository.findById(meetingId)
-                .orElseThrow(() -> new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND));
+        Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
 
         List<MeetingMember> meetingMembers = meetingMemberRepository.findAllByMeetingId(meetingId);
         List<Topic> topics = topicRepository.findAllByMeetingId(meetingId);
@@ -100,7 +100,7 @@ public class MeetingService {
     public MeetingStatusResponse changeMeetingStatus(Long meetingId, MeetingStatus meetingStatus) {
 
         // todo : 모임장만 바꿀 수 있도록 meetingValidator 머지된 후 추가 예정
-        Meeting meeting = getMeetingOrThrow(meetingId);
+        Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
 
         if (meetingStatus == MeetingStatus.CONFIRMED) {
             validateConfirmable(meeting);
@@ -110,14 +110,6 @@ public class MeetingService {
         meeting.changeStatus(meetingStatus);
 
         return MeetingStatusResponse.from(meeting);
-    }
-
-    /**
-     * meetingId로 약속을 조회하고 없으면 예외를 던진다.
-     */
-    private Meeting getMeetingOrThrow(Long meetingId) {
-        return meetingRepository.findById(meetingId)
-                .orElseThrow(() -> new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND));
     }
 
     /**
@@ -168,7 +160,7 @@ public class MeetingService {
 
         gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
-        if (meetingValidator.isMeetingMember(meetingId, userId)) {
+        if (restoreCanceledMemberIfExists(meetingId, userId)) {
             return meetingId;
         }
 
@@ -182,6 +174,22 @@ public class MeetingService {
     }
 
     /**
+     * 기존 취소 이력이 있으면 복구하고, 이미 참여 상태면 예외를 던진다.
+     */
+    private boolean restoreCanceledMemberIfExists(Long meetingId, Long userId) {
+        MeetingMember existingMember = meetingMemberRepository.findAnyByMeetingIdAndUserId(meetingId, userId)
+                .orElse(null);
+        if (existingMember == null) {
+            return false;
+        }
+        if (existingMember.getCanceledAt() == null) {
+            throw new MeetingException(MeetingErrorCode.MEETING_ALREADY_JOINED);
+        }
+        existingMember.restore();
+        return true;
+    }
+
+    /**
      * 약속 참여 멤버를 생성 후 저장한다.
      */
     private void saveMeetingMember(Meeting meeting, User user) {
@@ -191,5 +199,35 @@ public class MeetingService {
                 .build();
 
         meetingMemberRepository.save(meetingMember);
+    }
+
+    /**
+     * 약속 참가 신청을 취소한다. 약속 시작 24시간 이내에는 취소할 수 없다.
+     * @param meetingId 약속 식별자
+     * @return 취소한 약속 식별자
+     */
+    @Transactional
+    public Long cancelMeeting(Long meetingId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+
+        // 약속 시간 24간 이내이면 취소 불가능
+        LocalDateTime meetingStartDate = meeting.getMeetingStartDate();
+        if (meetingStartDate != null
+                && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24))) {
+            throw new MeetingException(MeetingErrorCode.MEETING_CANCEL_NOT_ALLOWED);
+        }
+
+        // 이미 취소한 약속인지 확인
+        MeetingMember meetingMember = meetingValidator.getAnyMeetingMember(meetingId, userId);
+        if (meetingMember.getCanceledAt() != null) {
+            throw new MeetingException(MeetingErrorCode.MEETING_ALREADY_CANCELED);
+        }
+
+        meetingMember.cancel();
+        // 참가 취소자가 주제까지 제안한 경우 주제 soft delete
+        topicRepository.softDeleteByMeetingIdAndProposedById(meetingId, userId);
+
+        return meetingId;
     }
 }

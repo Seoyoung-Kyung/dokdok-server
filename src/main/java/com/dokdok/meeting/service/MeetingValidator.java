@@ -73,4 +73,9 @@ public class MeetingValidator {
         return meetingMemberRepository.findByMeetingIdAndUserId(meetingId, userId)
                 .orElseThrow(() -> new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER));
     }
+
+    public MeetingMember getAnyMeetingMember(Long meetingId, Long userId) {
+        return meetingMemberRepository.findAnyByMeetingIdAndUserId(meetingId, userId)
+                .orElseThrow(() -> new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER));
+    }
 }
