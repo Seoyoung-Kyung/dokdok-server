@@ -1,7 +1,7 @@
 package com.dokdok.user.api;
 
 import com.dokdok.global.response.ApiResponse;
-import com.dokdok.user.dto.response.UserInfoResponseDto;
+import com.dokdok.user.dto.response.UserInfoResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -27,7 +27,7 @@ public interface AuthApi {
                     description = "로그인 사용자 정보 조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = UserInfoResponseDto.class),
+                            schema = @Schema(implementation = UserInfoResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "온보딩 완료된 사용자",
@@ -58,5 +58,5 @@ public interface AuthApi {
             )
     })
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ApiResponse<UserInfoResponseDto>> getCurrentUser();
+    ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUser();
 }

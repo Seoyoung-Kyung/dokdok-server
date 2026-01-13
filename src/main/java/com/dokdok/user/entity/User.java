@@ -45,4 +45,8 @@ public class User extends BaseTimeEntity {
                 .userEmail(oAuth2UserInfo.getEmail())
                 .build();
     }
+
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
 }
