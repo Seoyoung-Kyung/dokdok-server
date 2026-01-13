@@ -47,9 +47,11 @@ logging:
   level:
     com.dokdok: INFO
     org.hibernate.SQL: INFO
-    # DEV 환경에서는 민감한 정보 노출 방지
+    # OAuth 디버깅 (문제 해결 시 DEBUG로 변경)
     org.springframework.security: INFO
     org.springframework.security.oauth2: INFO
+    org.springframework.security.web.authentication: DEBUG
+    org.springframework.security.oauth2.client: DEBUG
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
   file:
@@ -67,8 +69,10 @@ server:
     session:
       timeout: 30m  # 세션 타임아웃 30분
       cookie:
-        same-site: none  # 크로스 오리진 요청에서 쿠키 전송 허용
-        secure: true     # HTTPS에서만 쿠키 전송 (same-site=none일 때 필수)
+        same-site: lax   # OAuth GET 리다이렉트에서 쿠키 전송 허용
+        secure: true     # HTTPS에서만 쿠키 전송
+        http-only: true  # XSS 방지
+        path: /          # 모든 경로에서 쿠키 사용
 
 # Swagger/OpenAPI Configuration
 springdoc:

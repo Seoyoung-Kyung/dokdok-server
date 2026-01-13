@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum GatheringErrorCode implements BaseErrorCode {
 
     GATHERING_NOT_FOUND("G001", "모임을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    NOT_GATHERING_MEMBER("G002", "모임의 멤버가 아닙니다.", HttpStatus.FORBIDDEN);
+    NOT_GATHERING_MEMBER("G002", "모임의 멤버가 아닙니다.", HttpStatus.FORBIDDEN),
+    NOT_GATHERING_LEADER("G003","리더만 수정할 수 있습니다.", HttpStatus.FORBIDDEN);
 
     private final String code;
     private final String message;
