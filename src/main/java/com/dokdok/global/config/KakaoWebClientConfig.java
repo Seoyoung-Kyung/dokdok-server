@@ -17,8 +17,6 @@ public class KakaoWebClientConfig {
 
     @Bean
     public WebClient kakaoWebClient() {
-        System.out.println("apiKey: " + apiKey);
-        System.out.println("baseUrl: " + baseUrl);
         return WebClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader(
