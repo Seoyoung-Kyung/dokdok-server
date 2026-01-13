@@ -1,6 +1,6 @@
 package com.dokdok.book.service;
 
-import com.dokdok.book.dto.request.PersonalBookCreateRequest;
+import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.response.PersonalBookCreateResponse;
 import com.dokdok.book.entity.Book;
 import com.dokdok.book.entity.BookReadingStatus;
@@ -66,8 +66,12 @@ class PersonalBookServiceTest {
     void createBook_Success() {
         // given
         Long userId = 1L;
-        PersonalBookCreateRequest request = PersonalBookCreateRequest.builder()
+        BookCreateRequest request = BookCreateRequest.builder()
                 .isbn("9788994757254")
+                .title("테스트 책")
+                .authors("작가")
+                .publisher("출판사")
+                .thumbnail("thumbnail-url")
                 .build();
 
         User user = User.builder()
@@ -79,14 +83,15 @@ class PersonalBookServiceTest {
         Book book = Book.builder()
                 .id(10L)
                 .isbn(request.isbn())
-                .bookName("테스트 책")
-                .author("작가")
-                .publisher("출판사")
+                .bookName(request.title())
+                .author(request.authors())
+                .publisher(request.publisher())
                 .build();
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(bookRepository.findByIsbn(request.isbn())).thenReturn(Optional.of(book));
+        when(personalBookRepository.findByUserIdAndBookId(userId, book.getId())).thenReturn(Optional.empty());
 
         // when
         PersonalBookCreateResponse response = personalBookService.createBook(request);
@@ -110,6 +115,8 @@ class PersonalBookServiceTest {
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userRepository, times(1)).findById(userId);
         verify(bookRepository, times(1)).findByIsbn(request.isbn());
+        verify(bookRepository, never()).save(any(Book.class));
+        verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, book.getId());
     }
 
     @Test
@@ -117,7 +124,7 @@ class PersonalBookServiceTest {
     void createBook_UserNotFound() {
         // given
         Long userId = 99L;
-        PersonalBookCreateRequest request = PersonalBookCreateRequest.builder()
+        BookCreateRequest request = BookCreateRequest.builder()
                 .isbn("9788994757254")
                 .build();
 
@@ -136,12 +143,16 @@ class PersonalBookServiceTest {
     }
 
     @Test
-    @DisplayName("도서 정보를 찾지 못하면 BookException 발생")
-    void createBook_BookNotFound() {
+    @DisplayName("도서 정보를 찾지 못하면 새로운 책을 저장 후 개인 도서 등록")
+    void createBook_CreateBookWhenNotFound() {
         // given
         Long userId = 1L;
-        PersonalBookCreateRequest request = PersonalBookCreateRequest.builder()
+        BookCreateRequest request = BookCreateRequest.builder()
                 .isbn("9788994757254")
+                .title("새로운 책")
+                .authors("새로운 작가")
+                .publisher("새로운 출판사")
+                .thumbnail("new-thumbnail")
                 .build();
 
         User user = User.builder()
@@ -150,19 +161,36 @@ class PersonalBookServiceTest {
                 .nickname("tester")
                 .build();
 
+        Book savedBook = Book.builder()
+                .id(10L)
+                .isbn(request.isbn())
+                .bookName(request.title())
+                .author(request.authors())
+                .publisher(request.publisher())
+                .thumbnail(request.thumbnail())
+                .build();
+
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(bookRepository.findByIsbn(request.isbn())).thenReturn(Optional.empty());
+        when(bookRepository.save(any(Book.class))).thenReturn(savedBook);
+        when(personalBookRepository.findByUserIdAndBookId(userId, savedBook.getId())).thenReturn(Optional.empty());
 
-        // when & then
-        assertThatThrownBy(() -> personalBookService.createBook(request))
-                .isInstanceOf(BookException.class)
-                .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_FOUND);
+        // when
+        PersonalBookCreateResponse response = personalBookService.createBook(request);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.isbn()).isEqualTo(request.isbn());
+        assertThat(response.readingStatus()).isEqualTo(BookReadingStatus.READING);
+        assertThat(response.addedAt()).isNotNull();
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userRepository, times(1)).findById(userId);
         verify(bookRepository, times(1)).findByIsbn(request.isbn());
-        verify(personalBookRepository, never()).save(any());
+        verify(bookRepository, times(1)).save(any(Book.class));
+        verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, savedBook.getId());
+        verify(personalBookRepository, times(1)).save(any(PersonalBook.class));
     }
 
     @Test
@@ -171,8 +199,12 @@ class PersonalBookServiceTest {
         // given
         Long userId = 1L;
         Long bookId = 10L;
-        PersonalBookCreateRequest request = PersonalBookCreateRequest.builder()
+        BookCreateRequest request = BookCreateRequest.builder()
                 .isbn("9788994757254")
+                .title("테스트 책")
+                .authors("작가")
+                .publisher("출판사")
+                .thumbnail("thumbnail-url")
                 .build();
 
         User user = User.builder()
