@@ -1,9 +1,12 @@
 package com.dokdok.topic.service;
 
 import com.dokdok.topic.dto.request.TopicAnswerRequest;
+import com.dokdok.topic.dto.response.TopicAnswerDetailResponse;
 import com.dokdok.topic.dto.response.TopicAnswerResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
+import com.dokdok.topic.exception.TopicErrorCode;
+import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
@@ -29,22 +32,32 @@ public class TopicAnswerService {
             TopicAnswerRequest request
     ) {
         // TODO: gatheringId/meetingId/topicId 관계 검증
-        // TODO: bookRating 0.5 단위 검증
 
         Topic topic = topicRepository.findById(topicId)
-                .orElseThrow(); // TODO: GlobalException으로 교체
+                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(); // TODO: GlobalException으로 교체
+                .orElseThrow(() -> new TopicException(TopicErrorCode.USER_NOT_FOUND));
 
         TopicAnswer saved = topicAnswerRepository.save(
-                TopicAnswer.create(topic, user, request.bookRating(), request.content())
+                TopicAnswer.create(topic, user, request.content())
         );
 
-        return new TopicAnswerResponse(
-                topic.getId(),
-                saved.getIsSubmitted(),
-                saved.getUpdatedAt()
-        );
+        return TopicAnswerResponse.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public TopicAnswerDetailResponse getMyAnswer(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId,
+            Long userId
+    ) {
+        // TODO: gatheringId/meetingId/topicId 관계 검증
+
+        TopicAnswer answer = topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
+                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+
+        return TopicAnswerDetailResponse.from(answer);
     }
 }

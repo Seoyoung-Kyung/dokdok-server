@@ -47,3 +47,8 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+kakao:
+  api:
+    key: ${KAKAO_API_KEY:dummy}
+    base-url: ${KAKAO_API_BASE_URL:https://dapi.kakao.com}
