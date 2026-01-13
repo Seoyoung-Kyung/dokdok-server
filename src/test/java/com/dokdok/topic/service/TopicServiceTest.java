@@ -18,6 +18,8 @@ import com.dokdok.topic.dto.response.TopicsPageResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
+import com.dokdok.topic.exception.TopicErrorCode;
+import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +57,9 @@ class TopicServiceTest {
 
     @Mock
     private GatheringValidator gatheringValidator;
+
+    @Mock
+    private TopicValidator topicValidator;
 
     @InjectMocks
     private TopicService topicService;
@@ -545,6 +550,257 @@ class TopicServiceTest {
                                 MeetingErrorCode.NOT_GATHERING_MEETING);
 
                 verify(topicRepository, never()).findTopicsByMeetingId(any(), any());
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteTopic - 주제 삭제")
+    class DeleteTopicTest {
+
+        @Test
+        @DisplayName("정상적으로 주제를 삭제한다")
+        void deleteTopic_Success() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+            Long userId = 1L;
+
+            Topic mockTopic = mock(Topic.class);
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doNothing().when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                doNothing().when(topicValidator)
+                        .validateTopicInMeeting(topicId, meetingId);
+
+                given(topicValidator.getDeletableTopic(topicId, userId))
+                        .willReturn(mockTopic);
+
+                topicService.deleteTopic(gatheringId, meetingId, topicId);
+
+                verify(gatheringValidator).validateMembership(gatheringId, userId);
+                verify(meetingValidator).validateMemberInGathering(meetingId, gatheringId);
+                verify(topicValidator).validateTopicInMeeting(topicId, meetingId);
+                verify(topicValidator).getDeletableTopic(topicId, userId);
+                verify(mockTopic).softDelete();
+            }
+        }
+
+        @Test
+        @DisplayName("인증되지 않은 사용자인 경우 예외가 발생한다")
+        void deleteTopic_Unauthorized_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
+
+                assertThatThrownBy(() ->
+                        topicService.deleteTopic(gatheringId, meetingId, topicId))
+                        .isInstanceOf(GlobalException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                GlobalErrorCode.UNAUTHORIZED);
+
+                verify(gatheringValidator, never()).validateMembership(any(), any());
+                verify(meetingValidator, never()).validateMemberInGathering(any(), any());
+                verify(topicValidator, never()).validateTopicInMeeting(any(), any());
+                verify(topicValidator, never()).getDeletableTopic(any(), any());
+            }
+        }
+
+        @Test
+        @DisplayName("모임 멤버가 아닌 경우 예외가 발생한다")
+        void deleteTopic_NotGatheringMember_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+            Long userId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
+                        .when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                assertThatThrownBy(() ->
+                        topicService.deleteTopic(gatheringId, meetingId, topicId))
+                        .isInstanceOf(GatheringException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                GatheringErrorCode.NOT_GATHERING_MEMBER);
+
+                verify(meetingValidator, never()).validateMemberInGathering(any(), any());
+                verify(topicValidator, never()).validateTopicInMeeting(any(), any());
+                verify(topicValidator, never()).getDeletableTopic(any(), any());
+            }
+        }
+
+        @Test
+        @DisplayName("회차가 해당 모임에 속하지 않는 경우 예외가 발생한다")
+        void deleteTopic_MeetingNotInGathering_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 999L;
+            Long topicId = 1L;
+            Long userId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doThrow(new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING))
+                        .when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                assertThatThrownBy(() ->
+                        topicService.deleteTopic(gatheringId, meetingId, topicId))
+                        .isInstanceOf(MeetingException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                MeetingErrorCode.NOT_GATHERING_MEETING);
+
+                verify(topicValidator, never()).validateTopicInMeeting(any(), any());
+                verify(topicValidator, never()).getDeletableTopic(any(), any());
+            }
+        }
+
+        @Test
+        @DisplayName("주제가 해당 회차에 속하지 않는 경우 예외가 발생한다")
+        void deleteTopic_TopicNotInMeeting_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 999L;
+            Long userId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doNothing().when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                doThrow(new TopicException(TopicErrorCode.TOPIC_NOT_IN_MEETING))
+                        .when(topicValidator)
+                        .validateTopicInMeeting(topicId, meetingId);
+
+                assertThatThrownBy(() ->
+                        topicService.deleteTopic(gatheringId, meetingId, topicId))
+                        .isInstanceOf(TopicException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                TopicErrorCode.TOPIC_NOT_IN_MEETING);
+
+                verify(topicValidator, never()).getDeletableTopic(any(), any());
+            }
+        }
+
+        @Test
+        @DisplayName("주제를 찾을 수 없는 경우 예외가 발생한다")
+        void deleteTopic_TopicNotFound_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 999L;
+            Long userId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doNothing().when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                doThrow(new TopicException(TopicErrorCode.TOPIC_NOT_FOUND))
+                        .when(topicValidator)
+                        .validateTopicInMeeting(topicId, meetingId);
+
+                assertThatThrownBy(() ->
+                        topicService.deleteTopic(gatheringId, meetingId, topicId))
+                        .isInstanceOf(TopicException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                TopicErrorCode.TOPIC_NOT_FOUND);
+
+                verify(topicValidator, never()).getDeletableTopic(any(), any());
+            }
+        }
+
+        @Test
+        @DisplayName("주제가 이미 삭제된 경우 예외가 발생한다")
+        void deleteTopic_TopicAlreadyDeleted_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+            Long userId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doNothing().when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                doThrow(new TopicException(TopicErrorCode.TOPIC_ALREADY_DELETED))
+                        .when(topicValidator)
+                        .validateTopicInMeeting(topicId, meetingId);
+
+                assertThatThrownBy(() ->
+                        topicService.deleteTopic(gatheringId, meetingId, topicId))
+                        .isInstanceOf(TopicException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                TopicErrorCode.TOPIC_ALREADY_DELETED);
+
+                verify(topicValidator, never()).getDeletableTopic(any(), any());
+            }
+        }
+
+        @Test
+        @DisplayName("삭제 권한이 없는 경우 예외가 발생한다")
+        void deleteTopic_UserCannotDelete_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+            Long userId = 2L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doNothing().when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                doNothing().when(topicValidator)
+                        .validateTopicInMeeting(topicId, meetingId);
+
+                given(topicValidator.getDeletableTopic(topicId, userId))
+                        .willThrow(new TopicException(TopicErrorCode.TOPIC_USER_CANNOT_DELETE));
+
+                assertThatThrownBy(() ->
+                        topicService.deleteTopic(gatheringId, meetingId, topicId))
+                        .isInstanceOf(TopicException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                TopicErrorCode.TOPIC_USER_CANNOT_DELETE);
             }
         }
     }

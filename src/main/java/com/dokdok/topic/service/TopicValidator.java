@@ -2,12 +2,16 @@ package com.dokdok.topic.service;
 
 import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.meeting.exception.MeetingErrorCode;
+import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -16,11 +20,19 @@ public class TopicValidator {
     private final TopicRepository topicRepository;
     private final TopicAnswerRepository topicAnswerRepository;
 
+    /**
+     * 해당 약속에 속한 주제인지 검증한다.
+     */
     public void validateTopicInMeeting(Long topicId, Long meetingId) {
-        Topic topic = topicRepository.findById(topicId)
+        Topic topic = topicRepository.findDetailById(topicId)
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
-        if (!meetingId.equals(topic.getMeeting().getId())) {
-            throw new TopicException(TopicErrorCode.TOPIC_NOT_FOUND);
+
+        if (topic.isDeleted()) {
+            throw new TopicException(TopicErrorCode.TOPIC_ALREADY_DELETED);
+        }
+
+        if (!topic.getMeeting().getId().equals(meetingId)) {
+            throw new TopicException(TopicErrorCode.TOPIC_NOT_IN_MEETING);
         }
     }
 
@@ -28,4 +40,19 @@ public class TopicValidator {
         return topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
     }
+
+    /**
+     * 주제에 대한 삭제 권한 검증한다
+     * 권한 소유 : 모임장, 약속장, 약속 제안자
+     */
+    public Topic getDeletableTopic(
+            Long topicId,
+            Long userId
+    ) {
+        Topic topic = topicRepository.findTopicWithDeletePermission(topicId, userId)
+                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_USER_CANNOT_DELETE));
+
+        return topic;
+    }
+
 }

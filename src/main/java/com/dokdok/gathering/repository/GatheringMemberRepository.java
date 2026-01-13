@@ -18,7 +18,7 @@ public interface GatheringMemberRepository extends JpaRepository<GatheringMember
     /**
      * 사용자가 특정 모임의 활성 멤버인지 확인
      */
-    boolean existsByGatheringIdAndUserIdAndRemovedAtIsNull(Long gatheringId, Long userId);
+    boolean existsByGatheringIdAndUserId(Long gatheringId, Long userId);
 
     /**
      * 특정 모임의 활성 멤버 수 조회
