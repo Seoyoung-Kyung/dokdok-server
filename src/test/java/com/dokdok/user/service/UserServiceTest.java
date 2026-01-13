@@ -10,10 +10,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import jakarta.servlet.http.HttpSession;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpSession;
 
 import java.util.Optional;
 
@@ -737,6 +742,51 @@ class UserServiceTest {
 
             verify(userRepository, times(1)).findById(userId);
             verify(userRepository, times(1)).findByNickname(validNickname);
+        }
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 - soft delete 수행")
+    void deleteCurrentUser_Success() {
+        // given
+        Long userId = 1L;
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            userService.deleteCurrentUser();
+
+            // then
+            assertThat(user.isDeleted()).isTrue();
+            assertThat(user.getDeletedAt()).isNotNull();
+            verify(userRepository, times(1)).findById(userId);
+        }
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 - 존재하지 않는 사용자 예외")
+    void deleteCurrentUser_UserNotFound_ThrowsException() {
+        // given
+        Long userId = 1L;
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.deleteCurrentUser())
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
+
+            verify(userRepository, times(1)).findById(userId);
         }
     }
 }

@@ -61,4 +61,8 @@ public class User extends BaseTimeEntity {
             this.nickname = request.nickname();
         }
     }
+
+    public void delete() {
+        markDeletedNow();
+    }
 }
