@@ -2,8 +2,9 @@ package com.dokdok.user.controller;
 
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.user.api.UserApi;
-import com.dokdok.user.dto.request.OnboardRequestDto;
+import com.dokdok.user.dto.request.OnboardRequest;
 import com.dokdok.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class UserController implements UserApi {
 
     @Override
     @PatchMapping("/onboarding")
-    public ResponseEntity<ApiResponse<Void>> onboard(OnboardRequestDto request) {
+    public ResponseEntity<ApiResponse<Void>> onboard(@Valid OnboardRequest request) {
         userService.onboard(request);
         return ApiResponse.success("온보딩 완료");
     }

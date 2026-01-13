@@ -76,3 +76,9 @@ springdoc:
     servers:
       - url: localhost:8080/
         description: 개발 서버 (HTTPS)
+
+# Kakao API Configuration
+kakao:
+  api:
+    key: ${KAKAO_API_KEY}
+    base-url: ${KAKAO_API_BASE_URL}

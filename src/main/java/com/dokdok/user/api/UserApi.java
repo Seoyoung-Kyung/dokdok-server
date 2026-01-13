@@ -1,7 +1,7 @@
 package com.dokdok.user.api;
 
 import com.dokdok.global.response.ApiResponse;
-import com.dokdok.user.dto.request.OnboardRequestDto;
+import com.dokdok.user.dto.request.OnboardRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -100,7 +100,7 @@ public interface UserApi {
     })
     @PatchMapping(value = "/onboarding", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<Void>> onboard(
-            @Valid @RequestBody OnboardRequestDto request
+            @Valid @RequestBody OnboardRequest request
     );
 
     @Operation(

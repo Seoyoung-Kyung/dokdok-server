@@ -1,7 +1,7 @@
 package com.dokdok.user.service;
 
 import com.dokdok.global.util.SecurityUtil;
-import com.dokdok.user.dto.request.OnboardRequestDto;
+import com.dokdok.user.dto.request.OnboardRequest;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.exception.UserErrorCode;
 import com.dokdok.user.exception.UserException;
@@ -21,7 +21,7 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional
-    public void onboard(OnboardRequestDto request) {
+    public void onboard(OnboardRequest request) {
 
         Long currentUserId = SecurityUtil.getCurrentUserId();
 

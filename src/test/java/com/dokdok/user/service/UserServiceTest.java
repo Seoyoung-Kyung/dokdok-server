@@ -1,7 +1,7 @@
 package com.dokdok.user.service;
 
 import com.dokdok.global.util.SecurityUtil;
-import com.dokdok.user.dto.request.OnboardRequestDto;
+import com.dokdok.user.dto.request.OnboardRequest;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.exception.UserErrorCode;
 import com.dokdok.user.exception.UserException;
@@ -270,7 +270,7 @@ class UserServiceTest {
         // given
         Long userId = 1L;
         String newNickname = "새로운닉네임";
-        OnboardRequestDto request = new OnboardRequestDto(newNickname);
+        OnboardRequest request = new OnboardRequest(newNickname);
 
         User user = User.builder()
                 .id(userId)
@@ -301,7 +301,7 @@ class UserServiceTest {
         Long userId = 1L;
         String nicknameWithWhitespace = "  새로운닉네임  ";
         String trimmedNickname = "새로운닉네임";
-        OnboardRequestDto request = new OnboardRequestDto(nicknameWithWhitespace);
+        OnboardRequest request = new OnboardRequest(nicknameWithWhitespace);
 
         User user = User.builder()
                 .id(userId)
@@ -330,7 +330,7 @@ class UserServiceTest {
         // given
         Long userId = 1L;
         String duplicateNickname = "기존닉네임";
-        OnboardRequestDto request = new OnboardRequestDto(duplicateNickname);
+        OnboardRequest request = new OnboardRequest(duplicateNickname);
 
         when(userRepository.findByNickname(duplicateNickname)).thenReturn(Optional.of(mockUser));
 
@@ -352,7 +352,7 @@ class UserServiceTest {
     void onboard_NullNickname_ThrowsException() {
         // given
         Long userId = 1L;
-        OnboardRequestDto request = new OnboardRequestDto(null);
+        OnboardRequest request = new OnboardRequest(null);
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -374,7 +374,7 @@ class UserServiceTest {
         // given
         Long userId = 1L;
         String emptyNickname = "";
-        OnboardRequestDto request = new OnboardRequestDto(emptyNickname);
+        OnboardRequest request = new OnboardRequest(emptyNickname);
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -396,7 +396,7 @@ class UserServiceTest {
         // given
         Long userId = 1L;
         String shortNickname = "a";
-        OnboardRequestDto request = new OnboardRequestDto(shortNickname);
+        OnboardRequest request = new OnboardRequest(shortNickname);
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -417,7 +417,7 @@ class UserServiceTest {
         // given
         Long userId = 1L;
         String longNickname = "a".repeat(21);
-        OnboardRequestDto request = new OnboardRequestDto(longNickname);
+        OnboardRequest request = new OnboardRequest(longNickname);
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -438,7 +438,7 @@ class UserServiceTest {
         // given
         Long userId = 1L;
         String invalidNickname = "닉네임!@#";
-        OnboardRequestDto request = new OnboardRequestDto(invalidNickname);
+        OnboardRequest request = new OnboardRequest(invalidNickname);
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -459,7 +459,7 @@ class UserServiceTest {
         // given
         Long userId = 1L;
         String validNickname = "새로운닉네임";
-        OnboardRequestDto request = new OnboardRequestDto(validNickname);
+        OnboardRequest request = new OnboardRequest(validNickname);
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
         when(userRepository.findByNickname(validNickname)).thenReturn(Optional.empty());
