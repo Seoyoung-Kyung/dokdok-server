@@ -35,6 +35,11 @@ public class MeetingMember {
     @Builder.Default
     private String attendanceStatus = "PENDING";
 
+    @Column(name = "meeting_role", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private MeetingMemberRole meetingRole = MeetingMemberRole.MEMBER;
+
     @CreatedDate
     @Column(name = "joined_at", nullable = false, updatable = false)
     private LocalDateTime joinedAt;
@@ -45,4 +50,8 @@ public class MeetingMember {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public void changeRole(MeetingMemberRole meetingRole) {
+        this.meetingRole = meetingRole;
+    }
 }

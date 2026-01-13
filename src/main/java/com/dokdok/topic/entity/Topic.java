@@ -49,9 +49,9 @@ public class Topic extends BaseTimeEntity {
     @Builder.Default
     private TopicStatus topicStatus = PROPOSED;
 
-    @Column(name = "vote_count", nullable = false)
+    @Column(name = "like_count", nullable = false)
     @Builder.Default
-    private Integer voteCount = 0;
+    private Integer likeCount = 0;
 
     public static Topic of(
             Meeting meeting,
