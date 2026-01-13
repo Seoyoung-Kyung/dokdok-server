@@ -95,4 +95,29 @@ public interface MeetingApi {
             @PathVariable Long meetingId,
             @RequestParam MeetingStatus meetingStatus
     );
+
+    @Operation(
+            summary = "약속 참가 신청",
+            description = "약속에 참가 신청합니다.",
+            parameters = {
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "약속 참가 신청 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = Long.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 멤버가 아님"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속 또는 사용자를 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping(value = "/{meetingId}/join", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<Long>> joinMeeting(
+            @PathVariable Long meetingId
+    );
+
 }

@@ -25,4 +25,11 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
             @Param("meetingId") Long meetingId,
             @Param("userId") Long userId
     );
+
+    @Query("""
+      SELECT count(mm) FROM MeetingMember mm
+      WHERE mm.meeting.id = :meetingId
+      AND mm.canceledAt IS NULL
+      """)
+    int countActiveMembers(@Param("meetingId") Long meetingId);
 }

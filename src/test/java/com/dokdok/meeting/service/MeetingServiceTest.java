@@ -3,8 +3,12 @@ package com.dokdok.meeting.service;
 import com.dokdok.book.entity.Book;
 import com.dokdok.book.repository.BookRepository;
 import com.dokdok.gathering.entity.Gathering;
+import com.dokdok.gathering.exception.GatheringErrorCode;
+import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
+import com.dokdok.gathering.service.GatheringValidator;
+import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.dto.MeetingCreateRequest;
 import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.dto.MeetingStatusResponse;
@@ -18,7 +22,7 @@ import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
-import com.dokdok.user.repository.UserRepository;
+import com.dokdok.user.service.UserValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -35,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MeetingServiceTest {
@@ -59,10 +64,16 @@ class MeetingServiceTest {
     private GatheringMemberRepository gatheringMemberRepository;
 
     @Mock
+    private GatheringValidator gatheringValidator;
+
+    @Mock
+    private MeetingValidator meetingValidator;
+
+    @Mock
     private BookRepository bookRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserValidator userValidator;
 
     private Meeting meeting;
     private Long meetingId;
@@ -181,8 +192,8 @@ class MeetingServiceTest {
                 .willReturn(memberCount);
         given(bookRepository.findById(bookId))
                 .willReturn(Optional.of(book));
-        given(userRepository.findById(userId))
-                .willReturn(Optional.of(user));
+        given(userValidator.findUserOrThrow(userId))
+                .willReturn(user);
         given(meetingRepository.save(any(Meeting.class)))
                 .willReturn(savedMeeting);
 
@@ -328,5 +339,143 @@ class MeetingServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE);
 
+    }
+
+    @DisplayName("약속 참가 신청을 한다.")
+    @Test
+    void givenMeetingId_whenMeetingJoin_thenMeetingId() {
+        // given
+        Long meetingId = 3L;
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .gathering(Gathering.builder()
+                        .id(1L)
+                        .gatheringName("gathering")
+                        .invitationLink("link")
+                        .build())
+                .build();
+        User user = User.builder()
+                .id(userId)
+                .nickname("member")
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+        given(meetingValidator.isMeetingMember(meetingId, userId))
+                .willReturn(false);
+        given(userValidator.findUserOrThrow(userId))
+                .willReturn(user);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            Long response = meetingService.joinMeeting(meetingId);
+
+            // then
+            assertThat(response).isEqualTo(meetingId);
+            verify(meetingMemberRepository).save(any());
+        }
+
+    }
+
+    @DisplayName("이미 약속 멤버면 참가 신청은 멱등 처리된다.")
+    @Test
+    void givenExistingMember_whenJoinMeeting_thenReturnMeetingId() {
+        // given
+        Long meetingId = 3L;
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .gathering(Gathering.builder()
+                        .id(1L)
+                        .gatheringName("gathering")
+                        .invitationLink("link")
+                        .build())
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+        given(meetingValidator.isMeetingMember(meetingId, userId))
+                .willReturn(true);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            Long response = meetingService.joinMeeting(meetingId);
+
+            // then
+            assertThat(response).isEqualTo(meetingId);
+            verify(meetingValidator, never()).validateCapacity(any(), any());
+            verify(userValidator, never()).findUserOrThrow(any());
+            verify(meetingMemberRepository, never()).save(any());
+        }
+    }
+
+    @DisplayName("모임 멤버가 아니면 약속 참가 신청에 실패한다.")
+    @Test
+    void givenNotGatheringMember_whenJoinMeeting_thenThrowException() {
+        // given
+        Long meetingId = 3L;
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .gathering(Gathering.builder()
+                        .id(1L)
+                        .gatheringName("gathering")
+                        .invitationLink("link")
+                        .build())
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+        doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
+                .when(gatheringValidator).validateMembership(meeting.getGathering().getId(), userId);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.joinMeeting(meetingId))
+                    .isInstanceOf(GatheringException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(GatheringErrorCode.NOT_GATHERING_MEMBER);
+        }
+    }
+
+    @DisplayName("약속 정원이 마감되면 참가 신청에 실패한다.")
+    @Test
+    void givenFullMeeting_whenJoinMeeting_thenThrowException() {
+        // given
+        Long meetingId = 3L;
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .maxParticipants(2)
+                .gathering(Gathering.builder()
+                        .id(1L)
+                        .gatheringName("gathering")
+                        .invitationLink("link")
+                        .build())
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+        given(meetingValidator.isMeetingMember(meetingId, userId))
+                .willReturn(false);
+        doThrow(new MeetingException(MeetingErrorCode.MEETING_FULL))
+                .when(meetingValidator).validateCapacity(meetingId, meeting.getMaxParticipants());
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.joinMeeting(meetingId))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.MEETING_FULL);
+        }
     }
 }

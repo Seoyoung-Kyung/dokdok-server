@@ -53,4 +53,13 @@ public class MeetingController implements MeetingApi {
         MeetingStatusResponse response = meetingService.changeMeetingStatus(meetingId, meetingStatus);
         return ApiResponse.updated(response, "약속 상태 변경에 성공했습니다.");
     }
+
+    @Override
+    @PostMapping(value = "/{meetingId}/join", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Long>> joinMeeting(
+            @PathVariable Long meetingId
+    ) {
+        Long response = meetingService.joinMeeting(meetingId);
+        return ApiResponse.success(response, "약속 참가 신청에 성공했습니다.");
+    }
 }
