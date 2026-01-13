@@ -157,8 +157,8 @@ class GatheringServiceTest {
 		Page<GatheringMember> memberPage = new PageImpl<>(members, pageable, members.size());
 
 		given(gatheringMemberRepository.findActiveGatheringsByUserId(userId, pageable)).willReturn(memberPage);
-		given(gatheringMemberRepository.countActiveMembers(1L)).willReturn(1);
-		given(gatheringMemberRepository.countActiveMembers(2L)).willReturn(1);
+		given(gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(1L)).willReturn(1);
+		given(gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(2L)).willReturn(1);
 
 		// when
 		MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
@@ -190,8 +190,8 @@ class GatheringServiceTest {
 
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
 		verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserId(eq(userId), any(Pageable.class));
-		verify(gatheringMemberRepository, times(1)).countActiveMembers(1L);
-		verify(gatheringMemberRepository, times(1)).countActiveMembers(2L);
+		verify(gatheringMemberRepository, times(1)).countByGatheringIdAndRemovedAtIsNull(1L);
+		verify(gatheringMemberRepository, times(1)).countByGatheringIdAndRemovedAtIsNull(2L);
 	}
 
 	@Test
@@ -218,7 +218,7 @@ class GatheringServiceTest {
 
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
 		verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserId(eq(userId), any(Pageable.class));
-		verify(gatheringMemberRepository, times(0)).countActiveMembers(any());
+		verify(gatheringMemberRepository, times(0)).countByGatheringIdAndRemovedAtIsNull(any());
 	}
 
 	@Test

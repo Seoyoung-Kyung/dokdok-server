@@ -1,11 +1,11 @@
 package com.dokdok.topic.controller;
 
 import com.dokdok.global.response.ApiResponse;
-import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.topic.api.TopicAnswerApi;
 import com.dokdok.topic.dto.request.TopicAnswerRequest;
 import com.dokdok.topic.dto.response.TopicAnswerDetailResponse;
 import com.dokdok.topic.dto.response.TopicAnswerResponse;
+import com.dokdok.topic.dto.response.TopicAnswerSubmitResponse;
 import com.dokdok.topic.service.TopicAnswerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,10 +24,8 @@ public class TopicAnswerController implements TopicAnswerApi {
             Long topicId,
             TopicAnswerRequest request
     ) {
-        Long userId = SecurityUtil.getCurrentUserId();
-
         TopicAnswerResponse response = topicAnswerService.createAnswer(
-                gatheringId, meetingId, topicId, userId, request
+                gatheringId, meetingId, topicId, request
         );
 
         return ApiResponse.created(response, "답변이 저장되었습니다.");
@@ -39,11 +37,37 @@ public class TopicAnswerController implements TopicAnswerApi {
             Long meetingId,
             Long topicId
     ) {
-        Long userId = SecurityUtil.getCurrentUserId();
         TopicAnswerDetailResponse response = topicAnswerService.getMyAnswer(
-                gatheringId, meetingId, topicId, userId
+                gatheringId, meetingId, topicId
         );
 
         return ApiResponse.success(response, "조회 성공");
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<TopicAnswerResponse>> updateMyAnswer(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId,
+            TopicAnswerRequest request
+    ) {
+        TopicAnswerResponse response = topicAnswerService.updateMyAnswer(
+                gatheringId, meetingId, topicId, request
+        );
+
+        return ApiResponse.updated(response, "답변이 수정되었습니다.");
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<TopicAnswerSubmitResponse>> submitMyAnswer(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId
+    ) {
+        TopicAnswerSubmitResponse response = topicAnswerService.submitMyAnswer(
+                gatheringId, meetingId, topicId
+        );
+
+        return ApiResponse.success(response, "답변이 제출되었습니다.");
     }
 }

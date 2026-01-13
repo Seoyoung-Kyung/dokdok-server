@@ -54,4 +54,12 @@ public class MeetingMember {
     public void changeRole(MeetingMemberRole meetingRole) {
         this.meetingRole = meetingRole;
     }
+
+    public void cancel() {
+        this.canceledAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        this.canceledAt = null;
+    }
 }

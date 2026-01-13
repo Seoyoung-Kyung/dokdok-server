@@ -50,4 +50,12 @@ public class TopicAnswer extends BaseTimeEntity {
                 .content(content)
                 .build();
     }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
+    public void submit() {
+        this.isSubmitted = true;
+    }
 }

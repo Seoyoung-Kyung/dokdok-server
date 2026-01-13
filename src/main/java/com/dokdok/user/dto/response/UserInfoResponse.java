@@ -6,16 +6,16 @@ import lombok.Builder;
 
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record UserInfoResponseDto(
+public record UserInfoResponse(
         Long userId,
         String nickname,
         String profileImageUrl,
         Boolean needsOnboarding
 ) {
-    public static UserInfoResponseDto from(User user) {
+    public static UserInfoResponse from(User user) {
         boolean needsOnboarding = user.getNickname() == null || user.getNickname().isBlank();
 
-        return UserInfoResponseDto.builder()
+        return UserInfoResponse.builder()
                 .userId(user.getId())
                 .nickname(user.getNickname())
                 .profileImageUrl(user.getProfileImageUrl())

@@ -10,8 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum TopicErrorCode implements BaseErrorCode {
     // 리소스 에러
     TOPIC_NOT_FOUND("E101", "토픽을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    USER_NOT_FOUND("E102", "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    TOPIC_ANSWER_NOT_FOUND("E103", "답변을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+    TOPIC_ANSWER_NOT_FOUND("E102", "답변을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    TOPIC_ANSWER_ALREADY_SUBMITTED("E103", "이미 제출된 답변입니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;
