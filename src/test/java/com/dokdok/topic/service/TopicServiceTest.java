@@ -14,27 +14,37 @@ import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
+import com.dokdok.topic.dto.response.TopicsPageResponse;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("TopicService - createTopic 테스트")
+@DisplayName("TopicService 테스트")
 class TopicServiceTest {
 
     @Mock
@@ -132,6 +142,8 @@ class TopicServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.title()).isEqualTo("의미 있는 이름 짓기");
             assertThat(response.topicType()).isEqualTo(TopicType.DISCUSSION);
+            assertThat(response.topicTypeLabel()).isEqualTo("토론형");
+            assertThat(response.topicTypeDescription()).isEqualTo("찬반 토론이나 다양한 관점을 나누는 주제입니다.");
             assertThat(response.createdBy().userId()).isEqualTo(1L);
             assertThat(response.createdBy().nickname()).isEqualTo("책벌레김");
 
@@ -285,6 +297,255 @@ class TopicServiceTest {
                             MeetingErrorCode.NOT_MEETING_MEMBER);
 
             verify(topicRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("getTopics - 주제 목록 조회")
+    class GetTopicsTest {
+
+        @Test
+        @DisplayName("정상적으로 주제 목록을 조회한다")
+        void getTopics_Success() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long userId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            User user1 = User.builder()
+                    .id(1L)
+                    .userName("김독서")
+                    .nickname("책벌레김")
+                    .build();
+
+            User user2 = User.builder()
+                    .id(2L)
+                    .userName("이개발")
+                    .nickname("코드러버")
+                    .build();
+
+            Topic topic1 = Topic.builder()
+                    .id(1L)
+                    .meeting(testMeeting)
+                    .proposedBy(user1)
+                    .title("의미 있는 이름 짓기")
+                    .description("변수명, 함수명, 클래스명을 짓는 원칙에 대해 토론합니다.")
+                    .topicType(TopicType.DISCUSSION)
+                    .topicStatus(TopicStatus.PROPOSED)
+                    .likeCount(5)
+                    .build();
+
+            Topic topic2 = Topic.builder()
+                    .id(2L)
+                    .meeting(testMeeting)
+                    .proposedBy(user2)
+                    .title("함수 작성 원칙")
+                    .description("작고 명확한 함수를 작성하는 방법을 논의합니다.")
+                    .topicType(TopicType.DISCUSSION)
+                    .topicStatus(TopicStatus.PROPOSED)
+                    .likeCount(3)
+                    .build();
+
+            List<Topic> topics = List.of(topic1, topic2);
+            Page<Topic> topicPage = new PageImpl<>(topics, pageable, topics.size());
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doNothing().when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
+                        .willReturn(topicPage);
+
+                TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
+
+                assertThat(response).isNotNull();
+                assertThat(response.topics()).hasSize(2);
+                assertThat(response.totalCount()).isEqualTo(2);
+                assertThat(response.currentPage()).isEqualTo(0);
+                assertThat(response.pageSize()).isEqualTo(10);
+                assertThat(response.totalPages()).isEqualTo(1);
+
+                assertThat(response.topics().get(0).title()).isEqualTo("의미 있는 이름 짓기");
+                assertThat(response.topics().get(0).likeCount()).isEqualTo(5);
+                assertThat(response.topics().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+
+                assertThat(response.topics().get(1).title()).isEqualTo("함수 작성 원칙");
+                assertThat(response.topics().get(1).likeCount()).isEqualTo(3);
+
+                verify(gatheringValidator).validateMembership(gatheringId, userId);
+                verify(meetingValidator).validateMemberInGathering(meetingId, gatheringId);
+                verify(topicRepository).findTopicsByMeetingId(eq(meetingId), any(Pageable.class));
+            }
+        }
+
+        @Test
+        @DisplayName("빈 주제 목록을 조회한다")
+        void getTopics_EmptyList() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long userId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            Page<Topic> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doNothing().when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
+                        .willReturn(emptyPage);
+
+                TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
+
+                assertThat(response).isNotNull();
+                assertThat(response.topics()).isEmpty();
+                assertThat(response.totalCount()).isEqualTo(0);
+                assertThat(response.currentPage()).isEqualTo(0);
+                assertThat(response.pageSize()).isEqualTo(10);
+                assertThat(response.totalPages()).isEqualTo(0);
+
+                verify(gatheringValidator).validateMembership(gatheringId, userId);
+                verify(meetingValidator).validateMemberInGathering(meetingId, gatheringId);
+                verify(topicRepository).findTopicsByMeetingId(eq(meetingId), any(Pageable.class));
+            }
+        }
+
+        @Test
+        @DisplayName("페이지네이션이 정상 작동한다")
+        void getTopics_WithPagination() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long userId = 1L;
+            Pageable pageable = PageRequest.of(1, 5);
+
+            List<Topic> topics = List.of(
+                    Topic.builder()
+                            .id(6L)
+                            .meeting(testMeeting)
+                            .proposedBy(testUser)
+                            .title("주제 6")
+                            .topicType(TopicType.DISCUSSION)
+                            .topicStatus(TopicStatus.PROPOSED)
+                            .likeCount(1)
+                            .build()
+            );
+            Page<Topic> topicPage = new PageImpl<>(topics, pageable, 11);
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doNothing().when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
+                        .willReturn(topicPage);
+
+                TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
+
+                assertThat(response).isNotNull();
+                assertThat(response.topics()).hasSize(1);
+                assertThat(response.totalCount()).isEqualTo(11);
+                assertThat(response.currentPage()).isEqualTo(1);
+                assertThat(response.pageSize()).isEqualTo(5);
+                assertThat(response.totalPages()).isEqualTo(3);
+
+                verify(topicRepository).findTopicsByMeetingId(eq(meetingId), any(Pageable.class));
+            }
+        }
+
+        @Test
+        @DisplayName("인증되지 않은 사용자인 경우 예외가 발생한다")
+        void getTopics_Unauthorized_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
+
+                assertThatThrownBy(() ->
+                        topicService.getTopics(gatheringId, meetingId, pageable))
+                        .isInstanceOf(GlobalException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                GlobalErrorCode.UNAUTHORIZED);
+
+                verify(gatheringValidator, never()).validateMembership(any(), any());
+                verify(meetingValidator, never()).validateMemberInGathering(any(), any());
+                verify(topicRepository, never()).findTopicsByMeetingId(any(), any());
+            }
+        }
+
+        @Test
+        @DisplayName("모임 멤버가 아닌 경우 예외가 발생한다")
+        void getTopics_NotGatheringMember_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long userId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
+                        .when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                assertThatThrownBy(() ->
+                        topicService.getTopics(gatheringId, meetingId, pageable))
+                        .isInstanceOf(GatheringException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                GatheringErrorCode.NOT_GATHERING_MEMBER);
+
+                verify(meetingValidator, never()).validateMemberInGathering(any(), any());
+                verify(topicRepository, never()).findTopicsByMeetingId(any(), any());
+            }
+        }
+
+        @Test
+        @DisplayName("회차가 해당 모임에 속하지 않는 경우 예외가 발생한다")
+        void getTopics_MeetingNotInGathering_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 999L;
+            Long userId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
+
+                doNothing().when(gatheringValidator)
+                        .validateMembership(gatheringId, userId);
+
+                doThrow(new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING))
+                        .when(meetingValidator)
+                        .validateMemberInGathering(meetingId, gatheringId);
+
+                assertThatThrownBy(() ->
+                        topicService.getTopics(gatheringId, meetingId, pageable))
+                        .isInstanceOf(MeetingException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                MeetingErrorCode.NOT_GATHERING_MEETING);
+
+                verify(topicRepository, never()).findTopicsByMeetingId(any(), any());
+            }
         }
     }
 }
