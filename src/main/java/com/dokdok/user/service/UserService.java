@@ -2,6 +2,8 @@ package com.dokdok.user.service;
 
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.dto.request.OnboardRequest;
+import com.dokdok.user.dto.request.UpdateUserInfoRequest;
+import com.dokdok.user.dto.response.UserDetailResponse;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.exception.UserErrorCode;
 import com.dokdok.user.exception.UserException;
@@ -50,6 +52,29 @@ public class UserService {
         validateNickname(nickname.trim());
     }
 
+    /**
+     * SecurityUtil에서 현재 세션에 저장된 사용자의 User Entity를 응답 Response Dto형식으로 반환.
+     */
+    public UserDetailResponse getCurrentUserInfo() {
+
+        User currentUser = SecurityUtil.getCurrentUserEntity();
+        return UserDetailResponse.from(currentUser);
+    }
+
+    /**
+     * 사용자의 정보응 변경합니다.
+     */
+    public UserDetailResponse updateUserInfo(UpdateUserInfoRequest request) {
+
+        validateNickname(request.nickname());
+
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+
+        User user = getUserById(currentUserId);
+        user.updateInfo(request);
+
+        return UserDetailResponse.from(user);
+    }
 
     /**
      * 닉네임 유효성을 검사합니다.
@@ -78,4 +103,5 @@ public class UserService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
     }
+
 }

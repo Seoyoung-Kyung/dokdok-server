@@ -476,4 +476,267 @@ class UserServiceTest {
             securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
         }
     }
+
+    @Test
+    @DisplayName("현재 사용자 정보 조회 - 성공")
+    void getCurrentUserInfo_Success() {
+        // given
+        User user = User.builder()
+                .id(1L)
+                .nickname("테스트닉네임")
+                .userEmail("test@test.com")
+                .profileImageUrl("https://example.com/profile.jpg")
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(user);
+
+            // when
+            var response = userService.getCurrentUserInfo();
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.userId()).isEqualTo(1L);
+            assertThat(response.nickname()).isEqualTo("테스트닉네임");
+            assertThat(response.email()).isEqualTo("test@test.com");
+            assertThat(response.profileImageUrl()).isEqualTo("https://example.com/profile.jpg");
+
+            securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - 정상적인 닉네임으로 성공")
+    void updateUserInfo_Success() {
+        // given
+        Long userId = 1L;
+        String newNickname = "변경된닉네임";
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(newNickname);
+
+        User user = User.builder()
+                .id(userId)
+                .nickname("기존닉네임")
+                .userEmail("test@test.com")
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByNickname(newNickname)).thenReturn(Optional.empty());
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            var response = userService.updateUserInfo(request);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.nickname()).isEqualTo(newNickname);
+            assertThat(user.getNickname()).isEqualTo(newNickname);
+
+            verify(userRepository, times(1)).findById(userId);
+            verify(userRepository, times(1)).findByNickname(newNickname);
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - 동일한 닉네임으로 변경 시도")
+    void updateUserInfo_SameNickname_Success() {
+        // given
+        Long userId = 1L;
+        String sameNickname = "기존닉네임";
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(sameNickname);
+
+        User user = User.builder()
+                .id(userId)
+                .nickname(sameNickname)
+                .userEmail("test@test.com")
+                .build();
+
+        when(userRepository.findByNickname(sameNickname)).thenReturn(Optional.of(user));
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.updateUserInfo(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_ALREADY_EXISTS);
+
+            verify(userRepository, times(1)).findByNickname(sameNickname);
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - null 닉네임으로 실패")
+    void updateUserInfo_NullNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(null);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.updateUserInfo(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_EMPTY);
+
+            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, never()).findByNickname(anyString());
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - 빈 닉네임으로 실패")
+    void updateUserInfo_EmptyNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String emptyNickname = "";
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(emptyNickname);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.updateUserInfo(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_EMPTY);
+
+            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, never()).findByNickname(anyString());
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - 공백만 있는 닉네임으로 실패")
+    void updateUserInfo_OnlyWhitespace_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String whitespaceNickname = "   ";
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(whitespaceNickname);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.updateUserInfo(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_EMPTY);
+
+            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, never()).findByNickname(anyString());
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - 길이가 짧은 닉네임으로 실패")
+    void updateUserInfo_TooShortNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String shortNickname = "a";
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(shortNickname);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.updateUserInfo(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_LENGTH_INVALID);
+
+            verify(userRepository, never()).findById(anyLong());
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - 길이가 긴 닉네임으로 실패")
+    void updateUserInfo_TooLongNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String longNickname = "a".repeat(21);
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(longNickname);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.updateUserInfo(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_LENGTH_INVALID);
+
+            verify(userRepository, never()).findById(anyLong());
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - 특수문자 포함 닉네임으로 실패")
+    void updateUserInfo_InvalidFormat_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String invalidNickname = "닉네임!@#";
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(invalidNickname);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.updateUserInfo(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_FORMAT_INVALID);
+
+            verify(userRepository, never()).findById(anyLong());
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - 중복된 닉네임으로 실패")
+    void updateUserInfo_DuplicateNickname_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String duplicateNickname = "기존닉네임";
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(duplicateNickname);
+
+        User anotherUser = User.builder()
+                .id(2L)
+                .nickname(duplicateNickname)
+                .build();
+
+        when(userRepository.findByNickname(duplicateNickname)).thenReturn(Optional.of(anotherUser));
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.updateUserInfo(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_ALREADY_EXISTS);
+
+            verify(userRepository, times(1)).findByNickname(duplicateNickname);
+            verify(userRepository, never()).findById(anyLong());
+        }
+    }
+
+    @Test
+    @DisplayName("사용자 정보 수정 - 존재하지 않는 사용자로 실패")
+    void updateUserInfo_UserNotFound_ThrowsException() {
+        // given
+        Long userId = 1L;
+        String validNickname = "새로운닉네임";
+        var request = new com.dokdok.user.dto.request.UpdateUserInfoRequest(validNickname);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.findByNickname(validNickname)).thenReturn(Optional.empty());
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when & then
+            assertThatThrownBy(() -> userService.updateUserInfo(request))
+                    .isInstanceOf(UserException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
+
+            verify(userRepository, times(1)).findById(userId);
+            verify(userRepository, times(1)).findByNickname(validNickname);
+        }
+    }
 }
