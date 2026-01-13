@@ -1,0 +1,19 @@
+package com.dokdok.topic.exception;
+
+import com.dokdok.global.exception.BaseErrorCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+
+@Getter
+@RequiredArgsConstructor
+public enum TopicErrorCode implements BaseErrorCode {
+    // 리소스 에러
+    TOPIC_NOT_FOUND("E101", "토픽을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    USER_NOT_FOUND("E102", "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    TOPIC_ANSWER_NOT_FOUND("E103", "답변을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+
+    private final String code;
+    private final String message;
+    private final HttpStatus status;
+}
