@@ -110,7 +110,7 @@ public record MeetingResponse(
                     topic.getTitle(),
                     topic.getTopicType(),
                     topic.getTopicStatus(),
-                    topic.getVoteCount()
+                    topic.getLikeCount()
             );
         }
     }
