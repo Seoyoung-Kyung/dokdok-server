@@ -4,6 +4,8 @@ import com.dokdok.book.entity.Book;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.global.BaseTimeEntity;
 import com.dokdok.meeting.dto.MeetingCreateRequest;
+import com.dokdok.meeting.exception.MeetingErrorCode;
+import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -77,5 +79,30 @@ public class Meeting extends BaseTimeEntity {
                 .meetingStartDate(request.meetingStartDate())
                 .meetingEndDate(request.meetingEndDate())
                 .build();
+    }
+
+    public void changeStatus(MeetingStatus targetStatus) {
+
+        // DONE 이후는 어떤 변경도 불가
+        if (this.meetingStatus == MeetingStatus.DONE) {
+            throw new MeetingException(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
+                    "종료된 약속의 상태는 변경할 수 없습니다.");
+        }
+
+        // CONFIRMED 이후에는 이전 상태로 되돌릴 수 없음
+        if (this.meetingStatus == MeetingStatus.CONFIRMED
+                && targetStatus == MeetingStatus.PENDING) {
+            throw new MeetingException(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
+                    "확정된 약속은 다시 신청 상태로 되돌릴 수 없습니다.");
+        }
+
+        // CONFIRMED는 PENDING에서만 가능
+        if (targetStatus == MeetingStatus.CONFIRMED
+                && this.meetingStatus != MeetingStatus.PENDING) {
+            throw new MeetingException(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
+                    "신청된 약속만 확정할 수 있습니다.");
+        }
+
+        this.meetingStatus = targetStatus;
     }
 }
