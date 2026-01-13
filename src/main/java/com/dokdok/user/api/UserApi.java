@@ -2,6 +2,8 @@ package com.dokdok.user.api;
 
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.user.dto.request.OnboardRequest;
+import com.dokdok.user.dto.request.UpdateUserInfoRequest;
+import com.dokdok.user.dto.response.UserDetailResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -170,5 +172,143 @@ public interface UserApi {
     @GetMapping(value = "/check-nickname", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<Void>> checkNickname(
             @RequestParam("nickname") String nickname
+    );
+
+    @Operation(
+            summary = "현재 사용자 정보 조회",
+            description = "현재 인증된 사용자의 프로필 정보를 조회합니다. SecurityContext에서 사용자 정보를 가져옵니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "프로필 조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UserDetailResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "SUCCESS",
+                                              "message": "프로필 조회 성공",
+                                              "data": {
+                                                "userId": 1,
+                                                "nickname": "테스트닉네임",
+                                                "email": "test@example.com",
+                                                "profileImageUrl": "https://example.com/profile.jpg",
+                                                "createdAt": "2024-01-13T10:30:00"
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<UserDetailResponse>> getCurrentUser();
+
+    @Operation(
+            summary = "사용자 정보 수정",
+            description = "현재 사용자의 프로필 정보를 수정합니다. 현재는 닉네임만 수정 가능하며, 유효성 검사 및 중복 확인을 수행합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "프로필 수정 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UserDetailResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "SUCCESS",
+                                              "message": "프로필 수정 성공",
+                                              "data": {
+                                                "userId": 1,
+                                                "nickname": "변경된닉네임",
+                                                "email": "test@example.com",
+                                                "profileImageUrl": "https://example.com/profile.jpg",
+                                                "createdAt": "2024-01-13T10:30:00"
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 (유효성 검사 실패)",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "닉네임 필수",
+                                            description = "닉네임이 null이거나 빈 문자열인 경우",
+                                            value = "{\"code\":\"U003\",\"message\":\"닉네임은 필수 입력 항목입니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "닉네임 길이 오류",
+                                            description = "닉네임이 2자 미만 또는 20자 초과인 경우",
+                                            value = "{\"code\":\"U004\",\"message\":\"닉네임은 2자 이상 20자 이하로 입력해주세요.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "닉네임 형식 오류",
+                                            description = "특수문자, 공백, 이모지 등이 포함된 경우",
+                                            value = "{\"code\":\"U005\",\"message\":\"닉네임은 한글, 영문, 숫자만 사용 가능합니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "닉네임 중복",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"U002\",\"message\":\"이미 존재하는 사용자 닉네임입니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @PatchMapping(value = "/me", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<UserDetailResponse>> updateUserInfo(
+            @Valid @RequestBody UpdateUserInfoRequest request
     );
 }
