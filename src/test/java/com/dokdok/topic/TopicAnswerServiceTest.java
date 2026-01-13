@@ -84,11 +84,9 @@ class TopicAnswerServiceTest {
     @DisplayName("토픽 답변 생성 시 저장 요청과 응답 DTO를 확인한다")
     void createAnswer_savesAnswerAndReturnsResponse() {
         Topic topic = Topic.builder().id(12L).build();
-        User user = User.builder().id(1L).build();
         TopicAnswer saved = TopicAnswer.builder()
                 .id(100L)
                 .topic(topic)
-                .user(user)
                 .content("이 책을 읽고 ...")
                 .isSubmitted(false)
                 .build();
@@ -109,7 +107,7 @@ class TopicAnswerServiceTest {
 
         TopicAnswer captured = captor.getValue();
         assertThat(captured.getTopic()).isEqualTo(topic);
-        assertThat(captured.getUser()).isEqualTo(user);
+        assertThat(captured.getUser().getId()).isEqualTo(1L);
         assertThat(captured.getContent()).isEqualTo("이 책을 읽고 ...");
 
         assertThat(response.topicId()).isEqualTo(12L);
