@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public interface BookApi {
 
     @Operation(
-            summary = "책 리스트 조회",
+            summary = "외부 책 API 조회",
             description = "검색할 책을 조회합니다.",
             parameters = {
                     @Parameter(name = "title", description = "책 이름, 책 내용 등을 검색할 수 있습니다.", in = ParameterIn.PATH, required = true)
@@ -43,7 +43,7 @@ public interface BookApi {
 
 
     @Operation(
-            summary = "책장에 책 등록",
+            summary = "내 책장에 책 등록",
             description = "조회한 책을 내 책장에 등록합니다."
     )
     @ApiResponses({
@@ -54,7 +54,7 @@ public interface BookApi {
                             schema = @Schema(implementation = MeetingResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "cor을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping
