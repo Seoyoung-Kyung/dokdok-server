@@ -3,6 +3,9 @@ package com.dokdok.gathering.service;
 import com.dokdok.gathering.dto.*;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
+import com.dokdok.gathering.entity.GatheringStatus;
+import com.dokdok.gathering.exception.GatheringErrorCode;
+import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.global.util.SecurityUtil;
@@ -93,6 +96,9 @@ public class GatheringService {
 		Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
 		gatheringValidator.validateLeader(gatheringId, userId);
 
+		if (gathering.getGatheringStatus().equals(GatheringStatus.INACTIVE)) {
+			throw new GatheringException(GatheringErrorCode.ALREADY_INACTIVE);
+		}
 		gathering.deleteGathering();
 	}
 }
