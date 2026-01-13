@@ -1,6 +1,7 @@
 package com.dokdok.topic;
 
 import com.dokdok.gathering.service.GatheringValidator;
+import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.TopicAnswerRequest;
 import com.dokdok.topic.dto.response.TopicAnswerResponse;
 import com.dokdok.topic.entity.Topic;
@@ -49,7 +50,7 @@ class TopicAnswerServiceTest {
     private GatheringValidator gatheringValidator;
 
     @Mock
-    private com.dokdok.meeting.service.MeetingValidator meetingValidator;
+    private MeetingValidator meetingValidator;
 
     @Mock
     private TopicValidator topicValidator;
