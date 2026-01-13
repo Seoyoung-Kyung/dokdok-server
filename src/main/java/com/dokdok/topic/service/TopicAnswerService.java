@@ -6,6 +6,7 @@ import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.TopicAnswerRequest;
 import com.dokdok.topic.dto.response.TopicAnswerDetailResponse;
 import com.dokdok.topic.dto.response.TopicAnswerResponse;
+import com.dokdok.topic.dto.response.TopicAnswerSubmitResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.exception.TopicErrorCode;
@@ -84,9 +85,37 @@ public class TopicAnswerService {
         TopicAnswer answer = topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
 
+        if (Boolean.TRUE.equals(answer.getIsSubmitted())) {
+            throw new TopicException(TopicErrorCode.TOPIC_ANSWER_ALREADY_SUBMITTED);
+        }
+
         answer.updateContent(request.content());
 
         return TopicAnswerResponse.from(answer);
+    }
+
+    @Transactional
+    public TopicAnswerSubmitResponse submitMyAnswer(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        gatheringValidator.validateMembership(gatheringId, userId);
+        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
+        topicValidator.validateTopicInMeeting(topicId, meetingId);
+
+        TopicAnswer answer = topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
+                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+
+        if (Boolean.TRUE.equals(answer.getIsSubmitted())) {
+            throw new TopicException(TopicErrorCode.TOPIC_ANSWER_ALREADY_SUBMITTED);
+        }
+
+        answer.submit();
+
+        return TopicAnswerSubmitResponse.from(answer);
     }
 
 }

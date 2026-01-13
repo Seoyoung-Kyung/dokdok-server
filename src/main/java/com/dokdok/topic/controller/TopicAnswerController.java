@@ -5,6 +5,7 @@ import com.dokdok.topic.api.TopicAnswerApi;
 import com.dokdok.topic.dto.request.TopicAnswerRequest;
 import com.dokdok.topic.dto.response.TopicAnswerDetailResponse;
 import com.dokdok.topic.dto.response.TopicAnswerResponse;
+import com.dokdok.topic.dto.response.TopicAnswerSubmitResponse;
 import com.dokdok.topic.service.TopicAnswerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -55,5 +56,18 @@ public class TopicAnswerController implements TopicAnswerApi {
         );
 
         return ApiResponse.updated(response, "답변이 수정되었습니다.");
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<TopicAnswerSubmitResponse>> submitMyAnswer(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId
+    ) {
+        TopicAnswerSubmitResponse response = topicAnswerService.submitMyAnswer(
+                gatheringId, meetingId, topicId
+        );
+
+        return ApiResponse.success(response, "답변이 제출되었습니다.");
     }
 }
