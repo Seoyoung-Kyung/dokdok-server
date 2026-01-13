@@ -55,7 +55,7 @@ public class Topic extends BaseTimeEntity {
     @Builder.Default
     private Integer likeCount = 0;
 
-    public static Topic of(
+    public static Topic create(
             Meeting meeting,
             User user,
             String title,

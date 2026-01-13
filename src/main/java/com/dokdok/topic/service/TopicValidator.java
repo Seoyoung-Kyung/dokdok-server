@@ -1,12 +1,15 @@
 package com.dokdok.topic.service;
 
+import com.dokdok.topic.dto.response.TopicLikeResponse;
 import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
+import com.dokdok.topic.entity.TopicLike;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicAnswerRepository;
+import com.dokdok.topic.repository.TopicLikeRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,11 +22,12 @@ public class TopicValidator {
 
     private final TopicRepository topicRepository;
     private final TopicAnswerRepository topicAnswerRepository;
+    private final TopicLikeRepository topicLikeRepository;
 
     /**
-     * 해당 약속에 속한 주제인지 검증한다.
+     * 해당 약속에 속한 주제인지 검증하고 Topic을 반환한다.
      */
-    public void validateTopicInMeeting(Long topicId, Long meetingId) {
+    public Topic getTopicInMeeting(Long topicId, Long meetingId) {
         Topic topic = topicRepository.findDetailById(topicId)
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
 
@@ -34,6 +38,15 @@ public class TopicValidator {
         if (!topic.getMeeting().getId().equals(meetingId)) {
             throw new TopicException(TopicErrorCode.TOPIC_NOT_IN_MEETING);
         }
+
+        return topic;
+    }
+
+    /**
+     * 해당 약속에 속한 주제인지 검증한다.
+     */
+    public void validateTopicInMeeting(Long topicId, Long meetingId) {
+        getTopicInMeeting(topicId, meetingId);
     }
 
     public TopicAnswer getTopicAnswer(Long topicId, Long userId) {
@@ -43,16 +56,15 @@ public class TopicValidator {
 
     /**
      * 주제에 대한 삭제 권한 검증한다
-     * 권한 소유 : 모임장, 약속장, 약속 제안자
+     * 권한 소유 : 모임장, 약속장, 주제 제안자
      */
     public Topic getDeletableTopic(
             Long topicId,
             Long userId
     ) {
-        Topic topic = topicRepository.findTopicWithDeletePermission(topicId, userId)
-                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_USER_CANNOT_DELETE));
 
-        return topic;
+        return topicRepository.findTopicWithDeletePermission(topicId, userId)
+                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_USER_CANNOT_DELETE));
     }
 
 }

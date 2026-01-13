@@ -38,7 +38,7 @@ public class TopicAnswerService {
         Long userId = SecurityUtil.getCurrentUserId();
 
         gatheringValidator.validateMembership(gatheringId, userId);
-        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
         topicValidator.validateTopicInMeeting(topicId, meetingId);
 
         Topic topic = topicRepository.getReferenceById(topicId);
@@ -60,7 +60,7 @@ public class TopicAnswerService {
         Long userId = SecurityUtil.getCurrentUserId();
 
         gatheringValidator.validateMembership(gatheringId, userId);
-        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
         topicValidator.validateTopicInMeeting(topicId, meetingId);
 
         TopicAnswer answer = topicValidator.getTopicAnswer(topicId, userId);
@@ -78,7 +78,7 @@ public class TopicAnswerService {
         Long userId = SecurityUtil.getCurrentUserId();
 
         gatheringValidator.validateMembership(gatheringId, userId);
-        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
         topicValidator.validateTopicInMeeting(topicId, meetingId);
 
         TopicAnswer answer = topicValidator.getTopicAnswer(topicId, userId);
@@ -101,7 +101,7 @@ public class TopicAnswerService {
         Long userId = SecurityUtil.getCurrentUserId();
 
         gatheringValidator.validateMembership(gatheringId, userId);
-        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
         topicValidator.validateTopicInMeeting(topicId, meetingId);
 
         TopicAnswer answer = topicValidator.getTopicAnswer(topicId, userId);

@@ -17,6 +17,17 @@ public class GatheringValidator {
 	private final GatheringMemberRepository gatheringMemberRepository;
 	private final GatheringRepository gatheringRepository;
 
+	/**
+	 * 존재하는 모임인지 검증한다.
+	 */
+	public void validateGathering(Long gatheringId) {
+		boolean isGathering = gatheringRepository.existsById(gatheringId);
+
+		if (!isGathering) {
+			throw new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER);
+		}
+	}
+
     /**
      * 모임에 속해있는 사용자인지 검증한다.
      */
