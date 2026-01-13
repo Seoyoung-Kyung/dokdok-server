@@ -28,11 +28,8 @@ public class Book {
     @Column(name = "publisher", length = 100)
     private String publisher;
 
-    @Column(name = "author", length = 100)
+    @Column(name = "author", length = 200)
     private String author;
-
-    @Column(name = "category", length = 100)
-    private String category;
 
     @Column(name = "book_image_url", length = 500)
     private String thumbnail;

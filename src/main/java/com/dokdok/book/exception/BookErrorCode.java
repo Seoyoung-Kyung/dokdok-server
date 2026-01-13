@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum BookErrorCode implements BaseErrorCode {
 
-    BOOK_NOT_FOUND("B001", "책을 찾을 수 없습니다.",HttpStatus.NOT_FOUND);
+    BOOK_NOT_FOUND("B001", "책을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    BOOK_ALREADY_EXISTS("B002", "이미 등록된 책입니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;
