@@ -1,4 +1,4 @@
-package com.dokdok.topic;
+package com.dokdok.topic.service;
 
 import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.meeting.service.MeetingValidator;
@@ -10,8 +10,6 @@ import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
-import com.dokdok.topic.service.TopicAnswerService;
-import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.entity.User;
 import com.dokdok.global.exception.GlobalException;
 import org.junit.jupiter.api.DisplayName;
@@ -25,8 +23,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -155,8 +151,7 @@ class TopicAnswerServiceTest {
                 .isSubmitted(false)
                 .build();
 
-        given(topicAnswerRepository.findByTopicIdAndUserId(12L, 1L))
-                .willReturn(Optional.of(answer));
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
         doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
 
         TopicAnswerRequest request = new TopicAnswerRequest("수정된 내용");
@@ -171,16 +166,84 @@ class TopicAnswerServiceTest {
     }
 
     @Test
-    @DisplayName("내 토픽 답변이 없으면 수정 시 예외가 발생한다")
-    void updateMyAnswer_throwsWhenAnswerMissing() {
-        given(topicAnswerRepository.findByTopicIdAndUserId(12L, 1L))
-                .willReturn(Optional.empty());
+    @DisplayName("이미 제출된 답변은 수정할 수 없다")
+    void updateMyAnswer_throwsWhenAlreadySubmitted() {
+        Topic topic = Topic.builder().id(12L).build();
+        User user = User.builder().id(1L).build();
+        TopicAnswer answer = TopicAnswer.builder()
+                .id(100L)
+                .topic(topic)
+                .user(user)
+                .content("기존 내용")
+                .isSubmitted(true)
+                .build();
+
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
         doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
 
         TopicAnswerRequest request = new TopicAnswerRequest("수정된 내용");
 
         assertThatThrownBy(() -> topicAnswerService.updateMyAnswer(
                 1L, 1L, 12L, request
+        )).isInstanceOf(TopicException.class);
+    }
+
+    @Test
+    @DisplayName("내 토픽 답변이 없으면 수정 시 예외가 발생한다")
+    void updateMyAnswer_throwsWhenAnswerMissing() {
+        given(topicValidator.getTopicAnswer(12L, 1L))
+                .willThrow(new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+        doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
+
+        TopicAnswerRequest request = new TopicAnswerRequest("수정된 내용");
+
+        assertThatThrownBy(() -> topicAnswerService.updateMyAnswer(
+                1L, 1L, 12L, request
+        )).isInstanceOf(TopicException.class);
+    }
+
+    @Test
+    @DisplayName("내 토픽 답변 제출 시 제출 상태로 변경된다")
+    void submitMyAnswer_updatesSubmittedState() {
+        Topic topic = Topic.builder().id(12L).build();
+        User user = User.builder().id(1L).build();
+        TopicAnswer answer = TopicAnswer.builder()
+                .id(100L)
+                .topic(topic)
+                .user(user)
+                .content("기존 내용")
+                .isSubmitted(false)
+                .build();
+
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
+        doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
+
+        com.dokdok.topic.dto.response.TopicAnswerSubmitResponse response =
+                topicAnswerService.submitMyAnswer(1L, 1L, 12L);
+
+        assertThat(answer.getIsSubmitted()).isTrue();
+        assertThat(response.topicId()).isEqualTo(12L);
+        assertThat(response.isSubmitted()).isTrue();
+    }
+
+    @Test
+    @DisplayName("이미 제출된 답변은 다시 제출할 수 없다")
+    void submitMyAnswer_throwsWhenAlreadySubmitted() {
+        Topic topic = Topic.builder().id(12L).build();
+        User user = User.builder().id(1L).build();
+        TopicAnswer answer = TopicAnswer.builder()
+                .id(100L)
+                .topic(topic)
+                .user(user)
+                .content("기존 내용")
+                .isSubmitted(true)
+                .build();
+
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
+        doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
+
+        assertThatThrownBy(() -> topicAnswerService.submitMyAnswer(
+                1L, 1L, 12L
         )).isInstanceOf(TopicException.class);
     }
 }
