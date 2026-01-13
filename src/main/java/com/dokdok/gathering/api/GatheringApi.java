@@ -203,4 +203,46 @@ public interface GatheringApi {
             )
             @PathVariable Long gatheringId
     );
+
+    @Operation(
+            summary = "모임원 강퇴",
+            description = """
+            모임원을 강퇴합니다.
+            - 모임의 리더만 강퇴할 수 있습니다.
+            - 리더는 강퇴할 수 없습니다.
+            """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "강퇴 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 모임의 리더만 강퇴할 수 있습니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임 또는 멤버를 찾을 수 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "리더는 강퇴할 수 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @DeleteMapping("/{gatheringId}/members/{userId}")
+    ResponseEntity<ApiResponse<Void>> removeMember(
+            @Parameter(description = "모임 ID", required = true, example = "123")
+            @PathVariable Long gatheringId,
+            @Parameter(description = "강퇴할 유저 ID", required = true, example = "456")
+            @PathVariable Long userId
+    );
 }

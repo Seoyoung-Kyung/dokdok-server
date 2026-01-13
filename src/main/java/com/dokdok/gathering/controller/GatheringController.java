@@ -53,7 +53,7 @@ public class GatheringController implements GatheringApi {
         return ApiResponse.deleted("모임 삭제 성공");
     }
 
-    @DeleteMapping("{/{gatheringId}/members/{userId}")
+    @DeleteMapping("/{gatheringId}/members/{userId}")
     public ResponseEntity<ApiResponse<Void>> removeMember(
             @PathVariable Long gatheringId,
             @PathVariable Long userId

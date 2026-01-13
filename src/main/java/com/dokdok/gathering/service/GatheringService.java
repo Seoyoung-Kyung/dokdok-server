@@ -7,7 +7,6 @@ import com.dokdok.gathering.entity.GatheringRole;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
-import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.repository.MeetingRepository;
@@ -117,8 +116,6 @@ public class GatheringService {
 			throw new GatheringException(GatheringErrorCode.CANNOT_REMOVE_LEADER);
 		}
 
-
 		targetMember.remove();
-
 	}
 }
