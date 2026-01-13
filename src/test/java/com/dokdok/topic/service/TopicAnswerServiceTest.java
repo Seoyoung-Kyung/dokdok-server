@@ -22,8 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -151,8 +149,7 @@ class TopicAnswerServiceTest {
                 .isSubmitted(false)
                 .build();
 
-        given(topicAnswerRepository.findByTopicIdAndUserId(12L, 1L))
-                .willReturn(Optional.of(answer));
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
         doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
 
         TopicAnswerRequest request = new TopicAnswerRequest("수정된 내용");
@@ -179,8 +176,7 @@ class TopicAnswerServiceTest {
                 .isSubmitted(true)
                 .build();
 
-        given(topicAnswerRepository.findByTopicIdAndUserId(12L, 1L))
-                .willReturn(Optional.of(answer));
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
         doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
 
         TopicAnswerRequest request = new TopicAnswerRequest("수정된 내용");
@@ -193,8 +189,8 @@ class TopicAnswerServiceTest {
     @Test
     @DisplayName("내 토픽 답변이 없으면 수정 시 예외가 발생한다")
     void updateMyAnswer_throwsWhenAnswerMissing() {
-        given(topicAnswerRepository.findByTopicIdAndUserId(12L, 1L))
-                .willReturn(Optional.empty());
+        given(topicValidator.getTopicAnswer(12L, 1L))
+                .willThrow(new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
         doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
 
         TopicAnswerRequest request = new TopicAnswerRequest("수정된 내용");
@@ -217,8 +213,7 @@ class TopicAnswerServiceTest {
                 .isSubmitted(false)
                 .build();
 
-        given(topicAnswerRepository.findByTopicIdAndUserId(12L, 1L))
-                .willReturn(Optional.of(answer));
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
         doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
 
         com.dokdok.topic.dto.response.TopicAnswerSubmitResponse response =
@@ -242,8 +237,7 @@ class TopicAnswerServiceTest {
                 .isSubmitted(true)
                 .build();
 
-        given(topicAnswerRepository.findByTopicIdAndUserId(12L, 1L))
-                .willReturn(Optional.of(answer));
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
         doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
 
         assertThatThrownBy(() -> topicAnswerService.submitMyAnswer(

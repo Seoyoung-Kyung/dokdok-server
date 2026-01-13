@@ -63,8 +63,7 @@ public class TopicAnswerService {
         meetingValidator.validateMemberInGathering(meetingId, gatheringId);
         topicValidator.validateTopicInMeeting(topicId, meetingId);
 
-        TopicAnswer answer = topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
-                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+        TopicAnswer answer = topicValidator.getTopicAnswer(topicId, userId);
 
         return TopicAnswerDetailResponse.from(answer);
     }
@@ -82,8 +81,7 @@ public class TopicAnswerService {
         meetingValidator.validateMemberInGathering(meetingId, gatheringId);
         topicValidator.validateTopicInMeeting(topicId, meetingId);
 
-        TopicAnswer answer = topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
-                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+        TopicAnswer answer = topicValidator.getTopicAnswer(topicId, userId);
 
         if (Boolean.TRUE.equals(answer.getIsSubmitted())) {
             throw new TopicException(TopicErrorCode.TOPIC_ANSWER_ALREADY_SUBMITTED);
@@ -106,8 +104,7 @@ public class TopicAnswerService {
         meetingValidator.validateMemberInGathering(meetingId, gatheringId);
         topicValidator.validateTopicInMeeting(topicId, meetingId);
 
-        TopicAnswer answer = topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
-                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+        TopicAnswer answer = topicValidator.getTopicAnswer(topicId, userId);
 
         if (Boolean.TRUE.equals(answer.getIsSubmitted())) {
             throw new TopicException(TopicErrorCode.TOPIC_ANSWER_ALREADY_SUBMITTED);
