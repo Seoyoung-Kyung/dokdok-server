@@ -69,9 +69,6 @@ public class Gathering extends BaseTimeEntity {
     }
 
     public void deleteGathering() {
-        if (this.gatheringStatus == GatheringStatus.INACTIVE) {
-            throw new GatheringException(GatheringErrorCode.ALREADY_INACTIVE);
-        }
         this.gatheringStatus = GatheringStatus.INACTIVE;
         this.markDeletedNow();
     }

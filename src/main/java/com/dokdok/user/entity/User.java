@@ -2,6 +2,7 @@ package com.dokdok.user.entity;
 
 import com.dokdok.global.BaseTimeEntity;
 import com.dokdok.oauth2.OAuth2UserInfo;
+import com.dokdok.user.dto.request.UpdateUserInfoRequest;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -48,5 +49,20 @@ public class User extends BaseTimeEntity {
 
     public void updateNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    /**
+     * 사용자의 정보를 변경합니다.
+     * 현재는 닉네임만 가능.
+     */
+    public void updateInfo(UpdateUserInfoRequest request) {
+
+        if (!this.nickname.equals(request.nickname())) {
+            this.nickname = request.nickname();
+        }
+    }
+
+    public void delete() {
+        markDeletedNow();
     }
 }
