@@ -12,6 +12,8 @@ public record SuggestTopicResponse(
         String title,
         String description,
         TopicType topicType,
+        String topicTypeLabel,
+        String topicTypeDescription,
         CreatedByInfo createdBy
 ) {
 
@@ -22,6 +24,8 @@ public record SuggestTopicResponse(
                 .title(topic.getTitle())
                 .description(topic.getDescription())
                 .topicType(topic.getTopicType())
+                .topicTypeLabel(topic.getTopicType().getDisplayName())
+                .topicTypeDescription(topic.getTopicType().getDescription())
                 .createdBy(CreatedByInfo.of(
                         user.getId(),
                         user.getNickname()
