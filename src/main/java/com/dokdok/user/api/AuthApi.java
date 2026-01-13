@@ -3,6 +3,7 @@ package com.dokdok.user.api;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.user.dto.response.UserInfoResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Tag(name = "인증", description = "인증 관련 API")
@@ -59,4 +61,28 @@ public interface AuthApi {
     })
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUser();
+
+    @Operation(
+            summary = "로그아웃",
+            description = "현재 세션을 무효화하고 보안 컨텍스트를 초기화합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "로그아웃 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"SUCCESS\",\"message\":\"로그아웃 성공\",\"data\":null}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @PostMapping(value = "/logout", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<Void>> logout();
 }
