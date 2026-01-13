@@ -10,13 +10,19 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     List<Topic> findAllByMeetingId(Long meetingId);
 
-    boolean existsByIdAndMeetingId(Long topicId, Long meetingId);
+    @Query("SELECT t " +
+            "FROM Topic t " +
+            "LEFT JOIN FETCH t.meeting m " +
+            "LEFT JOIN FETCH t.proposedBy u " +
+            "WHERE t.id = :topicId")
+    Optional<Topic> findDetailById(Long topicId);
 
     @Modifying
     @Query("""
@@ -42,4 +48,19 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("meetingId") Long meetingId,
             Pageable pageable
     );
+
+    @Query("SELECT t " +
+            "FROM Topic t " +
+            "LEFT JOIN FETCH t.meeting m " +
+            "LEFT JOIN FETCH m.gathering g " +
+            "WHERE t.id = :topicId " +
+            "AND (t.proposedBy.id = :userId " +
+            "OR g.gatheringLeader.id = :userId " +
+            "OR m.meetingLeader.id = :userId)")
+    Optional<Topic> findTopicWithDeletePermission(
+            @Param("topicId") Long topicId,
+            @Param("userId") Long userId
+    );
+
+    Optional<Topic> findByIdAndDeletedAtIsNull(Long topicId);
 }

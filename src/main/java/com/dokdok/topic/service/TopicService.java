@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @RequestMapping("/api/gatherings/{gatheringId}/meetings/{meetingId}")
@@ -27,6 +29,7 @@ public class TopicService {
     private final TopicRepository topicRepository;
     private final MeetingValidator meetingValidator;
     private final GatheringValidator gatheringValidator;
+    private final TopicValidator topicValidator;
 
     @Transactional
     public SuggestTopicResponse createTopic(
@@ -79,5 +82,24 @@ public class TopicService {
                 topicRepository.findTopicsByMeetingId(meetingId, noSortPageable);
 
         return TopicsPageResponse.from(topicPage);
+    }
+
+    @Transactional
+    public void deleteTopic(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        gatheringValidator.validateMembership(gatheringId, userId);
+
+        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
+
+        topicValidator.validateTopicInMeeting(topicId, meetingId);
+
+        Topic topic = topicValidator.getDeletableTopic(topicId, userId);
+
+        topic.softDelete();
     }
 }
