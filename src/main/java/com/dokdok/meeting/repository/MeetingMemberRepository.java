@@ -20,9 +20,29 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
       JOIN FETCH mm.meeting
       WHERE mm.meeting.id = :meetingId
       AND mm.user.id = :userId
+      AND mm.canceledAt IS NULL
       """)
     Optional<MeetingMember> findByMeetingIdAndUserId(
             @Param("meetingId") Long meetingId,
             @Param("userId") Long userId
     );
+
+    @Query("""
+      SELECT mm FROM MeetingMember mm
+      JOIN FETCH mm.user u
+      JOIN FETCH mm.meeting
+      WHERE mm.meeting.id = :meetingId
+      AND mm.user.id = :userId
+      """)
+    Optional<MeetingMember> findAnyByMeetingIdAndUserId(
+            @Param("meetingId") Long meetingId,
+            @Param("userId") Long userId
+    );
+
+    @Query("""
+      SELECT count(mm) FROM MeetingMember mm
+      WHERE mm.meeting.id = :meetingId
+      AND mm.canceledAt IS NULL
+      """)
+    int countActiveMembers(@Param("meetingId") Long meetingId);
 }

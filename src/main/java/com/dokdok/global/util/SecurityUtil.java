@@ -7,6 +7,7 @@ import com.dokdok.user.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 
 import java.util.Optional;
 
@@ -108,5 +109,37 @@ public class SecurityUtil {
      */
     public static Optional<Long> getCurrentUserIdOptional() {
         return getCurrentUserOptional().map(CustomOAuth2User::getUserId);
+    }
+
+    /**
+     * SecurityContext의 인증 정보를 업데이트
+     * User 엔티티가 업데이트된 경우 SecurityContext도 함께 갱신하기 위해 사용
+     *
+     * @param updatedUser 업데이트된 User 엔티티
+     * @throws GlobalException 현재 인증되지 않은 경우
+     */
+    public static void updateCurrentUserInContext(User updatedUser) {
+        Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+        CustomOAuth2User currentOAuth2User = getCurrentUser();
+
+        // 기존 attributes를 유지하면서 업데이트된 User로 새 CustomOAuth2User 생성
+        CustomOAuth2User updatedOAuth2User = CustomOAuth2User.builder()
+                .user(updatedUser)
+                .attributes(currentOAuth2User.getAttributes())
+                .build();
+
+        // OAuth2AuthenticationToken으로 새로운 인증 정보 생성 (Builder 패턴)
+        OAuth2AuthenticationToken currentOAuth2Token = (OAuth2AuthenticationToken) currentAuth;
+        OAuth2AuthenticationToken newAuth = currentOAuth2Token.toBuilder()
+                .principal(updatedOAuth2User)
+                .authorities(authorities -> {
+                    authorities.clear();
+                    authorities.addAll(updatedOAuth2User.getAuthorities());
+                })
+                .build();
+
+        // SecurityContext에 새로운 Authentication 설정
+        SecurityContextHolder.getContext().setAuthentication(newAuth);
+
     }
 }
