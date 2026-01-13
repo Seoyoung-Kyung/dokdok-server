@@ -24,6 +24,7 @@ public class Book {
     private Long id;
 
     @Column(name = "book_name", nullable = false, length = 255)
+    @NotBlank(message = "책 이름은 필수 항목입니다.")
     private String bookName;
 
     @Column(name = "publisher", length = 100)
