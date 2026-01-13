@@ -6,6 +6,8 @@ import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.global.util.SecurityUtil;
+import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.meeting.repository.MeetingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,7 @@ public class GatheringService {
 	private final GatheringMemberRepository gatheringMemberRepository;
 	private final GatheringValidator gatheringValidator;
 	private final GatheringRepository gatheringRepository;
+	private final MeetingRepository meetingRepository;
 
 	public MyGatheringListResponse getMyGatherings(Pageable pageable) {
 		Long userId = SecurityUtil.getCurrentUserId();
@@ -32,9 +35,10 @@ public class GatheringService {
 		List<GatheringSimpleResponse> gatheringResponses = gatheringMemberPage.getContent()
 				.stream()
 				.map(gatheringMember -> {
-					Integer totalMembers = gatheringMemberRepository.countActiveMembers(gatheringMember.getGathering().getId());
+					int totalMembers = gatheringMemberRepository.countActiveMembers(gatheringMember.getGathering().getId());
+					int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gatheringMember.getGathering().getId(), MeetingStatus.DONE);
 
-					return GatheringSimpleResponse.from(gatheringMember, totalMembers, gatheringMember.getRole());
+					return GatheringSimpleResponse.from(gatheringMember, totalMembers,totalMeetings, gatheringMember.getRole());
 				})
 				.collect(Collectors.toList());
 
