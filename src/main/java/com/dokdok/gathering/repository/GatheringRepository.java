@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface GatheringRepository extends JpaRepository<Gathering, Long> {
+
+    boolean existsByInvitationLink(String invitationLink);
 }

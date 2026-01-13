@@ -1,10 +1,12 @@
 package com.dokdok.gathering.controller;
 
 import com.dokdok.gathering.api.GatheringApi;
-import com.dokdok.gathering.dto.GatheringDetailResponse;
-import com.dokdok.gathering.dto.GatheringUpdateRequest;
-import com.dokdok.gathering.dto.GatheringUpdateResponse;
-import com.dokdok.gathering.dto.MyGatheringListResponse;
+import com.dokdok.gathering.dto.request.GatheringCreateRequest;
+import com.dokdok.gathering.dto.response.GatheringDetailResponse;
+import com.dokdok.gathering.dto.response.GatheringCreateResponse;
+import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
+import com.dokdok.gathering.dto.response.GatheringUpdateResponse;
+import com.dokdok.gathering.dto.response.MyGatheringListResponse;
 import com.dokdok.gathering.service.GatheringService;
 import com.dokdok.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -19,6 +21,15 @@ import org.springframework.web.bind.annotation.*;
 public class GatheringController implements GatheringApi {
 
     private final GatheringService gatheringService;
+
+    @Override
+    @PostMapping
+    public ResponseEntity<ApiResponse<GatheringCreateResponse>> createGathering(
+            @Valid @RequestBody GatheringCreateRequest request
+    ) {
+        GatheringCreateResponse response = gatheringService.createGathering(request);
+        return ApiResponse.created(response, "모임 생성에 성공하였습니다.");
+    }
 
     @Override
     @GetMapping
