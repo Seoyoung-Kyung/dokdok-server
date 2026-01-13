@@ -1,8 +1,9 @@
 package com.dokdok.topic.service;
 
+import com.dokdok.topic.entity.TopicAnswer;
+import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
-import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,9 @@ public class TopicValidator {
     private final TopicAnswerRepository topicAnswerRepository;
 
     public void validateTopicInMeeting(Long topicId, Long meetingId) {
-        boolean exists = topicRepository.existsByIdAndMeetingId(topicId, meetingId);
-        if (!exists) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
+        if (!meetingId.equals(topic.getMeeting().getId())) {
             throw new TopicException(TopicErrorCode.TOPIC_NOT_FOUND);
         }
     }
