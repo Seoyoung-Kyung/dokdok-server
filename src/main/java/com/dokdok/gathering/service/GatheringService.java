@@ -4,6 +4,7 @@ import com.dokdok.gathering.dto.*;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
+import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,7 @@ public class GatheringService {
 
 	private final GatheringMemberRepository gatheringMemberRepository;
 	private final GatheringValidator gatheringValidator;
+	private final GatheringRepository gatheringRepository;
 
 	public MyGatheringListResponse getMyGatherings(Pageable pageable) {
 		Long userId = SecurityUtil.getCurrentUserId();
@@ -76,5 +78,17 @@ public class GatheringService {
 		gathering.updateGatheringInfo(request.gatheringName(), request.description());
 
 		return GatheringUpdateResponse.from(gathering);
+	}
+
+	// 모임 삭제 - 리더만 가능
+	@Transactional
+	public void deleteGathering(Long gatheringId) {
+		Long userId = SecurityUtil.getCurrentUserId();
+
+		// 모임 존재 여부 & 리더 권한 검증
+		Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
+		gatheringValidator.validateLeader(gatheringId, userId);
+
+		gathering.deleteGathering();
 	}
 }

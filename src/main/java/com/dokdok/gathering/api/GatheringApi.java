@@ -16,6 +16,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -161,5 +162,45 @@ public interface GatheringApi {
                     required = true
             )
             @Valid @RequestBody GatheringUpdateRequest request
+    );
+
+    @Operation(
+            summary = "모임 삭제",
+            description = """
+              모임을 삭제(Soft Delete)합니다.
+              - 모임의 리더만 삭제할 수 있습니다.
+              - 삭제된 모임은 조회되지 않습니다.
+              """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "삭제 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 모임의 리더만 삭제할 수 있습니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임을 찾을 수 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @DeleteMapping("/{gatheringId}")
+    ResponseEntity<ApiResponse<Void>> deleteGathering(
+            @Parameter(
+                    description = "삭제할 모임 ID",
+                    required = true,
+                    example = "123"
+            )
+            @PathVariable Long gatheringId
     );
 }

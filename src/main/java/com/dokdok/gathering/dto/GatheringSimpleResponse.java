@@ -2,6 +2,7 @@ package com.dokdok.gathering.dto;
 
 import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.entity.GatheringRole;
+import com.dokdok.gathering.entity.GatheringStatus;
 import lombok.Builder;
 
 @Builder
@@ -9,7 +10,7 @@ public record GatheringSimpleResponse(
         Long gatheringId,
         String gatheringName,
         Boolean isFavorite,
-        String gatheringStatus,
+        GatheringStatus gatheringStatus,
         Integer totalMembers,
         Integer totalMeetings,      // TODO : Meeting 도메인 구현 후 실제 값으로 대체 필요
         GatheringRole currentUserRole,
