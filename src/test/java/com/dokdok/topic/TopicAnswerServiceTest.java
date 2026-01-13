@@ -4,6 +4,7 @@ import com.dokdok.topic.dto.request.TopicAnswerRequest;
 import com.dokdok.topic.dto.response.TopicAnswerResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
+import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicAnswerService;
@@ -17,8 +18,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +51,6 @@ class TopicAnswerServiceTest {
                 .id(100L)
                 .topic(topic)
                 .user(user)
-                .bookRating(new BigDecimal("4.5"))
                 .content("이 책을 읽고 ...")
                 .isSubmitted(false)
                 .build();
@@ -62,10 +60,7 @@ class TopicAnswerServiceTest {
         given(topicAnswerRepository.save(any(TopicAnswer.class)))
                 .willReturn(saved);
 
-        TopicAnswerRequest request = new TopicAnswerRequest(
-                "이 책을 읽고 ...",
-                new BigDecimal("4.5")
-        );
+        TopicAnswerRequest request = new TopicAnswerRequest("이 책을 읽고 ...");
 
         TopicAnswerResponse response = topicAnswerService.createAnswer(
                 1L, 1L, 12L, 1L, request
@@ -77,7 +72,6 @@ class TopicAnswerServiceTest {
         TopicAnswer captured = captor.getValue();
         assertThat(captured.getTopic()).isEqualTo(topic);
         assertThat(captured.getUser()).isEqualTo(user);
-        assertThat(captured.getBookRating()).isEqualByComparingTo("4.5");
         assertThat(captured.getContent()).isEqualTo("이 책을 읽고 ...");
 
         assertThat(response.topicId()).isEqualTo(12L);
@@ -89,14 +83,11 @@ class TopicAnswerServiceTest {
     void createAnswer_throwsWhenTopicMissing() {
         given(topicRepository.findById(12L)).willReturn(Optional.empty());
 
-        TopicAnswerRequest request = new TopicAnswerRequest(
-                "이 책을 읽고 ...",
-                new BigDecimal("4.5")
-        );
+        TopicAnswerRequest request = new TopicAnswerRequest("이 책을 읽고 ...");
 
         assertThatThrownBy(() -> topicAnswerService.createAnswer(
                 1L, 1L, 12L, 1L, request
-        )).isInstanceOf(NoSuchElementException.class);
+        )).isInstanceOf(TopicException.class);
 
         verifyNoInteractions(topicAnswerRepository);
     }
@@ -108,14 +99,11 @@ class TopicAnswerServiceTest {
         given(topicRepository.findById(12L)).willReturn(Optional.of(topic));
         given(userRepository.findById(1L)).willReturn(Optional.empty());
 
-        TopicAnswerRequest request = new TopicAnswerRequest(
-                "이 책을 읽고 ...",
-                new BigDecimal("4.5")
-        );
+        TopicAnswerRequest request = new TopicAnswerRequest("이 책을 읽고 ...");
 
         assertThatThrownBy(() -> topicAnswerService.createAnswer(
                 1L, 1L, 12L, 1L, request
-        )).isInstanceOf(NoSuchElementException.class);
+        )).isInstanceOf(TopicException.class);
 
         verifyNoInteractions(topicAnswerRepository);
     }

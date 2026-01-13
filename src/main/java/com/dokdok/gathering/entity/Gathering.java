@@ -8,6 +8,9 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+
 @Entity
 @Table(name = "gathering")
 @Getter
@@ -39,4 +42,16 @@ public class Gathering extends BaseTimeEntity {
     @Column(name = "gathering_status", nullable = false, length = 20)
     @Builder.Default
     private String gatheringStatus = "ACTIVE";
+
+    /**
+     * 생성일일로부터 경과한 일수를 계산합니다.
+     */
+    public Integer getDaysFromCreation(){
+        if(this.getCreatedAt()== null){
+            return 0;
+        }
+        return (int) ChronoUnit.DAYS.between(
+                this.getCreatedAt().toLocalDate(), LocalDate.now()
+        );
+    }
 }

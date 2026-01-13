@@ -9,6 +9,8 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import static com.dokdok.topic.entity.TopicStatus.PROPOSED;
+
 @Entity
 @Table(name = "topic")
 @Getter
@@ -39,13 +41,31 @@ public class Topic extends BaseTimeEntity {
     private String description;
 
     @Column(name = "topic_type", nullable = false, length = 30)
-    private String topicType;
+    @Enumerated(EnumType.STRING)
+    private TopicType topicType;
 
     @Column(name = "topic_status", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    private String topicStatus = "PROPOSED";
+    private TopicStatus topicStatus = PROPOSED;
 
-    @Column(name = "vote_count", nullable = false)
+    @Column(name = "like_count", nullable = false)
     @Builder.Default
-    private Integer voteCount = 0;
+    private Integer likeCount = 0;
+
+    public static Topic of(
+            Meeting meeting,
+            User user,
+            String title,
+            String description,
+            TopicType topicType
+    ) {
+        return Topic.builder()
+                .meeting(meeting)
+                .proposedBy(user)
+                .title(title)
+                .description(description)
+                .topicType(topicType)
+                .build();
+    }
 }

@@ -35,7 +35,7 @@ public class Book {
     private String category;
 
     @Column(name = "book_image_url", length = 500)
-    private String bookImageUrl;
+    private String thumbnail;
 
     @Column(name = "isbn", length = 20)
     private String isbn;
