@@ -126,6 +126,7 @@ public interface BookApi {
                                               "data": {
                                                 "content": [
                                                   {
+                                                    "bookId": 1,
                                                     "title": "예제 도서명",
                                                     "publisher": "예제 출판사",
                                                     "authors": "저자A, 저자B",
@@ -189,6 +190,7 @@ public interface BookApi {
                                               "code": "SUCCESS",
                                               "message": "책 상세 정보 조회 성공",
                                               "data": {
+                                                "bookId": 1,
                                                 "title": "예제 도서명",
                                                 "publisher": "예제 출판사",
                                                 "authors": "저자A, 저자B",
