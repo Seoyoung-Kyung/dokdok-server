@@ -11,9 +11,7 @@ import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.global.util.SecurityUtil;
-import com.dokdok.meeting.dto.MeetingCreateRequest;
-import com.dokdok.meeting.dto.MeetingResponse;
-import com.dokdok.meeting.dto.MeetingStatusResponse;
+import com.dokdok.meeting.dto.*;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingMemberRole;
@@ -133,6 +131,9 @@ public class MeetingService {
      * @param gatheringId 모임 식별자
      */
     private void validateMaxParticipants(Integer maxParticipants, Long gatheringId) {
+        if (maxParticipants == null) {
+            return;
+        }
         if (maxParticipants < 1) {
             throw new MeetingException(MeetingErrorCode.INVALID_MAX_PARTICIPANTS);
         }
@@ -265,5 +266,79 @@ public class MeetingService {
         topicRepository.softDeleteByMeetingIdAndProposedById(meetingId, userId);
 
         return meetingId;
+    }
+
+    /**
+     * 약속 제안자가 약속을 수정한다.
+     * 진행 전 상태의 약속만 수정 가능
+     * 현재 참여 인원 수보다 작을 순 없음
+     * maxParticipants가 null일 경우 기존 값 유지
+     * endDate는 startDate 보다 이전일 수 없다
+     * @param meetingId 약속 식별자
+     * @param request 수정 요청 폼
+     * @return 수정 완료된 응답
+     */
+    @Transactional
+    public MeetingUpdateResponse updateMeeting(Long meetingId, MeetingUpdateRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+        Long originMeetingId = meeting.getId();
+        meetingValidator.validateMeetingLeader(meeting, userId);
+
+        validateUpdatableStatus(meeting);
+
+        Long gatheringId = meeting.getGathering().getId();
+        validateMaxParticipants(request.maxParticipants(), gatheringId);
+
+        int curMemberCount = meetingValidator.countActiveMembers(originMeetingId);
+        validateMaxParticipantsNotLessThanCurrent(request.maxParticipants(), curMemberCount);
+
+        validateMeetingDates(request, meeting);
+
+        meeting.update(request);
+
+        return MeetingUpdateResponse.from(meeting);
+    }
+
+    /**
+     * 현재 모임 인원보다 약속 수정 요청에 대한 인원 수가 많지 않은지 확인한다.
+     */
+    private void validateMaxParticipantsNotLessThanCurrent(Integer maxParticipants, int currentParticipantCount) {
+        if (maxParticipants != null && maxParticipants < currentParticipantCount) {
+            throw new MeetingException(
+                    MeetingErrorCode.MAX_PARTICIPANTS_LESS_THAN_CURRENT
+            );
+        }
+    }
+
+    /**
+     * 수정 가능한 약속 상태인지 확인한다. (PENDING, CONFIRMED만 가능)
+     */
+    private void validateUpdatableStatus(Meeting meeting) {
+        if (meeting.getMeetingStatus() == MeetingStatus.DONE) {
+            throw new MeetingException(
+                    MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
+                    "종료된 약속은 수정할 수 없습니다."
+            );
+        }
+    }
+
+    /**
+     * 종료 일시가 시작 일시보다 이전인지 확인한다.
+     */
+    private void validateMeetingDates(MeetingUpdateRequest request, Meeting meeting) {
+        LocalDateTime startDate = request.startDate() != null
+                ? request.startDate()
+                : meeting.getMeetingStartDate();
+        LocalDateTime endDate = request.endDate() != null
+                ? request.endDate()
+                : meeting.getMeetingEndDate();
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            throw new MeetingException(
+                    MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
+                    "종료 일시는 시작 일시보다 이전일 수 없습니다."
+            );
+        }
     }
 }

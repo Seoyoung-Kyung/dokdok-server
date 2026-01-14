@@ -78,4 +78,22 @@ public class MeetingValidator {
         return meetingMemberRepository.findAnyByMeetingIdAndUserId(meetingId, userId)
                 .orElseThrow(() -> new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER));
     }
+
+    /**
+     * 요청한 사용자가 약속장인지 검증한다.
+     */
+    public void validateMeetingLeader(Meeting meeting, Long userId) {
+        if (meeting.getMeetingLeader() == null
+                || meeting.getMeetingLeader().getId() == null
+                || !meeting.getMeetingLeader().getId().equals(userId)) {
+            throw new MeetingException(MeetingErrorCode.NOT_MEETING_LEADER);
+        }
+    }
+
+    /**
+     * 약속에 현재 참가한 사람의 인원 수를 리턴한다.
+     */
+    public int countActiveMembers(Long meetingId) {
+        return meetingMemberRepository.countActiveMembers(meetingId);
+    }
 }
