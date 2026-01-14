@@ -40,4 +40,13 @@ public class BookReviewService {
         return BookReviewResponse.from(bookReviewRepository.save(review));
     }
 
+    @Transactional(readOnly = true)
+    public BookReviewResponse getMyReview(Long bookId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        BookReview review = bookValidator.validateAndGetReview(bookId, userId);
+
+        return BookReviewResponse.from(review);
+    }
+
 }
