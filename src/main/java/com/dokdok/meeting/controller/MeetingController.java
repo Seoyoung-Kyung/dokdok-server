@@ -79,7 +79,7 @@ public class MeetingController implements MeetingApi {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<MeetingUpdateResponse>> updateMeeting(
             @PathVariable Long meetingId,
-            @RequestBody MeetingUpdateRequest request
+            @RequestBody @Valid MeetingUpdateRequest request
     ) {
         MeetingUpdateResponse response = meetingService.updateMeeting(meetingId, request);
         return ApiResponse.updated(response, "약속 수정에 성공했습니다.");
