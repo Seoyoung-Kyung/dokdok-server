@@ -46,9 +46,10 @@ public interface GatheringMemberRepository extends JpaRepository<GatheringMember
     int countActiveMembers(@Param("gatheringId") Long gatheringId);
 
     /**
-     * 특정 유저가 특정 모임의 멤버인지 확인
+     * 특정 유저가 특정 모임의 멤버인지 확인 (Gathering fetch join)
      */
     @Query("SELECT gm FROM GatheringMember gm " +
+            "JOIN FETCH gm.gathering g " +
             "WHERE gm.gathering.id = :gatheringId " +
             "AND gm.user.id = :userId " +
             "AND gm.removedAt IS NULL")
