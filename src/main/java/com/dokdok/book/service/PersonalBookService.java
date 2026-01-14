@@ -13,9 +13,7 @@ import com.dokdok.book.repository.BookRepository;
 import com.dokdok.book.repository.PersonalBookRepository;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.entity.User;
-import com.dokdok.user.exception.UserErrorCode;
-import com.dokdok.user.exception.UserException;
-import com.dokdok.user.repository.UserRepository;
+import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,14 +27,13 @@ public class PersonalBookService {
 
     private final PersonalBookRepository personalBookRepository;
     private final BookRepository bookRepository;
-    private final UserRepository userRepository;
+    private final UserValidator userValidator;
 
     // 생성
     @Transactional
     public PersonalBookCreateResponse createBook(BookCreateRequest bookCreateRequest) {
         // 사용자 유효성 검증
-        User userEntity = getCurrentUser();
-
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
         // 책 유효성 검증 && 없으면 book entity에 저장
         Book entity = bookRepository.findByIsbn(bookCreateRequest.isbn())
                 .orElseGet(() -> bookRepository.save(bookCreateRequest.of()));
@@ -51,7 +48,7 @@ public class PersonalBookService {
 
     // List
     public Page<PersonalBookListResponse> getPersonalBookList(Pageable pageable) {
-        User userEntity = getCurrentUser();
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
         Page<PersonalBook> page= personalBookRepository.findByUserId(userEntity.getId(), pageable);
 
 
@@ -63,7 +60,7 @@ public class PersonalBookService {
     }
 
     public PersonalBookDetailResponse getPersonalBook(Long bookId) {
-        User userEntity = getCurrentUser();
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
         // 책 정보 GET Logic
         PersonalBook entity = personalBookRepository.findByUserIdAndBookId(userEntity.getId(), bookId)
                 .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
@@ -77,10 +74,5 @@ public class PersonalBookService {
                {
                    throw new BookException(BookErrorCode.BOOK_ALREADY_EXISTS);
                });
-   }
-
-   private User getCurrentUser() {
-        return userRepository.findById(SecurityUtil.getCurrentUserId())
-               .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
    }
 }
