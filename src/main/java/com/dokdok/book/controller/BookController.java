@@ -38,13 +38,15 @@ public class BookController implements BookApi {
     }
 
     @Override
+    @GetMapping
     public ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(Pageable pageable) {
         Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(pageable);
         return ApiResponse.success(personalBookList, "책 리스트 조회 성공");
     }
 
     @Override
-    public ResponseEntity<ApiResponse<PersonalBookDetailResponse>> getMyBook(Long bookId) {
+    @GetMapping("/{bookId}")
+    public ResponseEntity<ApiResponse<PersonalBookDetailResponse>> getMyBook(@PathVariable Long bookId) {
         PersonalBookDetailResponse personalBook = personalBookService.getPersonalBook(bookId);
         return ApiResponse.success(personalBook, "책 상세 정보 조회 성공");
     }
