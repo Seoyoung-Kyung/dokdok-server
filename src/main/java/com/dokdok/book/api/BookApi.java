@@ -3,6 +3,8 @@ package com.dokdok.book.api;
 import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.response.KakaoBookResponse;
 import com.dokdok.book.dto.response.PersonalBookCreateResponse;
+import com.dokdok.book.dto.response.PersonalBookDetailResponse;
+import com.dokdok.book.dto.response.PersonalBookListResponse;
 import com.dokdok.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,13 +13,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "책 관리", description = "책 검색 및 내 책장 관리 API")
 @RequestMapping("/api/book")
@@ -100,4 +103,111 @@ public interface BookApi {
     })
     @PostMapping
     ResponseEntity<ApiResponse<PersonalBookCreateResponse>> createBook(@Valid @RequestBody BookCreateRequest bookCreateRequest);
+
+    @Operation(
+            summary = "내 책장 목록 조회",
+            description = """
+                    내 책장에 등록된 책을 페이징으로 조회합니다.
+                    - 로그인한 사용자 기준으로 조회합니다.
+                    - page/size/sort 파라미터로 페이징과 정렬을 제어할 수 있습니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "책 리스트 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "SUCCESS",
+                                              "message": "책 리스트 조회 성공",
+                                              "data": {
+                                                "content": [
+                                                  {
+                                                    "bookId": 1,
+                                                    "title": "예제 도서명",
+                                                    "publisher": "예제 출판사",
+                                                    "authors": "저자A, 저자B",
+                                                    "bookReadingStatus": "READING",
+                                                    "thumbnail": "https://example.com/thumb.jpg"
+                                                  }
+                                                ],
+                                                "pageable": "INSTANCE",
+                                                "last": true,
+                                                "totalPages": 1,
+                                                "totalElements": 1,
+                                                "size": 10,
+                                                "number": 0,
+                                                "sort": {
+                                                  "empty": false,
+                                                  "sorted": true,
+                                                  "unsorted": false
+                                                },
+                                                "first": true,
+                                                "numberOfElements": 1,
+                                                "empty": false
+                                              }
+                                            }
+                                            """
+                            ))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @GetMapping
+    ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(
+            @ParameterObject
+            @Parameter(
+                    description = "페이징 정보 (page: 페이지 번호, size: 페이지 크기, sort: 정렬 기준)",
+                    example = "page=0&size=10&sort=book_name,asc"
+            )
+            @PageableDefault(
+                    size = 10,
+                    sort = "added_at",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable
+    );
+
+    @Operation(
+            summary = "내 책장 단일 조회",
+            description = """
+                    내 책장에 등록된 책 한 권의 상세 정보를 조회합니다.
+                    - 로그인한 사용자 소유의 책만 조회됩니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "책 상세 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "SUCCESS",
+                                              "message": "책 상세 정보 조회 성공",
+                                              "data": {
+                                                "bookId": 1,
+                                                "title": "예제 도서명",
+                                                "publisher": "예제 출판사",
+                                                "authors": "저자A, 저자B",
+                                                "bookReadingStatus": "READING"
+                                              }
+                                            }
+                                            """
+                            ))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @GetMapping("/{bookId}")
+    ResponseEntity<ApiResponse<PersonalBookDetailResponse>> getMyBook(
+            @Parameter(description = "조회할 책 ID", required = true, example = "1")
+            @PathVariable Long bookId
+    );
 }
