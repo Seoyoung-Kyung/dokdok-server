@@ -47,4 +47,9 @@ public class BookReview {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "keyword_id", nullable = false)
     private Keyword keyword;
+
+    public void updateReview(BigDecimal rating, Keyword keyword) {
+        this.rating = rating;
+        this.keyword = keyword;
+    }
 }
