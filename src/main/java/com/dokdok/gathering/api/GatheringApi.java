@@ -1,9 +1,12 @@
 package com.dokdok.gathering.api;
 
-import com.dokdok.gathering.dto.GatheringDetailResponse;
-import com.dokdok.gathering.dto.GatheringUpdateRequest;
-import com.dokdok.gathering.dto.GatheringUpdateResponse;
-import com.dokdok.gathering.dto.MyGatheringListResponse;
+
+import com.dokdok.gathering.dto.request.GatheringCreateRequest;
+import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
+import com.dokdok.gathering.dto.response.GatheringCreateResponse;
+import com.dokdok.gathering.dto.response.GatheringDetailResponse;
+import com.dokdok.gathering.dto.response.GatheringUpdateResponse;
+import com.dokdok.gathering.dto.response.MyGatheringListResponse;
 import com.dokdok.global.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,12 +19,13 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import jakarta.validation.Valid;
 
 @Tag(name = "모임", description = "모임 관련 API")
@@ -29,7 +33,43 @@ import jakarta.validation.Valid;
 public interface GatheringApi {
 
     @Operation(
-        summary = "모임 상세 정보 조회",
+            summary = "모임 생성",
+            description = """
+              신규 모임을 생성하고 초대 코드를 발급합니다.
+              - 요청한 사용자가 모임장이 되며 초기 멤버로 추가됩니다.
+              - 초대 코드는 고유하게 생성됩니다.
+              """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "생성 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GatheringCreateResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "초대 코드 중복 등으로 인한 생성 실패"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @PostMapping
+    ResponseEntity<ApiResponse<GatheringCreateResponse>> createGathering(
+            @Parameter(description = "모임 생성 요청", required = true)
+            @Valid @RequestBody GatheringCreateRequest request
+    );
+
+    @Operation(
+        summary = "모임 목록 조회",
         description = """
               현재 로그인한 사용자가 속한 모임 목록을 조회합니다.
               - 가입일 최신순으로 정렬됩니다.
@@ -65,10 +105,11 @@ public interface GatheringApi {
             @PageableDefault(size = 10, sort = "joinedAt", direction = org.springframework.data.domain.Sort.Direction.DESC)
             Pageable pageable
     );
+
     @Operation(
-            summary = "내 모임 리스트조회",
+            summary = "내 모임 상세 조회",
             description = """
-              내가 가입한 모임의 정보를 조회합니다.
+              내가 가입한 모임의 상세 정보를 조회합니다.
               - 모임에 가입한 모임만 조회할 수 있습니다.
               """
     )
@@ -161,5 +202,87 @@ public interface GatheringApi {
                     required = true
             )
             @Valid @RequestBody GatheringUpdateRequest request
+    );
+
+    @Operation(
+            summary = "모임 삭제",
+            description = """
+              모임을 삭제(Soft Delete)합니다.
+              - 모임의 리더만 삭제할 수 있습니다.
+              - 삭제된 모임은 조회되지 않습니다.
+              """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "삭제 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 모임의 리더만 삭제할 수 있습니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임을 찾을 수 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @DeleteMapping("/{gatheringId}")
+    ResponseEntity<ApiResponse<Void>> deleteGathering(
+            @Parameter(
+                    description = "삭제할 모임 ID",
+                    required = true,
+                    example = "123"
+            )
+            @PathVariable Long gatheringId
+    );
+
+    @Operation(
+            summary = "모임원 강퇴",
+            description = """
+            모임원을 강퇴합니다.
+            - 모임의 리더만 강퇴할 수 있습니다.
+            - 리더는 강퇴할 수 없습니다.
+            """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "강퇴 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 모임의 리더만 강퇴할 수 있습니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임 또는 멤버를 찾을 수 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "리더는 강퇴할 수 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @DeleteMapping("/{gatheringId}/members/{userId}")
+    ResponseEntity<ApiResponse<Void>> removeMember(
+            @Parameter(description = "모임 ID", required = true, example = "123")
+            @PathVariable Long gatheringId,
+            @Parameter(description = "강퇴할 유저 ID", required = true, example = "456")
+            @PathVariable Long userId
     );
 }

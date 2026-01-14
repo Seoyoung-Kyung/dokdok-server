@@ -3,15 +3,17 @@ package com.dokdok.user.controller;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.user.api.UserApi;
 import com.dokdok.user.dto.request.OnboardRequest;
+import com.dokdok.user.dto.request.UpdateUserInfoRequest;
+import com.dokdok.user.dto.response.UserDetailResponse;
 import com.dokdok.user.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -33,5 +35,42 @@ public class UserController implements UserApi {
     public ResponseEntity<ApiResponse<Void>> checkNickname(String nickname) {
         userService.checkNickname(nickname);
         return ApiResponse.success("사용 가능한 닉네임입니다.");
+    }
+
+    @Override
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserDetailResponse>> getCurrentUser() {
+        UserDetailResponse currentUserInfo = userService.getCurrentUserInfo();
+        return ApiResponse.success(currentUserInfo, "프로필 조회 성공");
+    }
+
+    @Override
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<UserDetailResponse>> updateUserInfo(@Valid @RequestBody UpdateUserInfoRequest request) {
+        UserDetailResponse response = userService.updateUserInfo(request);
+        return ApiResponse.success(response, "프로필 수정 성공");
+    }
+
+    @Override
+    @DeleteMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> deleteCurrentUser(HttpServletRequest request) {
+        userService.deleteCurrentUser();
+        ResponseEntity<ApiResponse<Void>> response = ApiResponse.deleted("회원 탈퇴가 완료되었습니다.");
+
+        invalidateSession(request);
+        SecurityContextHolder.clearContext();
+
+        return response;
+    }
+
+    private void invalidateSession(HttpServletRequest request) {
+        if (request == null) {
+            return;
+        }
+
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
     }
 }

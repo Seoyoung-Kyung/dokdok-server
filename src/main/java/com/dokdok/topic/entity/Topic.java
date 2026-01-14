@@ -2,6 +2,8 @@ package com.dokdok.topic.entity;
 
 import com.dokdok.global.BaseTimeEntity;
 import com.dokdok.meeting.entity.Meeting;
+import com.dokdok.topic.exception.TopicErrorCode;
+import com.dokdok.topic.exception.TopicException;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -18,7 +20,7 @@ import static com.dokdok.topic.entity.TopicStatus.PROPOSED;
 @AllArgsConstructor
 @SuperBuilder
 @SQLDelete(sql = "UPDATE topic SET deleted_at = CURRENT_TIMESTAMP WHERE topic_id = ?")
-@SQLRestriction("deleted_at IS NULL")
+// @SQLRestriction("deleted_at IS NULL")
 public class Topic extends BaseTimeEntity {
 
     @Id
@@ -79,4 +81,13 @@ public class Topic extends BaseTimeEntity {
     public void updateConfirmOrder(Integer confirmOrder) {
         this.confirmOrder = confirmOrder;
     }
+
+    public void softDelete() {
+        if (isDeleted()) {
+            throw new TopicException(TopicErrorCode.TOPIC_ALREADY_DELETED);
+        }
+
+        markDeletedNow();
+    }
+
 }

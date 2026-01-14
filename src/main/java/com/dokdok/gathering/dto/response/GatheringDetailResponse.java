@@ -1,8 +1,9 @@
-package com.dokdok.gathering.dto;
+package com.dokdok.gathering.dto.response;
 
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.entity.GatheringRole;
+import com.dokdok.gathering.entity.GatheringStatus;
 import lombok.Builder;
 
 import java.util.List;
@@ -12,7 +13,7 @@ public record GatheringDetailResponse(
         Long gatheringId,
         String gatheringName,
         String description,
-        String gatheringStatus,
+        GatheringStatus gatheringStatus,
         String invitationLink,
         Integer daysFromCreation,
         GatheringRole currentUserRole,

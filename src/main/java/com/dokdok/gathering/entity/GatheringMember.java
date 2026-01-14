@@ -3,6 +3,7 @@ package com.dokdok.gathering.entity;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -17,8 +18,9 @@ import java.time.temporal.ChronoUnit;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
-public class GatheringMember {
+    @Builder
+    @SQLRestriction("removed_at IS NULL")
+    public class GatheringMember {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +39,11 @@ public class GatheringMember {
     @Builder.Default
     private Boolean isFavorite = false;
 
+    @Column(name = "member_status", nullable = true, length = 20)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private GatheringMemberStatus memberStatus = GatheringMemberStatus.PENDING;
+
     @Column(name = "role", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     @Builder.Default
@@ -53,6 +60,16 @@ public class GatheringMember {
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
 
+    public static GatheringMember of(Gathering gathering, User user,
+                                     GatheringRole role, GatheringMemberStatus status) {
+        return GatheringMember.builder()
+                .gathering(gathering)
+                .user(user)
+                .role(role)
+                .memberStatus(status)
+                .build();
+    }
+
     /**
      * 가입일로부터 경과한 일수를 계산합니다.
      */
@@ -64,5 +81,9 @@ public class GatheringMember {
                 this.joinedAt.toLocalDate(),
                 LocalDate.now()
         );
+    }
+
+    public void remove() {
+        this.removedAt = LocalDateTime.now();
     }
 }
