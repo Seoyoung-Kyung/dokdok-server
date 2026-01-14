@@ -18,9 +18,9 @@ import java.time.temporal.ChronoUnit;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
-@SQLRestriction("removed_at IS NULL")
-public class GatheringMember {
+    @Builder
+    @SQLRestriction("removed_at IS NULL")
+    public class GatheringMember {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,6 +39,11 @@ public class GatheringMember {
     @Builder.Default
     private Boolean isFavorite = false;
 
+    @Column(name = "member_status", nullable = true, length = 20)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private GatheringMemberStatus memberStatus = GatheringMemberStatus.PENDING;
+
     @Column(name = "role", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     @Builder.Default
@@ -54,6 +59,16 @@ public class GatheringMember {
 
     @Column(name = "removed_at")
     private LocalDateTime removedAt;
+
+    public static GatheringMember of(Gathering gathering, User user,
+                                     GatheringRole role, GatheringMemberStatus status) {
+        return GatheringMember.builder()
+                .gathering(gathering)
+                .user(user)
+                .role(role)
+                .memberStatus(status)
+                .build();
+    }
 
     /**
      * 가입일로부터 경과한 일수를 계산합니다.

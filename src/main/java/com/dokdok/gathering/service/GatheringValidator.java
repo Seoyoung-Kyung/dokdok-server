@@ -3,6 +3,7 @@ package com.dokdok.gathering.service;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.entity.GatheringRole;
+import com.dokdok.gathering.entity.GatheringMemberStatus;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
@@ -59,4 +60,27 @@ public class GatheringValidator {
 				.orElseThrow(() -> new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER));
 	}
 
+    /**
+     * 초대링크와 일치하는 모임이 있는지 검증합니다.
+     * 추후 초대링크 갱신기능 추가 시 만료 여부도 검증하도록 추가될 수 있습니다.
+     */
+    public Gathering validateInvitationLink(String invitationLink) {
+        return gatheringRepository.findGatheringByInvitationLink(invitationLink)
+                .orElseThrow(() -> new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND));
+    }
+
+    /**
+     * 이미 모임에 가입했거나 가입 신청을 했는지 검증합니다.
+     */
+	public void validateJoinedGathering(Long gatheringId, Long userId) {
+		gatheringMemberRepository
+				.findByGatheringIdAndUserId(gatheringId, userId)
+				.ifPresent(member -> {
+					if (member.getMemberStatus() == GatheringMemberStatus.ACTIVE) {
+						throw new GatheringException(GatheringErrorCode.ALREADY_GATHERING_MEMBER);
+					} else if (member.getMemberStatus() == GatheringMemberStatus.PENDING) {
+						throw new GatheringException(GatheringErrorCode.JOIN_REQUEST_ALREADY_PENDING);
+					}
+				});
+	}
 }
