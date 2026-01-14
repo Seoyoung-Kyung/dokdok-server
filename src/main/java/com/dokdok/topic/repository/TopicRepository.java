@@ -17,6 +17,8 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     List<Topic> findAllByMeetingId(Long meetingId);
 
+    List<Topic> findAllByIdInAndMeetingId(List<Long> topicIds, Long meetingId);
+
     @Query("SELECT t " +
             "FROM Topic t " +
             "LEFT JOIN FETCH t.meeting m " +
@@ -61,6 +63,7 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("topicId") Long topicId,
             @Param("userId") Long userId
     );
+
 
     @Modifying
     @Query("""

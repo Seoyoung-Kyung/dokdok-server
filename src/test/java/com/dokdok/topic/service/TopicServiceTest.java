@@ -12,10 +12,15 @@ import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.service.MeetingValidator;
+import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
+import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicsPageResponse;
+import com.dokdok.topic.dto.response.TopicLikeResponse;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicLike;
+import com.dokdok.topic.entity.TopicMessage;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.exception.TopicErrorCode;
@@ -111,6 +116,86 @@ class TopicServiceTest {
                 "변수명, 함수명, 클래스명을 짓는 원칙에 대해 토론합니다.",
                 TopicType.DISCUSSION
         );
+    }
+
+    @Test
+    @DisplayName("선택한 주제를 확정 상태로 변경한다")
+    void confirmTopics_Success() {
+        Long gatheringId = 1L;
+        Long meetingId = 1L;
+        Long userId = 1L;
+        List<Long> topicIds = List.of(12L, 13L);
+        ConfirmTopicsRequest request = new ConfirmTopicsRequest(topicIds);
+
+        Topic topic1 = Topic.builder()
+                .id(12L)
+                .meeting(testMeeting)
+                .topicStatus(TopicStatus.PROPOSED)
+                .build();
+        Topic topic2 = Topic.builder()
+                .id(13L)
+                .meeting(testMeeting)
+                .topicStatus(TopicStatus.VOTING)
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenReturn(userId);
+
+            doNothing().when(gatheringValidator)
+                    .validateMembership(gatheringId, userId);
+            doNothing().when(meetingValidator)
+                    .validateMeetingInGathering(meetingId, gatheringId);
+            given(topicRepository.findAllByIdInAndMeetingId(topicIds, meetingId))
+                    .willReturn(List.of(topic1, topic2));
+
+            ConfirmTopicsResponse response =
+                    topicService.confirmTopics(gatheringId, meetingId, request);
+
+            assertThat(response.meetingId()).isEqualTo(meetingId);
+            assertThat(response.topicStatus()).isEqualTo(TopicStatus.CONFIRMED);
+            assertThat(topic1.getTopicStatus()).isEqualTo(TopicStatus.CONFIRMED);
+            assertThat(topic2.getTopicStatus()).isEqualTo(TopicStatus.CONFIRMED);
+            assertThat(topic1.getConfirmOrder()).isEqualTo(1);
+            assertThat(topic2.getConfirmOrder()).isEqualTo(2);
+
+            verify(gatheringValidator).validateMembership(gatheringId, userId);
+            verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
+            verify(topicRepository).findAllByIdInAndMeetingId(topicIds, meetingId);
+        }
+    }
+
+    @Test
+    @DisplayName("선택한 주제가 존재하지 않으면 예외가 발생한다")
+    void confirmTopics_ThrowsWhenTopicMissing() {
+        Long gatheringId = 1L;
+        Long meetingId = 1L;
+        Long userId = 1L;
+        List<Long> topicIds = List.of(12L, 13L);
+        ConfirmTopicsRequest request = new ConfirmTopicsRequest(topicIds);
+
+        Topic topic1 = Topic.builder()
+                .id(12L)
+                .meeting(testMeeting)
+                .topicStatus(TopicStatus.PROPOSED)
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenReturn(userId);
+
+            doNothing().when(gatheringValidator)
+                    .validateMembership(gatheringId, userId);
+            doNothing().when(meetingValidator)
+                    .validateMeetingInGathering(meetingId, gatheringId);
+            given(topicRepository.findAllByIdInAndMeetingId(topicIds, meetingId))
+                    .willReturn(List.of(topic1));
+
+            assertThatThrownBy(() ->
+                    topicService.confirmTopics(gatheringId, meetingId, request))
+                    .isInstanceOf(TopicException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_NOT_FOUND);
+        }
     }
 
     @Test
@@ -770,6 +855,334 @@ class TopicServiceTest {
                         .isInstanceOf(TopicException.class)
                         .hasFieldOrPropertyWithValue("errorCode",
                                 TopicErrorCode.TOPIC_USER_CANNOT_DELETE);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("toggleTopicLike - 주제 좋아요/취소")
+    class ToggleTopicLikeTest {
+
+        @Test
+        @DisplayName("정상적으로 주제에 좋아요를 추가한다")
+        void toggleTopicLike_AddLike_Success() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+
+            Topic topicWithLikeCount = Topic.builder()
+                    .id(topicId)
+                    .meeting(testMeeting)
+                    .proposedBy(testUser)
+                    .title("테스트 주제")
+                    .topicType(TopicType.DISCUSSION)
+                    .likeCount(5)
+                    .build();
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserEntity)
+                        .thenReturn(testUser);
+
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingMember(meetingId, testUser.getId());
+
+                given(topicValidator.getTopicInMeeting(topicId, meetingId))
+                        .willReturn(topicWithLikeCount);
+
+                given(topicLikeRepository.existsByTopicId(topicId))
+                        .willReturn(false);
+
+                given(topicLikeRepository.save(any(TopicLike.class)))
+                        .willReturn(TopicLike.create(topicWithLikeCount, testUser));
+
+                TopicLikeResponse response =
+                        topicService.toggleTopicLike(gatheringId, meetingId, topicId);
+
+                assertThat(response).isNotNull();
+                assertThat(response.topicId()).isEqualTo(topicId);
+                assertThat(response.liked()).isTrue();
+                assertThat(response.newCount()).isEqualTo(6);
+
+                verify(gatheringValidator).validateGathering(gatheringId);
+                verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
+                verify(meetingValidator).validateMeetingMember(meetingId, testUser.getId());
+                verify(topicValidator).getTopicInMeeting(topicId, meetingId);
+                verify(topicLikeRepository).existsByTopicId(topicId);
+                verify(topicLikeRepository).save(any(TopicLike.class));
+                verify(topicRepository).increaseLikeCount(topicId);
+                verify(topicLikeRepository, never()).deleteByTopicIdAndUserId(any(), any());
+            }
+        }
+
+        @Test
+        @DisplayName("정상적으로 주제 좋아요를 취소한다")
+        void toggleTopicLike_CancelLike_Success() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+
+            Topic topicWithLikeCount = Topic.builder()
+                    .id(topicId)
+                    .meeting(testMeeting)
+                    .proposedBy(testUser)
+                    .title("테스트 주제")
+                    .topicType(TopicType.DISCUSSION)
+                    .likeCount(5)
+                    .build();
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserEntity)
+                        .thenReturn(testUser);
+
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingMember(meetingId, testUser.getId());
+
+                given(topicValidator.getTopicInMeeting(topicId, meetingId))
+                        .willReturn(topicWithLikeCount);
+
+                given(topicLikeRepository.existsByTopicId(topicId))
+                        .willReturn(true);
+
+                TopicLikeResponse response =
+                        topicService.toggleTopicLike(gatheringId, meetingId, topicId);
+
+                assertThat(response).isNotNull();
+                assertThat(response.topicId()).isEqualTo(topicId);
+                assertThat(response.liked()).isFalse();
+                assertThat(response.newCount()).isEqualTo(4);
+
+                verify(gatheringValidator).validateGathering(gatheringId);
+                verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
+                verify(meetingValidator).validateMeetingMember(meetingId, testUser.getId());
+                verify(topicValidator).getTopicInMeeting(topicId, meetingId);
+                verify(topicLikeRepository).existsByTopicId(topicId);
+                verify(topicLikeRepository).deleteByTopicIdAndUserId(topicId, testUser.getId());
+                verify(topicRepository).decreaseLikeCount(topicId);
+                verify(topicLikeRepository, never()).save(any(TopicLike.class));
+            }
+        }
+
+        @Test
+        @DisplayName("인증되지 않은 사용자인 경우 예외가 발생한다")
+        void toggleTopicLike_Unauthorized_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserEntity)
+                        .thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
+
+                assertThatThrownBy(() ->
+                        topicService.toggleTopicLike(gatheringId, meetingId, topicId))
+                        .isInstanceOf(GlobalException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                GlobalErrorCode.UNAUTHORIZED);
+
+                verify(gatheringValidator, never()).validateGathering(any());
+                verify(meetingValidator, never()).validateMeetingInGathering(any(), any());
+                verify(topicValidator, never()).getTopicInMeeting(any(), any());
+                verify(topicLikeRepository, never()).existsByTopicId(any());
+            }
+        }
+
+        @Test
+        @DisplayName("모임을 찾을 수 없는 경우 예외가 발생한다")
+        void toggleTopicLike_GatheringNotFound_ThrowsException() {
+            Long gatheringId = 999L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserEntity)
+                        .thenReturn(testUser);
+
+                doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
+                        .when(gatheringValidator)
+                        .validateGathering(gatheringId);
+
+                assertThatThrownBy(() ->
+                        topicService.toggleTopicLike(gatheringId, meetingId, topicId))
+                        .isInstanceOf(GatheringException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                GatheringErrorCode.GATHERING_NOT_FOUND);
+
+                verify(meetingValidator, never()).validateMeetingInGathering(any(), any());
+                verify(topicValidator, never()).getTopicInMeeting(any(), any());
+                verify(topicLikeRepository, never()).existsByTopicId(any());
+            }
+        }
+
+        @Test
+        @DisplayName("회차가 해당 모임에 속하지 않는 경우 예외가 발생한다")
+        void toggleTopicLike_MeetingNotInGathering_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 999L;
+            Long topicId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserEntity)
+                        .thenReturn(testUser);
+
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
+
+                doThrow(new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING))
+                        .when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
+
+                assertThatThrownBy(() ->
+                        topicService.toggleTopicLike(gatheringId, meetingId, topicId))
+                        .isInstanceOf(MeetingException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                MeetingErrorCode.NOT_GATHERING_MEETING);
+
+                verify(meetingValidator, never()).validateMeetingMember(any(), any());
+                verify(topicValidator, never()).getTopicInMeeting(any(), any());
+                verify(topicLikeRepository, never()).existsByTopicId(any());
+            }
+        }
+
+        @Test
+        @DisplayName("회차 멤버가 아닌 경우 예외가 발생한다")
+        void toggleTopicLike_NotMeetingMember_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserEntity)
+                        .thenReturn(testUser);
+
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
+
+                doThrow(new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER))
+                        .when(meetingValidator)
+                        .validateMeetingMember(meetingId, testUser.getId());
+
+                assertThatThrownBy(() ->
+                        topicService.toggleTopicLike(gatheringId, meetingId, topicId))
+                        .isInstanceOf(MeetingException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                MeetingErrorCode.NOT_MEETING_MEMBER);
+
+                verify(topicValidator, never()).getTopicInMeeting(any(), any());
+                verify(topicLikeRepository, never()).existsByTopicId(any());
+            }
+        }
+
+        @Test
+        @DisplayName("주제를 찾을 수 없는 경우 예외가 발생한다")
+        void toggleTopicLike_TopicNotFound_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 999L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserEntity)
+                        .thenReturn(testUser);
+
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingMember(meetingId, testUser.getId());
+
+                given(topicValidator.getTopicInMeeting(topicId, meetingId))
+                        .willThrow(new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
+
+                assertThatThrownBy(() ->
+                        topicService.toggleTopicLike(gatheringId, meetingId, topicId))
+                        .isInstanceOf(TopicException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                TopicErrorCode.TOPIC_NOT_FOUND);
+
+                verify(topicLikeRepository, never()).existsByTopicId(any());
+            }
+        }
+
+        @Test
+        @DisplayName("주제가 해당 회차에 속하지 않는 경우 예외가 발생한다")
+        void toggleTopicLike_TopicNotInMeeting_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserEntity)
+                        .thenReturn(testUser);
+
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingMember(meetingId, testUser.getId());
+
+                given(topicValidator.getTopicInMeeting(topicId, meetingId))
+                        .willThrow(new TopicException(TopicErrorCode.TOPIC_NOT_IN_MEETING));
+
+                assertThatThrownBy(() ->
+                        topicService.toggleTopicLike(gatheringId, meetingId, topicId))
+                        .isInstanceOf(TopicException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                TopicErrorCode.TOPIC_NOT_IN_MEETING);
+
+                verify(topicLikeRepository, never()).existsByTopicId(any());
+            }
+        }
+
+        @Test
+        @DisplayName("이미 삭제된 주제에 좋아요를 시도하면 예외가 발생한다")
+        void toggleTopicLike_TopicAlreadyDeleted_ThrowsException() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Long topicId = 1L;
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserEntity)
+                        .thenReturn(testUser);
+
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingMember(meetingId, testUser.getId());
+
+                given(topicValidator.getTopicInMeeting(topicId, meetingId))
+                        .willThrow(new TopicException(TopicErrorCode.TOPIC_ALREADY_DELETED));
+
+                assertThatThrownBy(() ->
+                        topicService.toggleTopicLike(gatheringId, meetingId, topicId))
+                        .isInstanceOf(TopicException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                TopicErrorCode.TOPIC_ALREADY_DELETED);
+
+                verify(topicLikeRepository, never()).existsByTopicId(any());
             }
         }
     }

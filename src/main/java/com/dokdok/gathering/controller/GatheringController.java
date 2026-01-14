@@ -1,10 +1,9 @@
 package com.dokdok.gathering.controller;
 
 import com.dokdok.gathering.api.GatheringApi;
-import com.dokdok.gathering.dto.GatheringDetailResponse;
-import com.dokdok.gathering.dto.GatheringUpdateRequest;
-import com.dokdok.gathering.dto.GatheringUpdateResponse;
-import com.dokdok.gathering.dto.MyGatheringListResponse;
+import com.dokdok.gathering.dto.request.GatheringCreateRequest;
+import com.dokdok.gathering.dto.response.*;
+import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.service.GatheringService;
 import com.dokdok.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -21,11 +20,27 @@ public class GatheringController implements GatheringApi {
     private final GatheringService gatheringService;
 
     @Override
+    @PostMapping
+    public ResponseEntity<ApiResponse<GatheringCreateResponse>> createGathering(
+            @Valid @RequestBody GatheringCreateRequest request
+    ) {
+        GatheringCreateResponse response = gatheringService.createGathering(request);
+        return ApiResponse.created(response, "모임 생성에 성공하였습니다.");
+    }
+
+    @PostMapping("/join/{invitationLink}")
+    public ResponseEntity<ApiResponse<GatheringJoinResponse>> joinGathering(@PathVariable("invitationLink")  String invitationLink) {
+
+        GatheringJoinResponse response = gatheringService.joinGathering(invitationLink);
+        return ApiResponse.success(response);
+    }
+
+    @Override
     @GetMapping
     public ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(Pageable pageable) {
         MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
 
-        return ApiResponse.success(response, "모임 리스트 조회 성공");
+        return ApiResponse.success(response, "모임 가입 요청이 완료되었습니다. 모임장의 승인을 기다려주세요.");
     }
 
     @Override

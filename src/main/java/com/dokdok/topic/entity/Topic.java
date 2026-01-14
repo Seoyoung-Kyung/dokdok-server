@@ -55,6 +55,9 @@ public class Topic extends BaseTimeEntity {
     @Builder.Default
     private Integer likeCount = 0;
 
+    @Column(name = "confirm_order")
+    private Integer confirmOrder;
+
     public static Topic create(
             Meeting meeting,
             User user,
@@ -69,6 +72,14 @@ public class Topic extends BaseTimeEntity {
                 .description(description)
                 .topicType(topicType)
                 .build();
+    }
+
+    public void updateStatus(TopicStatus topicStatus) {
+        this.topicStatus = topicStatus;
+    }
+
+    public void updateConfirmOrder(Integer confirmOrder) {
+        this.confirmOrder = confirmOrder;
     }
 
     public void softDelete() {
