@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface TopicRepository extends JpaRepository<Topic, Long> {
@@ -41,8 +42,9 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     @Query("SELECT t " +
             "FROM Topic t " +
-            "JOIN FETCH t.proposedBy " +
-            "JOIN FETCH t.meeting " +
+            "JOIN FETCH t.proposedBy p " +
+            "JOIN FETCH t.meeting m " +
+            "JOIN FETCH m.gathering g " +
             "WHERE t.meeting.id = :meetingId " +
             "AND t.deletedAt IS NULL " +
             "ORDER BY t.likeCount DESC, t.id ASC")
@@ -81,5 +83,29 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             """)
     void decreaseLikeCount(@Param("topicId") Long topicId);
 
-    Optional<Topic> findByIdAndDeletedAtIsNull(Long topicId);
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END " +
+            "FROM Topic t " +
+            "JOIN t.meeting m " +
+            "JOIN m.gathering g " +
+            "WHERE t.id = :topicId " +
+            "AND (t.proposedBy.id = :userId " +
+            "OR g.gatheringLeader.id = :userId " +
+            "OR m.meetingLeader.id = :userId)")
+    boolean existsByTopicIdAndUserId(
+            @Param("topicId") Long topicId,
+            @Param("userId") Long userId
+    );
+
+    @Query("SELECT t.id " +
+            "FROM Topic t " +
+            "JOIN t.meeting m " +
+            "JOIN m.gathering g " +
+            "WHERE t.id IN :topicIds " +
+            "AND (t.proposedBy.id = :userId " +
+            "OR g.gatheringLeader.id = :userId " +
+            "OR m.meetingLeader.id = :userId)")
+    Set<Long> findDeletableTopicIds(
+            @Param("topicIds") List<Long> topicIds,
+            @Param("userId") Long userId
+    );
 }
