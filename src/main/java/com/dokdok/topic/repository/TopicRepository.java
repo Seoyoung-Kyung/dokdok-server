@@ -16,6 +16,7 @@ import java.util.Optional;
 public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     List<Topic> findAllByMeetingId(Long meetingId);
+    List<Topic> findAllByIdInAndMeetingId(List<Long> topicIds, Long meetingId);
 
     @Query("SELECT t " +
             "FROM Topic t " +
