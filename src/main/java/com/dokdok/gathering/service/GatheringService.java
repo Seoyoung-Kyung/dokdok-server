@@ -3,10 +3,7 @@ package com.dokdok.gathering.service;
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.response.*;
-import com.dokdok.gathering.entity.Gathering;
-import com.dokdok.gathering.entity.GatheringMember;
-import com.dokdok.gathering.entity.GatheringRole;
-import com.dokdok.gathering.entity.GatheringStatus;
+import com.dokdok.gathering.entity.*;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
@@ -48,10 +45,25 @@ public class GatheringService {
         Gathering gathering = Gathering.of(request.gatheringName(), request.gatheringDescription(), invitationLink, user);
         Gathering savedGathering = gatheringRepository.save(gathering);
 
-        GatheringMember gatheringMember = GatheringMember.of(savedGathering, user);
-        gatheringMemberRepository.save(gatheringMember);
+        saveGatheringMember(savedGathering, user, GatheringRole.LEADER, GatheringMemberStatus.ACTIVE);
 
         return GatheringCreateResponse.from(savedGathering);
+    }
+
+    /**
+     * 초대링크를 통해 들어온 사용자가 모임에 가입 요청을 합니다.
+     */
+    @Transactional
+    public GatheringJoinResponse joinGathering(String invitationLink) {
+
+        User user = SecurityUtil.getCurrentUserEntity();
+
+        Gathering gathering = gatheringValidator.validateInvitationLink(invitationLink);
+        gatheringValidator.validateJoinedGathering(gathering.getId(), user.getId());
+
+        GatheringMember member = saveGatheringMember(gathering, user, GatheringRole.MEMBER, GatheringMemberStatus.PENDING);
+
+        return GatheringJoinResponse.from(member);
     }
 
 	public MyGatheringListResponse getMyGatherings(Pageable pageable) {
@@ -164,4 +176,14 @@ public class GatheringService {
 
 		throw new GatheringException(GatheringErrorCode.INVITATION_CODE_GENERATION_FAILED);
 	}
+
+    /**
+     * 공통 메서드
+     * 모임 멤버를 추가합니다.
+     */
+    private GatheringMember saveGatheringMember(Gathering gathering,  User user, GatheringRole role, GatheringMemberStatus status) {
+
+        GatheringMember gatheringMember = GatheringMember.of(gathering, user, role, status);
+        return gatheringMemberRepository.save(gatheringMember);
+    }
 }
