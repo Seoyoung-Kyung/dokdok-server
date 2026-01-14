@@ -11,9 +11,7 @@ import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.global.util.SecurityUtil;
-import com.dokdok.meeting.dto.MeetingCreateRequest;
-import com.dokdok.meeting.dto.MeetingResponse;
-import com.dokdok.meeting.dto.MeetingStatusResponse;
+import com.dokdok.meeting.dto.*;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingMemberRole;
@@ -34,6 +32,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.DomainEvents;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -699,6 +698,108 @@ class MeetingServiceTest {
             // then
             verify(topicRepository).softDeleteByMeetingIdAndProposedById(meetingId, userId);
         }
-
     }
+
+    @DisplayName("진행 전의 약속만 수정 가능하다.")
+    @Test
+    void givenMeetingUpdateRequest_whenMeetingUpdate_thenSuccess() {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+        MeetingUpdateRequest request = MeetingUpdateRequest.builder()
+                .meetingName("약속명 변경")
+                .place("장소 변경")
+                .endDate(now)
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
+
+        // when
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(1L);
+            MeetingUpdateResponse response = meetingService.updateMeeting(meetingId, request);
+
+            // then
+            assertThat(response.meetingName()).isEqualTo(request.meetingName());
+            assertThat(response.endDate()).isEqualTo(request.endDate());
+        }
+    }
+
+    @DisplayName("종료된 약속은 수정할 수 없다.")
+    @Test
+    void givenDoneMeeting_whenUpdateMeeting_thenThrowException() {
+        // given
+        Meeting doneMeeting = Meeting.builder()
+                .id(meetingId)
+                .meetingName("Meeting 1")
+                .meetingStatus(MeetingStatus.DONE)
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+        MeetingUpdateRequest request = MeetingUpdateRequest.builder()
+                .meetingName("약속명 변경")
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(doneMeeting);
+
+        // when + then
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(leader.getId());
+
+            assertThatThrownBy(() -> meetingService.updateMeeting(meetingId, request))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE);
+        }
+    }
+
+    @DisplayName("종료 일시는 시작 일시보다 이전일 수 없다.")
+    @Test
+    void givenInvalidDates_whenUpdateMeeting_thenThrowException() {
+        // given
+        LocalDateTime startDate = LocalDateTime.now().plusDays(2);
+        LocalDateTime endDate = LocalDateTime.now().plusDays(1);
+        MeetingUpdateRequest request = MeetingUpdateRequest.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
+
+        // when + then
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(leader.getId());
+
+            assertThatThrownBy(() -> meetingService.updateMeeting(meetingId, request))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE);
+        }
+    }
+
+    @DisplayName("현재 참여 인원보다 적게 최대 참여 인원을 수정할 수 없다.")
+    @Test
+    void givenMaxParticipantsLessThanCurrent_whenUpdateMeeting_thenThrowException() {
+        // given
+        MeetingUpdateRequest request = MeetingUpdateRequest.builder()
+                .maxParticipants(1)
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
+        given(gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(gathering.getId()))
+                .willReturn(5);
+        given(meetingValidator.countActiveMembers(meetingId)).willReturn(2);
+
+        // when + then
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(leader.getId());
+
+            assertThatThrownBy(() -> meetingService.updateMeeting(meetingId, request))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.MAX_PARTICIPANTS_LESS_THAN_CURRENT);
+        }
+    }
+
+
+
 }
