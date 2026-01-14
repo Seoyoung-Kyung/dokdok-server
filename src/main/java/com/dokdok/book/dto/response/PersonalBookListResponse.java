@@ -9,14 +9,17 @@ public record PersonalBookListResponse(
         String title,
         String publisher,
         String authors,
-        BookReadingStatus bookReadingStatus
+        BookReadingStatus bookReadingStatus,
+        String thumbnail
 ) {
     public static PersonalBookListResponse from(PersonalBook entity) {
+        // TODO: 참여한 약속(모임) 수 계산 후 응답에 포함한다.
         return PersonalBookListResponse.builder()
                 .title(entity.getBook().getBookName())
                 .publisher(entity.getBook().getPublisher())
                 .authors(entity.getBook().getAuthor())
                 .bookReadingStatus(entity.getReadingStatus())
+                .thumbnail(entity.getBook().getThumbnail())
                 .build();
     }
 }
