@@ -1,16 +1,20 @@
 package com.dokdok.gathering.service;
 
-import com.dokdok.gathering.dto.GatheringDetailResponse;
-import com.dokdok.gathering.dto.GatheringSimpleResponse;
-import com.dokdok.gathering.dto.GatheringUpdateRequest;
-import com.dokdok.gathering.dto.GatheringUpdateResponse;
-import com.dokdok.gathering.dto.MyGatheringListResponse;
+import com.dokdok.gathering.dto.request.GatheringCreateRequest;
+import com.dokdok.gathering.dto.response.GatheringCreateResponse;
+import com.dokdok.gathering.dto.response.GatheringDetailResponse;
+import com.dokdok.gathering.dto.response.GatheringSimpleResponse;
+import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
+import com.dokdok.gathering.dto.response.GatheringUpdateResponse;
+import com.dokdok.gathering.dto.response.MyGatheringListResponse;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.entity.GatheringStatus;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
+import com.dokdok.gathering.repository.GatheringRepository;
+import com.dokdok.gathering.util.InvitationCodeGenerator;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.repository.MeetingRepository;
@@ -50,13 +54,16 @@ import static org.mockito.Mockito.mockStatic;
 class GatheringServiceTest {
 
 	@InjectMocks
-	private GatheringService gatheringService;
+    private GatheringService gatheringService;
 
-	@Mock
-	private GatheringMemberRepository gatheringMemberRepository;
+    @Mock
+    private GatheringMemberRepository gatheringMemberRepository;
 
-	@Mock
-	private GatheringValidator gatheringValidator;
+    @Mock
+    private GatheringRepository gatheringRepository;
+
+    @Mock
+    private GatheringValidator gatheringValidator;
 
 	@Mock
 	private MeetingRepository meetingRepository;
@@ -129,6 +136,89 @@ class GatheringServiceTest {
 	@AfterEach
 	void tearDown() {
 		securityUtilMock.close();
+	}
+
+	@Test
+	@DisplayName("모임 생성 성공 - 고유 초대 코드 생성")
+	void createGathering_Success() {
+		// given
+		GatheringCreateRequest request = new GatheringCreateRequest("새 모임", "설명");
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(leader);
+
+		try (MockedStatic<InvitationCodeGenerator> codeMock = mockStatic(InvitationCodeGenerator.class)) {
+			codeMock.when(InvitationCodeGenerator::generate).thenReturn("INVITE_CODE");
+
+			given(gatheringRepository.existsByInvitationLink("INVITE_CODE")).willReturn(false);
+			given(gatheringRepository.save(any(Gathering.class))).willAnswer(invocation -> invocation.getArgument(0));
+			given(gatheringMemberRepository.save(any(GatheringMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+			// when
+			GatheringCreateResponse response = gatheringService.createGathering(request);
+
+			// then
+			assertThat(response).isNotNull();
+			assertThat(response.gatheringName()).isEqualTo("새 모임");
+			assertThat(response.invitationLink()).isEqualTo("INVITE_CODE");
+			assertThat(response.totalMembers()).isEqualTo(1);
+			assertThat(response.totalMeetings()).isEqualTo(1);
+
+			securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+			verify(gatheringRepository, times(1)).existsByInvitationLink("INVITE_CODE");
+			verify(gatheringRepository, times(1)).save(any(Gathering.class));
+			verify(gatheringMemberRepository, times(1)).save(any(GatheringMember.class));
+		}
+	}
+
+	@Test
+	@DisplayName("모임 생성 시 초대 코드 중복이면 재시도 후 성공")
+	void createGathering_RetryOnDuplicateCode() {
+		// given
+		GatheringCreateRequest request = new GatheringCreateRequest("새 모임", "설명");
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(leader);
+
+		try (MockedStatic<InvitationCodeGenerator> codeMock = mockStatic(InvitationCodeGenerator.class)) {
+			codeMock.when(InvitationCodeGenerator::generate)
+					.thenReturn("DUPLICATE_CODE")
+					.thenReturn("UNIQUE_CODE");
+
+			given(gatheringRepository.existsByInvitationLink("DUPLICATE_CODE")).willReturn(true);
+			given(gatheringRepository.existsByInvitationLink("UNIQUE_CODE")).willReturn(false);
+			given(gatheringRepository.save(any(Gathering.class))).willAnswer(invocation -> invocation.getArgument(0));
+			given(gatheringMemberRepository.save(any(GatheringMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+			// when
+			GatheringCreateResponse response = gatheringService.createGathering(request);
+
+			// then
+			assertThat(response.invitationLink()).isEqualTo("UNIQUE_CODE");
+
+			verify(gatheringRepository, times(1)).existsByInvitationLink("DUPLICATE_CODE");
+			verify(gatheringRepository, times(1)).existsByInvitationLink("UNIQUE_CODE");
+			verify(gatheringRepository, times(1)).save(any(Gathering.class));
+			verify(gatheringMemberRepository, times(1)).save(any(GatheringMember.class));
+		}
+	}
+
+	@Test
+	@DisplayName("모임 생성 실패 - 초대 코드 중복이 계속되는 경우 예외")
+	void createGathering_Fail_WhenInvitationCodeCollides() {
+		// given
+		GatheringCreateRequest request = new GatheringCreateRequest("새 모임", "설명");
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(leader);
+
+		try (MockedStatic<InvitationCodeGenerator> codeMock = mockStatic(InvitationCodeGenerator.class)) {
+			codeMock.when(InvitationCodeGenerator::generate).thenReturn("DUPLICATE_CODE");
+			given(gatheringRepository.existsByInvitationLink("DUPLICATE_CODE")).willReturn(true);
+
+			// when & then
+			assertThatThrownBy(() -> gatheringService.createGathering(request))
+					.isInstanceOf(GatheringException.class)
+					.hasFieldOrPropertyWithValue("errorCode", GatheringErrorCode.INVITATION_CODE_GENERATION_FAILED);
+
+			verify(gatheringRepository, times(10)).existsByInvitationLink("DUPLICATE_CODE");
+			verify(gatheringRepository, times(0)).save(any(Gathering.class));
+			verify(gatheringMemberRepository, times(0)).save(any(GatheringMember.class));
+		}
 	}
 
 	@Test
