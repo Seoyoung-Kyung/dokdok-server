@@ -1,6 +1,7 @@
 package com.dokdok.book.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -23,20 +24,19 @@ public class Book {
     private Long id;
 
     @Column(name = "book_name", nullable = false, length = 255)
+    @NotBlank(message = "책 이름은 필수 항목입니다.")
     private String bookName;
 
     @Column(name = "publisher", length = 100)
     private String publisher;
 
-    @Column(name = "author", length = 100)
+    @Column(name = "author", length = 200)
     private String author;
-
-    @Column(name = "category", length = 100)
-    private String category;
 
     @Column(name = "book_image_url", length = 500)
     private String thumbnail;
 
+    @NotBlank(message = "isbn은 필수 항목입니다.")
     @Column(name = "isbn", length = 20)
     private String isbn;
 

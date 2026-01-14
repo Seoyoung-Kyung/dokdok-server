@@ -35,8 +35,9 @@ public class PersonalBook {
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
-    @Column(name = "reading_status", length = 20)
-    private String readingStatus;
+    @Enumerated(EnumType.STRING)
+    private BookReadingStatus readingStatus;
+
 
     @CreatedDate
     @Column(name = "added_at", nullable = false, updatable = false)
@@ -48,4 +49,16 @@ public class PersonalBook {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static PersonalBook create(User user, Book book, BookReadingStatus readingStatus) {
+        if (user == null || book == null) {
+            throw new EntityNotFoundException("Entity를 찾을 수 없습니다.");
+        }
+        return PersonalBook.builder()
+                .user(user)
+                .book(book)
+                .readingStatus(readingStatus)
+                .addedAt(LocalDateTime.now())
+                .build();
+    }
 }
