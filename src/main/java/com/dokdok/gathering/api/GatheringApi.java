@@ -1,9 +1,10 @@
 package com.dokdok.gathering.api;
 
-import com.dokdok.gathering.dto.response.GatheringDetailResponse;
+
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
-import com.dokdok.gathering.dto.response.GatheringCreateResponse;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
+import com.dokdok.gathering.dto.response.GatheringCreateResponse;
+import com.dokdok.gathering.dto.response.GatheringDetailResponse;
 import com.dokdok.gathering.dto.response.GatheringUpdateResponse;
 import com.dokdok.gathering.dto.response.MyGatheringListResponse;
 import com.dokdok.global.response.ApiResponse;

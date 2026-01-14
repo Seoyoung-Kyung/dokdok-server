@@ -1,4 +1,4 @@
-package com.dokdok.gathering.dto;
+package com.dokdok.gathering.dto.response;
 
 import com.dokdok.gathering.entity.Gathering;
 import lombok.Builder;

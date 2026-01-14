@@ -3,12 +3,14 @@ package com.dokdok.gathering.service;
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.response.GatheringCreateResponse;
 import com.dokdok.gathering.dto.response.GatheringDetailResponse;
+import com.dokdok.gathering.dto.response.GatheringJoinResponse;
 import com.dokdok.gathering.dto.response.GatheringSimpleResponse;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.response.GatheringUpdateResponse;
 import com.dokdok.gathering.dto.response.MyGatheringListResponse;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
+import com.dokdok.gathering.entity.GatheringMemberStatus;
 import com.dokdok.gathering.entity.GatheringStatus;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
@@ -72,10 +74,13 @@ class GatheringServiceTest {
 
 	private User leader;
 	private User member;
+	private User newUser;
+	private User pendingUser;
 	private Gathering gathering1;
 	private Gathering gathering2;
 	private GatheringMember leaderMember;
 	private GatheringMember normalMember;
+	private GatheringMember pendingMember;
 
 	@BeforeEach
 	void setUp() {
@@ -91,6 +96,18 @@ class GatheringServiceTest {
 				.id(2L)
 				.nickname("멤버닉네임")
 				.profileImageUrl("member.jpg")
+				.build();
+
+		newUser = User.builder()
+				.id(3L)
+				.nickname("신규유저")
+				.profileImageUrl("new.jpg")
+				.build();
+
+		pendingUser = User.builder()
+				.id(4L)
+				.nickname("대기유저")
+				.profileImageUrl("pending.jpg")
 				.build();
 
 		gathering1 = Gathering.builder()
@@ -129,7 +146,18 @@ class GatheringServiceTest {
 				.user(member)
 				.isFavorite(false)
 				.role(MEMBER)
+				.memberStatus(GatheringMemberStatus.ACTIVE)
 				.joinedAt(LocalDateTime.now().minusDays(10))
+				.build();
+
+		pendingMember = GatheringMember.builder()
+				.id(3L)
+				.gathering(gathering1)
+				.user(pendingUser)
+				.isFavorite(false)
+				.role(MEMBER)
+				.memberStatus(GatheringMemberStatus.PENDING)
+				.joinedAt(LocalDateTime.now().minusDays(1))
 				.build();
 	}
 
@@ -709,5 +737,110 @@ class GatheringServiceTest {
 		verify(gatheringValidator, times(1)).validateAndGetGathering(gatheringId);
 		verify(gatheringValidator, times(1)).validateLeader(gatheringId, memberId);
 		verify(gatheringValidator, times(0)).validateAndGetMember(any(), any());
+	}
+
+	@Test
+	@DisplayName("모임 가입 성공 - 신규 사용자가 초대링크로 가입 요청")
+	void joinGathering_Success() {
+		// given
+		String invitationLink = "https://invite.link/abc123";
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(newUser);
+
+		given(gatheringValidator.validateInvitationLink(invitationLink)).willReturn(gathering1);
+		given(gatheringMemberRepository.save(any(GatheringMember.class))).willAnswer(invocation -> {
+			GatheringMember savedMember = invocation.getArgument(0);
+			return GatheringMember.builder()
+					.id(5L)
+					.gathering(savedMember.getGathering())
+					.user(savedMember.getUser())
+					.role(savedMember.getRole())
+					.memberStatus(savedMember.getMemberStatus())
+					.isFavorite(false)
+					.joinedAt(LocalDateTime.now())
+					.build();
+		});
+
+		// when
+		GatheringJoinResponse response = gatheringService.joinGathering(invitationLink);
+
+		// then
+		assertThat(response).isNotNull();
+		assertThat(response.gatheringId()).isEqualTo(1L);
+		assertThat(response.gatheringName()).isEqualTo("독서 모임");
+		assertThat(response.memberStatus()).isEqualTo(GatheringMemberStatus.PENDING);
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateInvitationLink(invitationLink);
+		verify(gatheringValidator, times(1)).validateJoinedGathering(1L, 3L);
+		verify(gatheringMemberRepository, times(1)).save(any(GatheringMember.class));
+	}
+
+	@Test
+	@DisplayName("모임 가입 실패 - 유효하지 않은 초대링크")
+	void joinGathering_Fail_InvalidInvitationLink() {
+		// given
+		String invalidLink = "https://invite.link/invalid";
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(newUser);
+
+		doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
+				.when(gatheringValidator).validateInvitationLink(invalidLink);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.joinGathering(invalidLink))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.GATHERING_NOT_FOUND.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateInvitationLink(invalidLink);
+		verify(gatheringValidator, times(0)).validateJoinedGathering(any(), any());
+		verify(gatheringMemberRepository, times(0)).save(any());
+	}
+
+	@Test
+	@DisplayName("모임 가입 실패 - 이미 활성 멤버인 경우")
+	void joinGathering_Fail_AlreadyActiveMember() {
+		// given
+		String invitationLink = "https://invite.link/abc123";
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(member);
+
+		given(gatheringValidator.validateInvitationLink(invitationLink)).willReturn(gathering1);
+		doThrow(new GatheringException(GatheringErrorCode.ALREADY_GATHERING_MEMBER))
+				.when(gatheringValidator).validateJoinedGathering(1L, 2L);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.joinGathering(invitationLink))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.ALREADY_GATHERING_MEMBER.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateInvitationLink(invitationLink);
+		verify(gatheringValidator, times(1)).validateJoinedGathering(1L, 2L);
+		verify(gatheringMemberRepository, times(0)).save(any());
+	}
+
+	@Test
+	@DisplayName("모임 가입 실패 - 이미 가입 요청이 진행 중인 경우")
+	void joinGathering_Fail_AlreadyPendingRequest() {
+		// given
+		String invitationLink = "https://invite.link/abc123";
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(pendingUser);
+
+		given(gatheringValidator.validateInvitationLink(invitationLink)).willReturn(gathering1);
+		doThrow(new GatheringException(GatheringErrorCode.JOIN_REQUEST_ALREADY_PENDING))
+				.when(gatheringValidator).validateJoinedGathering(1L, 4L);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.joinGathering(invitationLink))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.JOIN_REQUEST_ALREADY_PENDING.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateInvitationLink(invitationLink);
+		verify(gatheringValidator, times(1)).validateJoinedGathering(1L, 4L);
+		verify(gatheringMemberRepository, times(0)).save(any());
 	}
 }
