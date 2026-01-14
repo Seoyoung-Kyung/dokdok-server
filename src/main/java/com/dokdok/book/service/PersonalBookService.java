@@ -28,6 +28,7 @@ public class PersonalBookService {
     private final PersonalBookRepository personalBookRepository;
     private final BookRepository bookRepository;
     private final UserValidator userValidator;
+    private final BookValidator bookValidator;
 
     // 생성
     @Transactional
@@ -38,7 +39,7 @@ public class PersonalBookService {
         Book entity = bookRepository.findByIsbn(bookCreateRequest.isbn())
                 .orElseGet(() -> bookRepository.save(bookCreateRequest.of()));
 
-        validateDuplicatePersonalBook(userEntity.getId(), entity.getId());
+        bookValidator.validateDuplicatePersonalBook(userEntity.getId(), entity.getId());
         PersonalBook personalBookEntity = PersonalBook.create(userEntity, entity, BookReadingStatus.READING);
 
         personalBookRepository.save(personalBookEntity);
@@ -49,8 +50,7 @@ public class PersonalBookService {
     // List
     public Page<PersonalBookListResponse> getPersonalBookList(Pageable pageable) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
-        Page<PersonalBook> page= personalBookRepository.findByUserId(userEntity.getId(), pageable);
-
+        Page<PersonalBook> page = personalBookRepository.findByUserId(userEntity.getId(), pageable);
 
         if (page.isEmpty()) {
             throw new BookException(BookErrorCode.BOOK_NOT_IN_SHELF);
@@ -62,17 +62,17 @@ public class PersonalBookService {
     public PersonalBookDetailResponse getPersonalBook(Long bookId) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
         // 책 정보 GET Logic
-        PersonalBook entity = personalBookRepository.findByUserIdAndBookId(userEntity.getId(), bookId)
-                .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
+        PersonalBook entity = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
 
         return PersonalBookDetailResponse.from(entity);
     }
 
-    private void validateDuplicatePersonalBook(Long userId, Long bookId) {
-       personalBookRepository.findByUserIdAndBookId(userId, bookId)
-               .ifPresent(personalBook ->
-               {
-                   throw new BookException(BookErrorCode.BOOK_ALREADY_EXISTS);
-               });
-   }
+    @Transactional
+    public void deleteBook(Long bookId) {
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+
+        PersonalBook personalBook = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
+
+        personalBookRepository.delete(personalBook);
+    }
 }
