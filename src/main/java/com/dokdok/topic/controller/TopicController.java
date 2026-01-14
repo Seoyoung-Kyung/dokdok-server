@@ -2,7 +2,9 @@ package com.dokdok.topic.controller;
 
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.topic.api.TopicApi;
+import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
+import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
 import com.dokdok.topic.dto.response.TopicsPageResponse;
@@ -13,6 +15,11 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -50,6 +57,19 @@ public class TopicController implements TopicApi {
     }
 
     @Override
+    @PatchMapping(value = "/confirm")
+    public ResponseEntity<ApiResponse<ConfirmTopicsResponse>> confirmTopics(
+            Long gatheringId,
+            Long meetingId,
+            ConfirmTopicsRequest request
+    ) {
+        ConfirmTopicsResponse response = topicService.confirmTopics(
+                gatheringId, meetingId, request
+        );
+
+        return ApiResponse.success(response, "주제가 확정되었습니다.");
+    }
+
     @DeleteMapping(value = "/{topicId}")
     public ResponseEntity<ApiResponse<Void>> deleteTopic(
             Long gatheringId,

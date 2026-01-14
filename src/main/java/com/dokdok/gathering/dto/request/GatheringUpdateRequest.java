@@ -1,4 +1,4 @@
-package com.dokdok.gathering.dto;
+package com.dokdok.gathering.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;

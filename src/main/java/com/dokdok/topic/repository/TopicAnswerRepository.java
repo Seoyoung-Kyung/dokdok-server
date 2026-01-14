@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface TopicAnswerRepository extends JpaRepository<TopicAnswer, Long> {
     Optional<TopicAnswer> findByTopicIdAndUserId(Long topicId, Long userId);
+
+    boolean existsByTopicIdAndUserId(Long topicId, Long userId);
 }

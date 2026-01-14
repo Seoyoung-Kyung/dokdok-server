@@ -1,8 +1,12 @@
 package com.dokdok.meeting.service;
 
 import com.dokdok.book.entity.Book;
+import com.dokdok.book.exception.BookErrorCode;
+import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
 import com.dokdok.gathering.entity.Gathering;
+import com.dokdok.gathering.exception.GatheringErrorCode;
+import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
@@ -44,15 +48,18 @@ public class MeetingService {
     private final UserValidator userValidator;
 
     /**
-     * 특정 약속의 정보를 확인할 수 있다.
+     * 특정 약속의 정보를 확인할 수 있다. 모임에 속한 사용자만 조회 가능
      * @param meetingId 약속 식별자
      * @return 약속 응답 정보
      */
     @Transactional(readOnly = true)
     public MeetingResponse findMeeting(Long meetingId) {
 
-        // todo : 모임에 속해있는 사용자만 확일할 수 있는 제약 사항 추가 -> 시큐리티 role로 확인할지, 따로 메서드로 만들지
+        Long userId = SecurityUtil.getCurrentUserId();
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+
+        // 모임 멤버만 약속 조회 가능
+        gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
         List<MeetingMember> meetingMembers = meetingMemberRepository.findAllByMeetingId(meetingId);
         List<Topic> topics = topicRepository.findAllByMeetingId(meetingId);
@@ -61,20 +68,22 @@ public class MeetingService {
     }
 
     /**
-     * 모임원이 약속 생성 신청을 할 수 있다.
+     * 모임원이 약속 생성 신청을 할 수 있다. 모임에 속한 사용자만 생성 가능
      * @param request 약속 생성 신청 폼
-     * @param userId 신청인 식별자
      * @return 약속 응답 정보
      */
     @Transactional
-    public MeetingResponse createMeeting(MeetingCreateRequest request, Long userId) {
-        // todo : 모임에 속해있는 사용자만 약속을 생성할 수 있는 제약 사항 추가
-        Gathering gathering = gatheringRepository.findById(request.gatheringId())
-                .orElseThrow(() -> new MeetingException(MeetingErrorCode.GATHERING_NOT_FOUND));
+    public MeetingResponse createMeeting(MeetingCreateRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId();
 
-        // todo : 개별 Book, User 에러코드 생기면 그 Exception으로 변경하는 게 좋을 듯함
+        // 모임 멤버만 약속 생성 가능
+        gatheringValidator.validateMembership(request.gatheringId(), userId);
+
+        Gathering gathering = gatheringRepository.findById(request.gatheringId())
+                .orElseThrow(() -> new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND));
+
         Book book = bookRepository.findById(request.bookId())
-                .orElseThrow(() -> new MeetingException(MeetingErrorCode.BOOK_NOT_FOUND));
+                .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_FOUND));
 
         User user = userValidator.findUserOrThrow(userId);
 
@@ -84,6 +93,9 @@ public class MeetingService {
                     .countByGatheringIdAndRemovedAtIsNull(gathering.getId());
         }
 
+        // 최대 참가 인원 검증
+        validateMaxParticipants(maxParticipants, gathering.getId());
+
         Meeting meeting = Meeting.create(request, gathering, book, user, maxParticipants);
         Meeting savedMeeting = meetingRepository.save(meeting);
 
@@ -91,7 +103,7 @@ public class MeetingService {
     }
 
     /**
-     * 약속 상태를 변경한다. - PENDING 상태일 때만 CONFIRMED로 변경 가능
+     * 약속 상태를 변경한다. 모임장만 상태 변경 가능
      * @param meetingId 약속 식별자
      * @param meetingStatus 약속 상태
      * @return 약속 상태 응답 정보
@@ -99,8 +111,11 @@ public class MeetingService {
     @Transactional
     public MeetingStatusResponse changeMeetingStatus(Long meetingId, MeetingStatus meetingStatus) {
 
-        // todo : 모임장만 바꿀 수 있도록 meetingValidator 머지된 후 추가 예정
+        Long userId = SecurityUtil.getCurrentUserId();
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+
+        // 모임장만 상태 변경 가능
+        gatheringValidator.validateLeader(meeting.getGathering().getId(), userId);
 
         if (meetingStatus == MeetingStatus.CONFIRMED) {
             validateConfirmable(meeting);
@@ -110,6 +125,23 @@ public class MeetingService {
         meeting.changeStatus(meetingStatus);
 
         return MeetingStatusResponse.from(meeting);
+    }
+
+    /**
+     * 최대 참가 인원의 유효성을 검증한다.
+     * @param maxParticipants 최대 참가 인원
+     * @param gatheringId 모임 식별자
+     */
+    private void validateMaxParticipants(Integer maxParticipants, Long gatheringId) {
+        if (maxParticipants < 1) {
+            throw new MeetingException(MeetingErrorCode.INVALID_MAX_PARTICIPANTS);
+        }
+
+        int totalGatheringMembers = gatheringMemberRepository
+                .countByGatheringIdAndRemovedAtIsNull(gatheringId);
+        if (maxParticipants > totalGatheringMembers) {
+            throw new MeetingException(MeetingErrorCode.INVALID_MAX_PARTICIPANTS);
+        }
     }
 
     /**
@@ -160,7 +192,7 @@ public class MeetingService {
 
         gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
-        if (restoreCanceledMemberIfExists(meetingId, userId)) {
+        if (restoreCanceledMemberIfExists(meetingId, userId, meeting.getMaxParticipants())) {
             return meetingId;
         }
 
@@ -174,9 +206,9 @@ public class MeetingService {
     }
 
     /**
-     * 기존 취소 이력이 있으면 복구하고, 이미 참여 상태면 예외를 던진다.
+     * 기존 취소 이력이 있으면 정원 검증 후 복구하고, 이미 참여 상태면 예외를 던진다.
      */
-    private boolean restoreCanceledMemberIfExists(Long meetingId, Long userId) {
+    private boolean restoreCanceledMemberIfExists(Long meetingId, Long userId, Integer maxParticipants) {
         MeetingMember existingMember = meetingMemberRepository.findAnyByMeetingIdAndUserId(meetingId, userId)
                 .orElse(null);
         if (existingMember == null) {
@@ -185,6 +217,10 @@ public class MeetingService {
         if (existingMember.getCanceledAt() == null) {
             throw new MeetingException(MeetingErrorCode.MEETING_ALREADY_JOINED);
         }
+
+        // 복구 전 정원 검증
+        meetingValidator.validateCapacity(meetingId, maxParticipants);
+
         existingMember.restore();
         return true;
     }
@@ -202,7 +238,7 @@ public class MeetingService {
     }
 
     /**
-     * 약속 참가 신청을 취소한다. 약속 시작 24시간 이내에는 취소할 수 없다.
+     * 약속 참가 신청을 취소한다. 약속 시작까지 24시간 미만 남았으면 취소 불가
      * @param meetingId 약속 식별자
      * @return 취소한 약속 식별자
      */
