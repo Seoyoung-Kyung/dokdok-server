@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.Optional;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +40,7 @@ public class TopicService {
     private final TopicRepository topicRepository;
     private final MeetingValidator meetingValidator;
     private final GatheringValidator gatheringValidator;
+    private final TopicValidator topicValidator;
 
     @Transactional
     public SuggestTopicResponse createTopic(
@@ -125,5 +128,24 @@ public class TopicService {
         }
 
         return ConfirmTopicsResponse.from(meetingId);
+    }
+
+    @Transactional
+    public void deleteTopic(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        gatheringValidator.validateMembership(gatheringId, userId);
+
+        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
+
+        topicValidator.validateTopicInMeeting(topicId, meetingId);
+
+        Topic topic = topicValidator.getDeletableTopic(topicId, userId);
+
+        topic.softDelete();
     }
 }

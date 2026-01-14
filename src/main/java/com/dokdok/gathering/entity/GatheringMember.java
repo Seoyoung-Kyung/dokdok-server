@@ -3,6 +3,7 @@ package com.dokdok.gathering.entity;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -18,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@SQLRestriction("removed_at IS NULL")
 public class GatheringMember {
 
     @Id
@@ -64,5 +66,9 @@ public class GatheringMember {
                 this.joinedAt.toLocalDate(),
                 LocalDate.now()
         );
+    }
+
+    public void remove() {
+        this.removedAt = LocalDateTime.now();
     }
 }

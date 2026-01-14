@@ -20,7 +20,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "주제 관리", description = "주제 관련 API")
@@ -110,5 +112,31 @@ public interface TopicApi {
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
             @Valid @RequestBody ConfirmTopicsRequest request
+    );
+
+    @Operation(
+            summary = "주제 삭제",
+            description = "제안된 주제를 삭제합니다.",
+            parameters = {
+                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "topicId", description = "주제 식별자", in = ParameterIn.PATH, required = true)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "204",
+                    description = "주제 삭제 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "주제 삭제 권한 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임, 약속 또는 주제를 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @DeleteMapping(value = "/{topicId}")
+    ResponseEntity<ApiResponse<Void>> deleteTopic(
+            @PathVariable Long gatheringId,
+            @PathVariable Long meetingId,
+            @PathVariable Long topicId
     );
 }

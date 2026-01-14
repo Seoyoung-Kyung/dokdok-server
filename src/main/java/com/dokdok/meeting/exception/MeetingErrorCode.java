@@ -20,7 +20,9 @@ public enum MeetingErrorCode implements BaseErrorCode {
     INVALID_MEETING_STATUS_CHANGE("M009", "약속 상태를 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
     MEETING_ALREADY_JOINED("M010", "이미 참가한 약속입니다.", HttpStatus.BAD_REQUEST),
     MEETING_ALREADY_CANCELED("M011", "이미 취소된 약속입니다.", HttpStatus.BAD_REQUEST),
-    MEETING_CANCEL_NOT_ALLOWED("M012", "약속 시작 24시간 이내에는 취소할 수 없습니다.", HttpStatus.BAD_REQUEST);
+    MEETING_CANCEL_NOT_ALLOWED("M012", "약속 시작 24시간 이내에는 취소할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    NOT_MEETING_LEADER("M013", "약속장만 수정할 수 있습니다.", HttpStatus.FORBIDDEN),
+    INVALID_MAX_PARTICIPANTS("M014", "최대 참가 인원은 1명 이상이어야 하며, 모임 전체 인원을 초과할 수 없습니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

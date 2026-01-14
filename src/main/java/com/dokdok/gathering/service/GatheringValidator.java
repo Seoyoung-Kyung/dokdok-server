@@ -17,15 +17,21 @@ public class GatheringValidator {
 	private final GatheringMemberRepository gatheringMemberRepository;
 	private final GatheringRepository gatheringRepository;
 
-	public void validateMembership(Long gatheringId, Long userId) {
-		boolean isMember = gatheringMemberRepository
-				.existsByGatheringIdAndUserIdAndRemovedAtIsNull(gatheringId, userId);
+    /**
+     * 모임에 속해있는 사용자인지 검증한다.
+     */
+    public void validateMembership(Long gatheringId, Long userId) {
+        boolean isMember = gatheringMemberRepository
+                .existsByGatheringIdAndUserId(gatheringId, userId);
 
 		if (!isMember) {
 			throw new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER);
 		}
 	}
 
+    /**
+     * 모임의 모임장인지 검증한다.
+     */
 	public void validateLeader(Long gatheringId, Long userId) {
 		GatheringMember member = gatheringMemberRepository
 				.findByGatheringIdAndUserId(gatheringId, userId)

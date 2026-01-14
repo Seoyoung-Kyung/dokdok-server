@@ -5,6 +5,7 @@ import com.dokdok.oauth2.handler.OAuth2AuthenticationFailureHandler;
 import com.dokdok.oauth2.handler.OAuth2AuthenticationSuccessHandler;
 import com.dokdok.oauth2.resolver.CustomAuthorizationRequestResolver;
 import com.dokdok.oauth2.service.CustomOAuth2UserService;
+import com.dokdok.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -17,7 +18,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,7 +38,8 @@ public class SecurityConfig {
             OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler,
             OAuth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler,
             CustomAuthorizationRequestResolver customAuthorizationRequestResolver,
-            CorsConfigurationSource corsConfigurationSource) throws Exception {
+            CorsConfigurationSource corsConfigurationSource,
+            ObjectMapper objectMapper) throws Exception {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -59,6 +63,13 @@ public class SecurityConfig {
                         .logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("application/json;charset=UTF-8");
+                            ApiResponse<Void> apiResponse = new ApiResponse<>("SUCCESS", "로그아웃 성공", null);
+                            try {
+                                response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+                            } catch (IOException e) {
+                                throw new RuntimeException("로그아웃 응답 처리 중 오류", e);
+                            }
                         })
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")

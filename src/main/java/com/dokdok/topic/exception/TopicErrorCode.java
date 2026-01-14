@@ -9,9 +9,12 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum TopicErrorCode implements BaseErrorCode {
     // 리소스 에러
-    TOPIC_NOT_FOUND("E101", "토픽을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    TOPIC_ANSWER_NOT_FOUND("E102", "답변을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    TOPIC_ANSWER_ALREADY_SUBMITTED("E103", "이미 제출된 답변입니다.", HttpStatus.CONFLICT),
+    TOPIC_NOT_FOUND("E101", "주제를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    TOPIC_NOT_IN_MEETING("E102", "해당 주제는 지정한 약속에 속하지 않습니다.", HttpStatus.NOT_FOUND),
+    TOPIC_ANSWER_NOT_FOUND("E103", "답변을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    TOPIC_ANSWER_ALREADY_SUBMITTED("E104", "이미 제출된 답변입니다.", HttpStatus.CONFLICT),
+    TOPIC_USER_CANNOT_DELETE("E105", "사용자에게 주제 삭제 권한이 없습니다.", HttpStatus.NOT_FOUND),
+    TOPIC_ALREADY_DELETED("E106", "이미 삭제된 주제입니다.", HttpStatus.CONFLICT),
     TOPIC_ANSWER_ALREADY_EXISTS("E104", "이미 답변이 존재합니다.", HttpStatus.CONFLICT);
 
     private final String code;

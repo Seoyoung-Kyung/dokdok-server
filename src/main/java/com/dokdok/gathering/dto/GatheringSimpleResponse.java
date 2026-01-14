@@ -2,6 +2,7 @@ package com.dokdok.gathering.dto;
 
 import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.entity.GatheringRole;
+import com.dokdok.gathering.entity.GatheringStatus;
 import lombok.Builder;
 
 @Builder
@@ -9,15 +10,16 @@ public record GatheringSimpleResponse(
         Long gatheringId,
         String gatheringName,
         Boolean isFavorite,
-        String gatheringStatus,
+        GatheringStatus gatheringStatus,
         Integer totalMembers,
-        Integer totalMeetings,      // TODO : Meeting 도메인 구현 후 실제 값으로 대체 필요
+        Integer totalMeetings,
         GatheringRole currentUserRole,
         Integer daysFromJoined
 ) {
     public static GatheringSimpleResponse from(
             GatheringMember gatheringMember,
-            Integer totalMembers,
+            int totalMembers,
+            int totalMeetings,
             GatheringRole currentUserRole
     ){
         return GatheringSimpleResponse.builder()
@@ -26,7 +28,7 @@ public record GatheringSimpleResponse(
                 .isFavorite(gatheringMember.getIsFavorite())
                 .gatheringStatus(gatheringMember.getGathering().getGatheringStatus())
                 .totalMembers(totalMembers)
-                .totalMeetings(0) // TODO : Meeting 도메인 구현 필요
+                .totalMeetings(totalMeetings)
                 .currentUserRole(currentUserRole)
                 .daysFromJoined(gatheringMember.getDaysFromJoined())
                 .build();
