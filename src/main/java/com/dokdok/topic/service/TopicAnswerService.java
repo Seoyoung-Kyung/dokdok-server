@@ -41,7 +41,7 @@ public class TopicAnswerService {
         meetingValidator.validateMemberInGathering(meetingId, gatheringId);
         topicValidator.validateTopicInMeeting(topicId, meetingId);
 
-        boolean exists = topicAnswerRepository.findByTopicIdAndUserId(topicId, userId).isPresent();
+        boolean exists = topicAnswerRepository.existsByTopicIdAndUserId(topicId, userId);
         if (exists) {
             throw new TopicException(TopicErrorCode.TOPIC_ANSWER_ALREADY_EXISTS);
         }
