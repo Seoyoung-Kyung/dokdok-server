@@ -45,4 +45,9 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
       AND mm.canceledAt IS NULL
       """)
     int countActiveMembers(@Param("meetingId") Long meetingId);
+
+    boolean existsByIdAndUserId(
+            Long meetingId,
+            Long userId
+    );
 }

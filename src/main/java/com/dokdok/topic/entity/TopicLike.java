@@ -27,14 +27,21 @@ public class TopicLike {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "liked")
-    private Boolean liked;
-
     @Column(name = "liked_at", nullable = false, updatable = false)
     private LocalDateTime likedAt;
 
     @PrePersist
     protected void onCreate() {
         this.likedAt = LocalDateTime.now();
+    }
+
+    public static TopicLike create(
+            Topic topic,
+            User user
+    ) {
+        return TopicLike.builder()
+                .topic(topic)
+                .user(user)
+                .build();
     }
 }

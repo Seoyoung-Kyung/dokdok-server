@@ -9,8 +9,12 @@ import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
+import com.dokdok.topic.dto.response.TopicLikeResponse;
 import com.dokdok.topic.dto.response.TopicsPageResponse;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicLike;
+import com.dokdok.topic.entity.TopicMessage;
+import com.dokdok.topic.repository.TopicLikeRepository;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
@@ -24,9 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.util.Optional;
-
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -38,8 +39,9 @@ import java.util.stream.Collectors;
 public class TopicService {
 
     private final TopicRepository topicRepository;
-    private final MeetingValidator meetingValidator;
+    private final TopicLikeRepository topicLikeRepository;
     private final GatheringValidator gatheringValidator;
+    private final MeetingValidator meetingValidator;
     private final TopicValidator topicValidator;
 
     @Transactional
@@ -50,10 +52,8 @@ public class TopicService {
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
-        gatheringValidator.validateMembership(gatheringId, userId);
-
-        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
-
+        gatheringValidator.validateGathering(gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
         meetingValidator.validateMeetingStatus(meetingId);
 
         MeetingMember meetingMember = meetingValidator.getMeetingMember(meetingId, userId);
@@ -61,7 +61,7 @@ public class TopicService {
         Meeting meeting = meetingMember.getMeeting();
         User user = meetingMember.getUser();
 
-        Topic topic = Topic.of(
+        Topic topic = Topic.create(
                 meeting,
                 user,
                 request.title(),
@@ -80,11 +80,8 @@ public class TopicService {
             Long meetingId,
             Pageable pageable
     ) {
-        Long userId = SecurityUtil.getCurrentUserId();
-
-        gatheringValidator.validateMembership(gatheringId, userId);
-
-        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
+        gatheringValidator.validateGathering(gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
 
         Pageable noSortPageable =
                 PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
@@ -104,7 +101,7 @@ public class TopicService {
         Long userId = SecurityUtil.getCurrentUserId();
 
         gatheringValidator.validateMembership(gatheringId, userId);
-        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
 
         List<Long> topicIds = request.topicIds();
 
@@ -138,14 +135,47 @@ public class TopicService {
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
-        gatheringValidator.validateMembership(gatheringId, userId);
-
-        meetingValidator.validateMemberInGathering(meetingId, gatheringId);
-
+        gatheringValidator.validateGathering(gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
+        meetingValidator.validateMeetingMember(meetingId, userId);
         topicValidator.validateTopicInMeeting(topicId, meetingId);
 
         Topic topic = topicValidator.getDeletableTopic(topicId, userId);
 
         topic.softDelete();
+    }
+
+    @Transactional
+    public TopicLikeResponse toggleTopicLike(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId
+    ) {
+        User user = SecurityUtil.getCurrentUserEntity();
+
+        gatheringValidator.validateGathering(gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
+        meetingValidator.validateMeetingMember(meetingId, user.getId());
+
+        Topic topic = topicValidator.getTopicInMeeting(topicId, meetingId);
+
+        boolean exists = topicLikeRepository.existsByTopicId(topicId);
+
+        TopicMessage message;
+        int newCount;
+
+        if (exists) {
+            topicLikeRepository.deleteByTopicIdAndUserId(topicId, user.getId());
+            topicRepository.decreaseLikeCount(topicId);
+            message = TopicMessage.LIKE_CANCEL;
+            newCount = topic.getLikeCount() - 1;
+        } else {
+            topicLikeRepository.save(TopicLike.create(topic, user));
+            topicRepository.increaseLikeCount(topicId);
+            message = TopicMessage.LIKE_SUCCESS;
+            newCount = topic.getLikeCount() + 1;
+        }
+
+        return TopicLikeResponse.from(topicId, message, newCount);
     }
 }
