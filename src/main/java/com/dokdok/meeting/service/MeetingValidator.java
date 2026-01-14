@@ -20,11 +20,11 @@ public class MeetingValidator {
     /**
      * 약속이 모임에 속하는지 검증한다.
      */
-    public void validateMemberInGathering(Long meetingId, Long gatheringId) {
-        boolean isMemberInGathering = meetingRepository
+    public void validateMeetingInGathering(Long meetingId, Long gatheringId) {
+        boolean isMeetingInGathering = meetingRepository
                 .existsByIdAndGatheringId(meetingId, gatheringId);
 
-        if (!isMemberInGathering) {
+        if (!isMeetingInGathering) {
             throw new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING);
         }
     }
@@ -52,8 +52,12 @@ public class MeetingValidator {
     /**
      * 사용자의 약속 참여 여부를 확인한다.
      */
-    public boolean isMeetingMember(Long meetingId, Long userId) {
-        return meetingMemberRepository.findByMeetingIdAndUserId(meetingId, userId).isPresent();
+    public void validateMeetingMember(Long meetingId, Long userId) {
+        boolean isMeetingMember = meetingMemberRepository.existsByIdAndUserId(meetingId, userId);
+
+        if(!isMeetingMember) {
+            throw new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER);
+        }
     }
 
     /**

@@ -6,7 +6,9 @@ import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
+import com.dokdok.topic.dto.response.TopicLikeResponse;
 import com.dokdok.topic.dto.response.TopicsPageResponse;
+import com.dokdok.topic.entity.TopicMessage;
 import com.dokdok.topic.service.TopicService;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -67,6 +69,8 @@ public class TopicController implements TopicApi {
 
         return ApiResponse.success(response, "주제가 확정되었습니다.");
     }
+
+    @Override
     @DeleteMapping(value = "/{topicId}")
     public ResponseEntity<ApiResponse<Void>> deleteTopic(
             Long gatheringId,
@@ -77,6 +81,23 @@ public class TopicController implements TopicApi {
         topicService.deleteTopic(gatheringId, meetingId, topicId);
 
         return ApiResponse.deleted("주제가 삭제되었습니다.");
+    }
+
+    @Override
+    @PostMapping("/{topicId}/likes")
+    public ResponseEntity<ApiResponse<TopicLikeResponse>> toggleLike(
+            Long gatheringId,
+            Long meetingId,
+            Long topicId
+    ) {
+
+        TopicLikeResponse response = topicService.toggleTopicLike(gatheringId, meetingId, topicId);
+
+        TopicMessage message = response.liked()
+                ? TopicMessage.LIKE_SUCCESS
+                : TopicMessage.LIKE_CANCEL;
+
+        return ApiResponse.success(response, message.getMessage());
     }
 
 }

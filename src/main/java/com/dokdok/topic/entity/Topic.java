@@ -58,7 +58,7 @@ public class Topic extends BaseTimeEntity {
     @Column(name = "confirm_order")
     private Integer confirmOrder;
 
-    public static Topic of(
+    public static Topic create(
             Meeting meeting,
             User user,
             String title,

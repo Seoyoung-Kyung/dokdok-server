@@ -16,6 +16,7 @@ import java.util.Optional;
 public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     List<Topic> findAllByMeetingId(Long meetingId);
+
     List<Topic> findAllByIdInAndMeetingId(List<Long> topicIds, Long meetingId);
 
     @Query("SELECT t " +
@@ -27,12 +28,12 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     @Modifying
     @Query("""
-      UPDATE Topic t
-      SET t.deletedAt = CURRENT_TIMESTAMP
-      WHERE t.meeting.id = :meetingId
-      AND t.proposedBy.id = :userId
-      AND t.deletedAt IS NULL
-      """)
+            UPDATE Topic t
+            SET t.deletedAt = CURRENT_TIMESTAMP
+            WHERE t.meeting.id = :meetingId
+            AND t.proposedBy.id = :userId
+            AND t.deletedAt IS NULL
+            """)
     void softDeleteByMeetingIdAndProposedById(
             @Param("meetingId") Long meetingId,
             @Param("userId") Long userId
@@ -62,6 +63,23 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("topicId") Long topicId,
             @Param("userId") Long userId
     );
+
+    @Modifying
+    @Query("""
+                UPDATE Topic t
+                SET t.likeCount = t.likeCount + 1
+                WHERE t.id = :topicId
+            """)
+    void increaseLikeCount(@Param("topicId") Long topicId);
+
+    @Modifying
+    @Query("""
+                UPDATE Topic t
+                SET t.likeCount = t.likeCount - 1
+                WHERE t.id = :topicId
+                  AND t.likeCount > 0
+            """)
+    void decreaseLikeCount(@Param("topicId") Long topicId);
 
     Optional<Topic> findByIdAndDeletedAtIsNull(Long topicId);
 }
