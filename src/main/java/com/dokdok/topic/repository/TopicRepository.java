@@ -64,7 +64,6 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("userId") Long userId
     );
 
-
     @Modifying
     @Query("""
                 UPDATE Topic t
@@ -82,5 +81,5 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             """)
     void decreaseLikeCount(@Param("topicId") Long topicId);
 
-
+    Optional<Topic> findByIdAndDeletedAtIsNull(Long topicId);
 }
