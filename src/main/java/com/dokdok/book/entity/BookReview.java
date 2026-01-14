@@ -48,8 +48,12 @@ public class BookReview {
     @JoinColumn(name = "keyword_id", nullable = false)
     private Keyword keyword;
 
-    public void updateReview(BigDecimal rating, Keyword keyword) {
-        this.rating = rating;
-        this.keyword = keyword;
+    public static BookReview create(Book book, User user, BigDecimal rating, Keyword keyword) {
+        return BookReview.builder()
+                .book(book)
+                .user(user)
+                .rating(rating)
+                .keyword(keyword)
+                .build();
     }
 }
