@@ -4,6 +4,7 @@ import com.dokdok.book.entity.Book;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.global.BaseTimeEntity;
 import com.dokdok.meeting.dto.MeetingCreateRequest;
+import com.dokdok.meeting.dto.MeetingUpdateRequest;
 import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.user.entity.User;
@@ -104,5 +105,27 @@ public class Meeting extends BaseTimeEntity {
         }
 
         this.meetingStatus = targetStatus;
+    }
+
+    public void update(MeetingUpdateRequest request) {
+
+        if (request.meetingName() != null) {
+            this.meetingName = request.meetingName();
+        }
+
+        if (request.startDate() != null) {
+            this.meetingStartDate = request.startDate();
+        }
+
+        if (request.endDate() != null) {
+            this.meetingEndDate = request.endDate();
+        }
+        if (request.place() != null) {
+            this.place = request.place();
+        }
+
+        if (request.maxParticipants() != null) {
+            this.maxParticipants = request.maxParticipants();
+        }
     }
 }

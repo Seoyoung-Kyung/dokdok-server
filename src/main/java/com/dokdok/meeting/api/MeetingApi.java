@@ -4,6 +4,8 @@ import com.dokdok.global.response.ApiResponse;
 import com.dokdok.meeting.dto.MeetingCreateRequest;
 import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.dto.MeetingStatusResponse;
+import com.dokdok.meeting.dto.MeetingUpdateRequest;
+import com.dokdok.meeting.dto.MeetingUpdateResponse;
 import com.dokdok.meeting.entity.MeetingStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -156,6 +158,34 @@ public interface MeetingApi {
     })
     ResponseEntity<ApiResponse<Long>> cancelMeeting(
             Long meetingId
+    );
+
+    @Operation(
+            summary = "약속 수정",
+            description = """
+            약속 정보를 수정합니다.
+            - 권한: 약속장
+            - 제약: 종료된 약속은 수정 불가
+            - 제약: 종료 일시는 시작 일시보다 이전일 수 없음
+            - 제약: 최대 참여 인원은 현재 참여 인원보다 작을 수 없음
+            """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "약속 수정 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = MeetingUpdateResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속장 아님"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    ResponseEntity<ApiResponse<MeetingUpdateResponse>> updateMeeting(
+            @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
+            Long meetingId,
+            MeetingUpdateRequest request
     );
 
 }

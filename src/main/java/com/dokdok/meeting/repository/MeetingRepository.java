@@ -13,4 +13,5 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     boolean existsByGatheringIdAndMeetingStatus(Long gatheringId, MeetingStatus meetingStatus);
 
     int countByGatheringIdAndMeetingStatus(Long gatheringId, MeetingStatus meetingStatus);
+
 }
