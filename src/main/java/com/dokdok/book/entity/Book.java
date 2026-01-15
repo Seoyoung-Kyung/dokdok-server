@@ -37,7 +37,7 @@ public class Book {
     private String thumbnail;
 
     @NotBlank(message = "isbn은 필수 항목입니다.")
-    @Column(name = "isbn", length = 20)
+    @Column(name = "isbn", length = 50)
     private String isbn;
 
     @CreatedDate

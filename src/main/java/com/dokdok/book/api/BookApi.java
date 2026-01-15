@@ -162,11 +162,11 @@ public interface BookApi {
             @ParameterObject
             @Parameter(
                     description = "페이징 정보 (page: 페이지 번호, size: 페이지 크기, sort: 정렬 기준)",
-                    example = "page=0&size=10&sort=book_name,asc"
+                    example = "page=0&size=10&sort=addedAt,desc"
             )
             @PageableDefault(
                     size = 10,
-                    sort = "added_at",
+                    sort = "addedAt",
                     direction = Sort.Direction.DESC
             ) Pageable pageable
     );
