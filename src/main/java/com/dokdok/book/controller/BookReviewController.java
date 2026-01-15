@@ -33,4 +33,21 @@ public class BookReviewController implements BookReviewApi {
         BookReviewResponse response = bookReviewService.getMyReview(bookId);
         return ApiResponse.success(response, "책 리뷰 조회가 완료되었습니다.");
     }
+
+    @Override
+    public ResponseEntity<ApiResponse<BookReviewResponse>> updateMyReview(
+            Long bookId,
+            BookReviewRequest request
+    ) {
+        BookReviewResponse response = bookReviewService.updateMyReview(bookId, request);
+        return ApiResponse.success(response, "책 리뷰가 수정되었습니다.");
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> deleteMyReview(
+            Long bookId
+    ) {
+        bookReviewService.deleteMyReview(bookId);
+        return ApiResponse.deleted("책 리뷰가 삭제되었습니다.");
+    }
 }

@@ -1,24 +1,24 @@
 package com.dokdok.book.entity;
 
+import com.dokdok.global.BaseTimeEntity;
 import com.dokdok.keyword.entity.Keyword;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "book_review")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class BookReview {
+@SQLDelete(sql = "UPDATE book_review SET deleted_at = CURRENT_TIMESTAMP WHERE book_review_id = ?")
+@SQLRestriction("deleted_at IS NULL")
+public class BookReview extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,14 +36,6 @@ public class BookReview {
     @Column(name = "rating", precision = 2, scale = 1)
     private BigDecimal rating;
 
-    @CreatedDate
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "keyword_id", nullable = false)
     private Keyword keyword;
@@ -55,5 +47,14 @@ public class BookReview {
                 .rating(rating)
                 .keyword(keyword)
                 .build();
+    }
+
+    public void updateReview(BigDecimal rating, Keyword keyword) {
+        this.rating = rating;
+        this.keyword = keyword;
+    }
+
+    public void deleteReview() {
+        this.markDeletedNow();
     }
 }
