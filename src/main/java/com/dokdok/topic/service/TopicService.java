@@ -7,10 +7,7 @@ import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
-import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
-import com.dokdok.topic.dto.response.SuggestTopicResponse;
-import com.dokdok.topic.dto.response.TopicLikeResponse;
-import com.dokdok.topic.dto.response.TopicsPageResponse;
+import com.dokdok.topic.dto.response.*;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicLike;
 import com.dokdok.topic.entity.TopicMessage;
@@ -30,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -80,6 +78,8 @@ public class TopicService {
             Long meetingId,
             Pageable pageable
     ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
         gatheringValidator.validateGathering(gatheringId);
         meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
 
@@ -89,7 +89,16 @@ public class TopicService {
         Page<Topic> topicPage =
                 topicRepository.findTopicsByMeetingId(meetingId, noSortPageable);
 
-        return TopicsPageResponse.from(topicPage);
+        Set<Long> deletableTopicIds = Set.of();
+
+        if (userId != null && !topicPage.isEmpty()) {
+            List<Long> topicIds = topicPage.getContent().stream()
+                    .map(Topic::getId)
+                    .toList();
+            deletableTopicIds = topicRepository.findDeletableTopicIds(topicIds, userId);
+        }
+
+        return TopicsPageResponse.from(topicPage, deletableTopicIds);
     }
 
     @Transactional

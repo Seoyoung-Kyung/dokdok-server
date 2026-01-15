@@ -1,11 +1,7 @@
 package com.dokdok.topic.service;
 
-import com.dokdok.topic.dto.response.TopicLikeResponse;
 import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.entity.Topic;
-import com.dokdok.meeting.exception.MeetingErrorCode;
-import com.dokdok.meeting.exception.MeetingException;
-import com.dokdok.topic.entity.TopicLike;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicAnswerRepository;
@@ -14,7 +10,6 @@ import com.dokdok.topic.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -22,7 +17,6 @@ public class TopicValidator {
 
     private final TopicRepository topicRepository;
     private final TopicAnswerRepository topicAnswerRepository;
-    private final TopicLikeRepository topicLikeRepository;
 
     /**
      * 해당 약속에 속한 주제인지 검증하고 Topic을 반환한다.
@@ -65,6 +59,17 @@ public class TopicValidator {
 
         return topicRepository.findTopicWithDeletePermission(topicId, userId)
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_USER_CANNOT_DELETE));
+    }
+
+    public void validateDeletableTopic(
+            Long topicId,
+            Long userId
+    ) {
+        boolean isDeletable = topicRepository.existsByTopicIdAndUserId(topicId, userId);
+
+        if (isDeletable) {
+            throw new TopicException(TopicErrorCode.TOPIC_USER_CANNOT_DELETE);
+        }
     }
 
 }
