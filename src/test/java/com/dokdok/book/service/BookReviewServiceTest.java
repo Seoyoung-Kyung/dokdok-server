@@ -168,4 +168,49 @@ class BookReviewServiceTest {
             verify(bookReviewRepository, never()).save(any(BookReview.class));
         }
     }
+
+    @Test
+    @DisplayName("내 책 리뷰를 정상적으로 조회한다")
+    void getMyReview_success() {
+        Book book = Book.builder().id(1L).build();
+        Keyword keyword = Keyword.builder().id(2L).build();
+        User user = User.builder().id(3L).build();
+        BookReview review = BookReview.builder()
+                .id(10L)
+                .book(book)
+                .user(user)
+                .rating(new BigDecimal("4.5"))
+                .keyword(keyword)
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
+
+            when(bookValidator.validateAndGetReview(1L, 3L))
+                    .thenReturn(review);
+
+            BookReviewResponse response = bookReviewService.getMyReview(1L);
+
+            assertThat(response.reviewId()).isEqualTo(10L);
+            assertThat(response.bookId()).isEqualTo(1L);
+            assertThat(response.userId()).isEqualTo(3L);
+            assertThat(response.rating()).isEqualTo(new BigDecimal("4.5"));
+            assertThat(response.keywordId()).isEqualTo(2L);
+        }
+    }
+
+    @Test
+    @DisplayName("내 책 리뷰가 없으면 예외가 발생한다")
+    void getMyReview_throwsWhenReviewMissing() {
+        try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
+
+            when(bookValidator.validateAndGetReview(1L, 3L))
+                    .thenThrow(new BookException(BookErrorCode.BOOK_REVIEW_NOT_FOUND));
+
+            assertThatThrownBy(() -> bookReviewService.getMyReview(1L))
+                    .isInstanceOf(BookException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_REVIEW_NOT_FOUND);
+        }
+    }
 }

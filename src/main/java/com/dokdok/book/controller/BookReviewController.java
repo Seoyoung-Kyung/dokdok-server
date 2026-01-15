@@ -25,4 +25,12 @@ public class BookReviewController implements BookReviewApi {
         BookReviewResponse response = bookReviewService.createReview(bookId, request);
         return ApiResponse.created(response, "책 리뷰가 저장되었습니다.");
     }
+
+    @Override
+    public ResponseEntity<ApiResponse<BookReviewResponse>> getMyReview(
+            Long bookId
+    ) {
+        BookReviewResponse response = bookReviewService.getMyReview(bookId);
+        return ApiResponse.success(response, "책 리뷰 조회가 완료되었습니다.");
+    }
 }
