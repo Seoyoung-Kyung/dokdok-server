@@ -5,6 +5,7 @@ import com.dokdok.keyword.entity.Keyword;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@SQLDelete(sql = "UPDATE book_review SET deleted_at = CURRENT_TIMESTAMP WHERE book_review_id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class BookReview extends BaseTimeEntity {
 
