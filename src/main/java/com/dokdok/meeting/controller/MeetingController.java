@@ -5,6 +5,7 @@ import com.dokdok.meeting.api.MeetingApi;
 import com.dokdok.meeting.dto.MeetingCreateRequest;
 import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.dto.MeetingStatusResponse;
+import com.dokdok.meeting.dto.MeetingTabCountsResponse;
 import com.dokdok.meeting.dto.MeetingUpdateRequest;
 import com.dokdok.meeting.dto.MeetingUpdateResponse;
 import com.dokdok.meeting.entity.MeetingStatus;
@@ -83,5 +84,14 @@ public class MeetingController implements MeetingApi {
     ) {
         MeetingUpdateResponse response = meetingService.updateMeeting(meetingId, request);
         return ApiResponse.updated(response, "약속 수정에 성공했습니다.");
+    }
+
+    @Override
+    @GetMapping(value = "/tab-counts", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<MeetingTabCountsResponse>> getMeetingTabCounts(
+            @RequestParam Long gatheringId
+    ) {
+        MeetingTabCountsResponse response = meetingService.getMeetingTabCounts(gatheringId);
+        return ApiResponse.success(response, "약속 탭 카운트 조회에 성공했습니다.");
     }
 }

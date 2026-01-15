@@ -21,6 +21,7 @@ import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
@@ -29,7 +30,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
@@ -340,5 +351,205 @@ public class MeetingService {
                     "종료 일시는 시작 일시보다 이전일 수 없습니다."
             );
         }
+    }
+
+    /**
+     * 약속 리스트를 조회한다.
+     * 약속 : 모임에서 약속이 확정된 전체 약속
+     * 다가오는 약속 : 약속이 확정된 것들 중 3일 이내인 약속
+     * 완료된 약속 : 약속이 완전히 끝난 약속
+     * 내가 참여한 약속 : 완전히 끝난 약속 중 내가 참여한 약속
+     * @param gatheringId 모임 식별자
+     * @param request 약속 리스트 요청 폼
+     * @return MeetingListResponse
+     */
+    public MeetingListResponse meetingList(Long gatheringId, MeetingListRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        gatheringValidator.validateMembership(gatheringId, userId);
+        Pageable pageable = buildPageable(request, Sort.by("meetingStartDate").descending());
+        Pageable upcomingPageable = buildPageable(request, Sort.by("meetingStartDate").ascending());
+
+        return switch (request.filter()) {
+            case ALL -> getAllMeetings(gatheringId, pageable, userId);
+            case UPCOMING -> getUpcomingMeetings(gatheringId, upcomingPageable, userId);
+            case DONE -> getDoneMeetings(gatheringId, pageable, userId);
+            case JOINED -> getJoinedMeetings(gatheringId, pageable, userId);
+        };
+
+    }
+
+    /**
+     * 기본 페이저블 상태를 정의한다.
+     */
+    private Pageable buildPageable(MeetingListRequest request, Sort sort) {
+        int page = request.page() != null ? request.page() : 0;
+        int size = request.size() != null ? request.size() : 4;
+        return PageRequest.of(page, size, sort);
+    }
+
+    /**
+     * 약속 탭별 뱃지 카운트 수를 반환한다.
+     * @param gatheringId 모임 식별자
+     * @return MeetingTabCountsResponse
+     */
+    public MeetingTabCountsResponse getMeetingTabCounts(Long gatheringId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        gatheringValidator.validateMembership(gatheringId, userId);
+
+        int allCount = meetingRepository
+                .countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.CONFIRMED);
+        int doneCount = meetingRepository
+                .countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE);
+
+        LocalDateTime now = LocalDateTime.now();
+        int upcomingCount = meetingRepository.countUpcomingMeetings(
+                gatheringId,
+                MeetingStatus.CONFIRMED,
+                now,
+                now.plusDays(3)
+        );
+
+        int joinedCount = meetingMemberRepository.countMeetingsByUserIdAndStatus(
+                userId,
+                gatheringId,
+                MeetingStatus.DONE
+        );
+
+        return MeetingTabCountsResponse.builder()
+                .all(allCount)
+                .upcoming(upcomingCount)
+                .done(doneCount)
+                .joined(joinedCount)
+                .build();
+    }
+
+    /**
+     * 모임의 약속 중 확정된 리스트를 전부 반환한다.
+     */
+    private MeetingListResponse getAllMeetings(
+            Long gatheringId,
+            Pageable pageable,
+            Long userId
+    ) {
+        Page<Meeting> meetingPage = meetingRepository.findByGatheringIdAndMeetingStatus(
+                gatheringId,
+                MeetingStatus.CONFIRMED,
+                pageable
+        );
+        return buildMeetingListResponse(meetingPage.getContent(), userId, gatheringId);
+    }
+
+    private MeetingListResponse getUpcomingMeetings(
+            Long gatheringId,
+            Pageable pageable,
+            Long userId
+    ) {
+        LocalDateTime now = LocalDateTime.now();
+
+        Page<Meeting> meetingPage = meetingRepository
+                .findByGatheringIdAndMeetingStatusAndMeetingStartDateBetween(
+                        gatheringId,
+                        MeetingStatus.CONFIRMED,
+                        now,
+                        now.plusDays(3),
+                        pageable
+                );
+
+        return buildMeetingListResponse(meetingPage.getContent(), userId, gatheringId);
+    }
+
+    /**
+     * 완료된 약속 리스트를 반환한다.
+     */
+    private MeetingListResponse getDoneMeetings(
+            Long gatheringId,
+            Pageable pageable,
+            Long userId
+    ) {
+        Page<Meeting> meetingPage = meetingRepository.findByGatheringIdAndMeetingStatus(
+                gatheringId,
+                MeetingStatus.DONE,
+                pageable
+        );
+        return buildMeetingListResponse(meetingPage.getContent(), userId, gatheringId);
+    }
+
+    /**
+     * 완료된 약속 중 내가 참여했던 약속 리스트를 반환한다.
+     */
+    private MeetingListResponse getJoinedMeetings(
+            Long gatheringId,
+            Pageable pageable,
+            Long userId
+    ) {
+        Page<Meeting> meetingPage = meetingMemberRepository.findMeetingsByUserIdAndStatus(
+                userId,
+                gatheringId,
+                MeetingStatus.DONE,
+                pageable
+        );
+        return buildMeetingListResponse(meetingPage.getContent(), userId, gatheringId);
+    }
+
+    private MeetingListResponse buildMeetingListResponse(
+            List<Meeting> meetings,
+            Long userId,
+            Long gatheringId
+    ) {
+        if (meetings.isEmpty()) {
+            return MeetingListResponse.builder()
+                    .items(List.of())
+                    .build();
+        }
+
+        List<Long> meetingIds = meetings.stream()
+                .map(Meeting::getId)
+                .toList();
+
+        Map<Long, List<TopicType>> topicTypesByMeetingId = findTopicTypes(meetingIds);
+        Set<Long> joinedMeetingIds = new HashSet<>(
+                meetingMemberRepository.findActiveMeetingIdsByUserIdAndGatheringId(userId, gatheringId)
+        );
+
+        List<MeetingListResponse.Item> items = new ArrayList<>();
+        for (Meeting meeting : meetings) {
+            List<TopicType> topicTypes = topicTypesByMeetingId.getOrDefault(meeting.getId(), List.of());
+            boolean joined = joinedMeetingIds.contains(meeting.getId());
+
+            items.add(MeetingListResponse.Item.builder()
+                    .meetingId(meeting.getId())
+                    .meetingName(meeting.getMeetingName())
+                    .bookName(meeting.getBook().getBookName())
+                    .startDateTime(meeting.getMeetingStartDate())
+                    .endDateTime(meeting.getMeetingEndDate())
+                    .topicTypes(topicTypes)
+                    .joined(joined)
+                    .meetingStatus(meeting.getMeetingStatus())
+                    .build());
+        }
+
+        return MeetingListResponse.builder()
+                .items(items)
+                .build();
+    }
+
+    /**
+     * 약속의 주제 타입 리스트를 반환한다.
+     */
+    private Map<Long, List<TopicType>> findTopicTypes(List<Long> meetingIds) {
+        List<Object[]> rows = topicRepository.findTopicTypesByMeetingIds(meetingIds);
+        Map<Long, Set<TopicType>> result = new HashMap<>();
+
+        for (Object[] row : rows) {
+            Long meetingId = (Long) row[0];
+            TopicType topicType = (TopicType) row[1];
+            result.computeIfAbsent(meetingId, key -> new LinkedHashSet<>()).add(topicType);
+        }
+
+        Map<Long, List<TopicType>> listResult = new HashMap<>();
+        for (Map.Entry<Long, Set<TopicType>> entry : result.entrySet()) {
+            listResult.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
+        return listResult;
     }
 }
