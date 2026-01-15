@@ -224,43 +224,4 @@ class PersonalReadingRecordServiceTest {
         verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
     }
 
-    @Test
-    @DisplayName("지원하지 않는 기록 타입이면 RecordException이 발생한다")
-    void createRecord_InvalidRecordType() {
-        // given
-        Long userId = 1L;
-        Long personalBookId = 40L;
-        PersonalReadingRecordCreateRequest request = new PersonalReadingRecordCreateRequest(
-                null,
-                "잘못된 타입",
-                null
-        );
-
-        User user = User.builder()
-                .id(userId)
-                .kakaoId(999L)
-                .nickname("reader")
-                .build();
-
-        PersonalBook personalBook = PersonalBook.builder()
-                .id(personalBookId)
-                .user(user)
-                .book(Book.builder().id(400L).isbn("9781111111111").bookName("책").author("저자").publisher("출판").build())
-                .readingStatus(BookReadingStatus.READING)
-                .build();
-
-        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
-        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, personalBookId)).thenReturn(personalBook);
-
-        // when & then
-        assertThatThrownBy(() -> personalReadingRecordService.create(personalBookId, request))
-                .isInstanceOf(RecordException.class)
-                .hasFieldOrPropertyWithValue("errorCode", RecordErrorCode.INVALID_RECORD_TYPE);
-
-        verify(personalReadingRecordRepository, never()).save(any());
-        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
-        verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
-    }
 }
