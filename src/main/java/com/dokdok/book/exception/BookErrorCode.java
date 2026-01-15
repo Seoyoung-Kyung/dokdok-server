@@ -15,7 +15,8 @@ public enum BookErrorCode implements BaseErrorCode {
     BOOK_REVIEW_NOT_FOUND("B004", "책 리뷰를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     BOOK_REVIEW_ALREADY_EXISTS("B005", "이미 책 리뷰가 존재합니다.", HttpStatus.CONFLICT),
     KEYWORD_NOT_FOUND("B006", "키워드를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    KEYWORD_NOT_SELECTABLE("B007", "선택할 수 없는 키워드입니다.", HttpStatus.BAD_REQUEST);
+    KEYWORD_NOT_SELECTABLE("B007", "선택할 수 없는 키워드입니다.", HttpStatus.BAD_REQUEST),
+    BOOK_REVIEW_INVALID_RATING("B008", "별점은 0.5 단위의 5점 만점 값이어야 합니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

@@ -56,4 +56,9 @@ public class BookReview {
                 .keyword(keyword)
                 .build();
     }
+
+    public void updateReview(BigDecimal rating, Keyword keyword) {
+        this.rating = rating;
+        this.keyword = keyword;
+    }
 }

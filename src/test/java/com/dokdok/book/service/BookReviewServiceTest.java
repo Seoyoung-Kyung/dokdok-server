@@ -88,27 +88,6 @@ class BookReviewServiceTest {
     }
 
     @Test
-    @DisplayName("리뷰가 이미 존재하면 예외가 발생한다")
-    void createReview_throwsWhenAlreadyExists() {
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), 2L);
-
-        try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
-            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
-
-            doThrow(new BookException(BookErrorCode.BOOK_REVIEW_ALREADY_EXISTS))
-                    .when(bookValidator).validateReviewNotExists(1L, 3L);
-
-            assertThatThrownBy(() -> bookReviewService.createReview(1L, request))
-                    .isInstanceOf(BookException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_REVIEW_ALREADY_EXISTS);
-
-            verify(bookValidator).validateAndGetBook(1L);
-            verify(keywordValidator).validateAndGetSelectableKeyword(2L);
-            verify(bookReviewRepository, never()).save(any(BookReview.class));
-        }
-    }
-
-    @Test
     @DisplayName("책이 없으면 예외가 발생한다")
     void createReview_throwsWhenBookMissing() {
         BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), 2L);
@@ -124,7 +103,6 @@ class BookReviewServiceTest {
                     .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_FOUND);
 
             verify(keywordValidator, never()).validateAndGetSelectableKeyword(any());
-            verify(bookValidator, never()).validateReviewNotExists(any(), any());
             verify(bookReviewRepository, never()).save(any(BookReview.class));
         }
     }
@@ -146,7 +124,6 @@ class BookReviewServiceTest {
                     .isInstanceOf(BookException.class)
                     .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.KEYWORD_NOT_SELECTABLE);
 
-            verify(bookValidator, never()).validateReviewNotExists(any(), any());
             verify(bookReviewRepository, never()).save(any(BookReview.class));
         }
     }
@@ -164,7 +141,49 @@ class BookReviewServiceTest {
                     .isInstanceOf(GlobalException.class)
                     .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
 
-            verify(bookValidator, never()).validateReviewNotExists(any(), any());
+            verify(bookReviewRepository, never()).save(any(BookReview.class));
+        }
+    }
+
+    @Test
+    @DisplayName("별점이 유효하지 않으면 생성 시 예외가 발생한다")
+    void createReview_throwsWhenInvalidRating() {
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.7"), 2L);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
+
+            assertThatThrownBy(() -> bookReviewService.createReview(1L, request))
+                    .isInstanceOf(BookException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_REVIEW_INVALID_RATING);
+
+            verify(bookValidator, never()).validateAndGetBook(any());
+            verify(keywordValidator, never()).validateAndGetSelectableKeyword(any());
+            verify(bookReviewRepository, never()).save(any(BookReview.class));
+        }
+    }
+
+    @Test
+    @DisplayName("리뷰가 이미 존재하면 생성 시 예외가 발생한다")
+    void createReview_throwsWhenAlreadyExists() {
+        Book book = Book.builder().id(1L).build();
+        Keyword keyword = Keyword.builder().id(2L).build();
+        User user = User.builder().id(3L).build();
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), 2L);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
+            securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(user);
+
+            when(bookValidator.validateAndGetBook(1L)).thenReturn(book);
+            when(keywordValidator.validateAndGetSelectableKeyword(2L)).thenReturn(keyword);
+            doThrow(new BookException(BookErrorCode.BOOK_REVIEW_ALREADY_EXISTS))
+                    .when(bookValidator).validateReviewNotExists(1L, 3L);
+
+            assertThatThrownBy(() -> bookReviewService.createReview(1L, request))
+                    .isInstanceOf(BookException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_REVIEW_ALREADY_EXISTS);
+
             verify(bookReviewRepository, never()).save(any(BookReview.class));
         }
     }
@@ -211,6 +230,98 @@ class BookReviewServiceTest {
             assertThatThrownBy(() -> bookReviewService.getMyReview(1L))
                     .isInstanceOf(BookException.class)
                     .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_REVIEW_NOT_FOUND);
+        }
+    }
+
+    @Test
+    @DisplayName("내 책 리뷰를 수정한다")
+    void updateMyReview_success() {
+        Book book = Book.builder().id(1L).build();
+        Keyword keyword = Keyword.builder().id(2L).build();
+        Keyword newKeyword = Keyword.builder().id(5L).build();
+        User user = User.builder().id(3L).build();
+        BookReview review = BookReview.builder()
+                .id(10L)
+                .book(book)
+                .user(user)
+                .rating(new BigDecimal("4.5"))
+                .keyword(keyword)
+                .build();
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), 5L);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
+
+            when(bookValidator.validateAndGetReview(1L, 3L)).thenReturn(review);
+            when(keywordValidator.validateAndGetSelectableKeyword(5L)).thenReturn(newKeyword);
+
+            BookReviewResponse response = bookReviewService.updateMyReview(1L, request);
+
+            assertThat(review.getRating()).isEqualTo(new BigDecimal("3.5"));
+            assertThat(review.getKeyword().getId()).isEqualTo(5L);
+            assertThat(response.reviewId()).isEqualTo(10L);
+        }
+    }
+
+    @Test
+    @DisplayName("내 책 리뷰가 없으면 수정 시 예외가 발생한다")
+    void updateMyReview_throwsWhenReviewMissing() {
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), 5L);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
+
+            when(bookValidator.validateAndGetReview(1L, 3L))
+                    .thenThrow(new BookException(BookErrorCode.BOOK_REVIEW_NOT_FOUND));
+
+            assertThatThrownBy(() -> bookReviewService.updateMyReview(1L, request))
+                    .isInstanceOf(BookException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_REVIEW_NOT_FOUND);
+        }
+    }
+
+    @Test
+    @DisplayName("선택 불가 키워드면 수정 시 예외가 발생한다")
+    void updateMyReview_throwsWhenKeywordNotSelectable() {
+        Book book = Book.builder().id(1L).build();
+        Keyword keyword = Keyword.builder().id(2L).build();
+        User user = User.builder().id(3L).build();
+        BookReview review = BookReview.builder()
+                .id(10L)
+                .book(book)
+                .user(user)
+                .rating(new BigDecimal("4.5"))
+                .keyword(keyword)
+                .build();
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), 5L);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
+
+            when(bookValidator.validateAndGetReview(1L, 3L)).thenReturn(review);
+            when(keywordValidator.validateAndGetSelectableKeyword(5L))
+                    .thenThrow(new BookException(BookErrorCode.KEYWORD_NOT_SELECTABLE));
+
+            assertThatThrownBy(() -> bookReviewService.updateMyReview(1L, request))
+                    .isInstanceOf(BookException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.KEYWORD_NOT_SELECTABLE);
+        }
+    }
+
+    @Test
+    @DisplayName("별점이 유효하지 않으면 수정 시 예외가 발생한다")
+    void updateMyReview_throwsWhenInvalidRating() {
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("0.3"), 2L);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
+
+            assertThatThrownBy(() -> bookReviewService.updateMyReview(1L, request))
+                    .isInstanceOf(BookException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_REVIEW_INVALID_RATING);
+
+            verify(bookValidator, never()).validateAndGetReview(any(), any());
+            verify(keywordValidator, never()).validateAndGetSelectableKeyword(any());
         }
     }
 }
