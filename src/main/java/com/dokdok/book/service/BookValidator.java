@@ -11,6 +11,8 @@ import com.dokdok.book.repository.PersonalBookRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
 @Component
 @RequiredArgsConstructor
 public class BookValidator {
@@ -50,5 +52,21 @@ public class BookValidator {
     public BookReview validateAndGetReview(Long bookId, Long userId) {
         return bookReviewRepository.findByBookIdAndUserId(bookId, userId)
                 .orElseThrow(() -> new BookException(BookErrorCode.BOOK_REVIEW_NOT_FOUND));
+    }
+
+    // 별점이 0.5 단위의 5점 만점인지 검증합니다.
+    public void validateRating(BigDecimal rating) {
+        if (rating == null) {
+            return;
+        }
+        BigDecimal min = new BigDecimal("0.5");
+        BigDecimal max = new BigDecimal("5.0");
+        if (rating.compareTo(min) < 0 || rating.compareTo(max) > 0) {
+            throw new BookException(BookErrorCode.BOOK_REVIEW_INVALID_RATING);
+        }
+        BigDecimal scaled = rating.multiply(BigDecimal.TEN);
+        if (scaled.remainder(new BigDecimal("5")).compareTo(BigDecimal.ZERO) != 0) {
+            throw new BookException(BookErrorCode.BOOK_REVIEW_INVALID_RATING);
+        }
     }
 }
