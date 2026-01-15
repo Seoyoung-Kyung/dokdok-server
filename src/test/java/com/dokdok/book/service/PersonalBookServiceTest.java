@@ -401,4 +401,75 @@ class PersonalBookServiceTest {
         verify(userValidator, times(1)).findUserOrThrow(userId);
         verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
     }
+
+    @Test
+    @DisplayName("내 책장에서 도서를 삭제하면 성공적으로 삭제된다")
+    void deleteBook_Success() {
+        // given
+        Long userId = 1L;
+        Long personalBookId = 100L;
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        Book book = Book.builder()
+                .id(10L)
+                .bookName("테스트 책")
+                .publisher("테스트 출판사")
+                .author("테스트 저자")
+                .isbn("9788994757254")
+                .build();
+
+        PersonalBook personalBook = PersonalBook.builder()
+                .id(personalBookId)
+                .user(user)
+                .book(book)
+                .readingStatus(BookReadingStatus.READING)
+                .build();
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(bookValidator.validateInBookShelf(userId, personalBookId)).thenReturn(personalBook);
+
+        // when
+        personalBookService.deleteBook(personalBookId);
+
+        // then
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
+        verify(personalBookRepository, times(1)).delete(personalBook);
+    }
+
+    @Test
+    @DisplayName("내 책장에 없는 도서를 삭제하려 하면 BookException 발생")
+    void deleteBook_NotFound() {
+        // given
+        Long userId = 1L;
+        Long personalBookId = 100L;
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(bookValidator.validateInBookShelf(userId, personalBookId))
+                .thenThrow(new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
+
+        // when & then
+        assertThatThrownBy(() -> personalBookService.deleteBook(personalBookId))
+                .isInstanceOf(BookException.class)
+                .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_IN_SHELF);
+
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
+        verify(personalBookRepository, never()).delete(any());
+    }
 }

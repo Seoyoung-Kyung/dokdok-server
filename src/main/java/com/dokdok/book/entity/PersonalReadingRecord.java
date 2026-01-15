@@ -5,8 +5,12 @@ import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
+
+import java.util.Map;
 
 @Entity
 @Table(name = "personal_reading_record")
@@ -31,19 +35,29 @@ public class PersonalReadingRecord extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "record_type", nullable = false)
+    private RecordType recordType;
+
     @Column(name = "record_content", columnDefinition = "TEXT")
     private String recordContent;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "meta", columnDefinition = "jsonb")
+    private Map<String, Object> meta;
 
     @Column(name = "is_published", nullable = false)
     @Builder.Default
     private Boolean isPublished = false;
 
 
-    public static PersonalReadingRecord create(PersonalBook personalBook, User user, String recordContent) {
+    public static PersonalReadingRecord create(PersonalBook personalBook, User user, RecordType recordType, String recordContent, Map<String, Object> meta) {
         return PersonalReadingRecord.builder()
                 .personalBook(personalBook)
                 .user(user)
+                .recordType(recordType)
                 .recordContent(recordContent)
+                .meta(meta)
                 .build();
 
     }

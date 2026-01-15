@@ -261,7 +261,8 @@ public interface BookApi {
             description = """
                     내 책장에 있는 책의 독서 기록을 등록합니다.
                     - 경로의 personalBookId로 책을 지정합니다.
-                    - 요청 본문은 기록 내용(recordContent)만 전달합니다.
+                    - 요청 본문: recordType(MEMO/QUOTE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
+                    - recordType이 MEMO이면 meta는 null로 저장됩니다.
                     - 로그인한 사용자 기준으로 본인 책에만 기록을 남길 수 있습니다.
                     """
     )
@@ -277,14 +278,19 @@ public interface BookApi {
                                               "code": "CREATED",
                                               "message": "기록 등록 성공",
                                               "data": {
-                                                "recordContent": "오늘 3장까지 읽었다.",
+                                                "recordType": "QUOTE",
+                                                "recordContent": "오늘 기억하고 싶은 문장을 기록합니다.",
+                                                "meta": {
+                                                  "page": 23,
+                                                  "excerpt": "이 문장이 좋았다."
+                                                },
                                                 "personalBookId": 10
                                               }
                                             }
                                             """
                             ))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청 (recordType 혹은 meta 오류)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
@@ -294,7 +300,7 @@ public interface BookApi {
             @Parameter(description = "독서 기록을 남길 개인 책 ID", required = true, example = "10")
             @PathVariable Long personalBookId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "등록할 독서 기록 내용",
+                    description = "등록할 독서 기록 내용 및 유형",
                     required = true,
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -302,12 +308,17 @@ public interface BookApi {
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
-                                              "recordContent": "오늘 3장까지 읽었다."
+                                              "recordType": "QUOTE",
+                                              "recordContent": "오늘 기억하고 싶은 문장을 기록합니다.",
+                                              "meta": {
+                                                "page": 23,
+                                                "excerpt": "이 문장이 좋았다."
+                                              }
                                             }
                                             """
                             )
                     )
             )
-            @RequestBody PersonalReadingRecordCreateRequest personalReadingRecordCreateRequest
+            @RequestBody PersonalReadingRecordCreateRequest request
     );
 }
