@@ -38,9 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
@@ -360,31 +358,21 @@ public class MeetingService {
      * 완료된 약속 : 약속이 완전히 끝난 약속
      * 내가 참여한 약속 : 완전히 끝난 약속 중 내가 참여한 약속
      * @param gatheringId 모임 식별자
-     * @param request 약속 리스트 요청 폼
+     * @param filter 약속 리스트 필터
+     * @param pageable 페이징 정보
      * @return MeetingListResponse
      */
-    public MeetingListResponse meetingList(Long gatheringId, MeetingListRequest request) {
+    public MeetingListResponse meetingList(Long gatheringId, MeetingListFilter filter, Pageable pageable) {
         Long userId = SecurityUtil.getCurrentUserId();
         gatheringValidator.validateMembership(gatheringId, userId);
-        Pageable pageable = buildPageable(request, Sort.by("meetingStartDate").descending());
-        Pageable upcomingPageable = buildPageable(request, Sort.by("meetingStartDate").ascending());
 
-        return switch (request.filter()) {
+        return switch (filter) {
             case ALL -> getAllMeetings(gatheringId, pageable, userId);
-            case UPCOMING -> getUpcomingMeetings(gatheringId, upcomingPageable, userId);
+            case UPCOMING -> getUpcomingMeetings(gatheringId, pageable, userId);
             case DONE -> getDoneMeetings(gatheringId, pageable, userId);
             case JOINED -> getJoinedMeetings(gatheringId, pageable, userId);
         };
 
-    }
-
-    /**
-     * 기본 페이저블 상태를 정의한다.
-     */
-    private Pageable buildPageable(MeetingListRequest request, Sort sort) {
-        int page = request.page() != null ? request.page() : 0;
-        int size = request.size() != null ? request.size() : 4;
-        return PageRequest.of(page, size, sort);
     }
 
     /**
@@ -436,9 +424,12 @@ public class MeetingService {
                 MeetingStatus.CONFIRMED,
                 pageable
         );
-        return buildMeetingListResponse(meetingPage.getContent(), userId, gatheringId);
+        return buildMeetingListResponse(meetingPage, userId, gatheringId);
     }
 
+    /**
+     * 다가오는 약속 리스트를 반환한다.
+     */
     private MeetingListResponse getUpcomingMeetings(
             Long gatheringId,
             Pageable pageable,
@@ -455,7 +446,7 @@ public class MeetingService {
                         pageable
                 );
 
-        return buildMeetingListResponse(meetingPage.getContent(), userId, gatheringId);
+        return buildMeetingListResponse(meetingPage, userId, gatheringId);
     }
 
     /**
@@ -471,7 +462,7 @@ public class MeetingService {
                 MeetingStatus.DONE,
                 pageable
         );
-        return buildMeetingListResponse(meetingPage.getContent(), userId, gatheringId);
+        return buildMeetingListResponse(meetingPage, userId, gatheringId);
     }
 
     /**
@@ -488,17 +479,22 @@ public class MeetingService {
                 MeetingStatus.DONE,
                 pageable
         );
-        return buildMeetingListResponse(meetingPage.getContent(), userId, gatheringId);
+        return buildMeetingListResponse(meetingPage, userId, gatheringId);
     }
 
     private MeetingListResponse buildMeetingListResponse(
-            List<Meeting> meetings,
+            Page<Meeting> meetingPage,
             Long userId,
             Long gatheringId
     ) {
+        List<Meeting> meetings = meetingPage.getContent();
         if (meetings.isEmpty()) {
             return MeetingListResponse.builder()
                     .items(List.of())
+                    .totalCount((int) meetingPage.getTotalElements())
+                    .currentPage(meetingPage.getNumber())
+                    .pageSize(meetingPage.getSize())
+                    .totalPages(meetingPage.getTotalPages())
                     .build();
         }
 
@@ -530,6 +526,10 @@ public class MeetingService {
 
         return MeetingListResponse.builder()
                 .items(items)
+                .totalCount((int) meetingPage.getTotalElements())
+                .currentPage(meetingPage.getNumber())
+                .pageSize(meetingPage.getSize())
+                .totalPages(meetingPage.getTotalPages())
                 .build();
     }
 

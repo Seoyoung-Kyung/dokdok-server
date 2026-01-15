@@ -3,10 +3,11 @@ package com.dokdok.meeting.controller;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.meeting.api.MeetingListApi;
 import com.dokdok.meeting.dto.MeetingListFilter;
-import com.dokdok.meeting.dto.MeetingListRequest;
 import com.dokdok.meeting.dto.MeetingListResponse;
 import com.dokdok.meeting.service.MeetingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,16 +28,9 @@ public class MeetingListController implements MeetingListApi {
     public ResponseEntity<ApiResponse<MeetingListResponse>> getMeetingList(
             @PathVariable Long gatheringId,
             @RequestParam MeetingListFilter filter,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size
+            @PageableDefault(size = 4) Pageable pageable
     ) {
-        MeetingListRequest request = MeetingListRequest.builder()
-                .filter(filter)
-                .page(page)
-                .size(size)
-                .build();
-
-        MeetingListResponse response = meetingService.meetingList(gatheringId, request);
+        MeetingListResponse response = meetingService.meetingList(gatheringId, filter, pageable);
         return ApiResponse.success(response, "약속 리스트 조회에 성공했습니다.");
     }
 }

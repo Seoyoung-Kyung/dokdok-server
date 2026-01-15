@@ -9,7 +9,11 @@ import java.util.List;
 
 @Builder
 public record MeetingListResponse(
-        List<Item> items
+        List<Item> items,
+        Integer totalCount,
+        Integer currentPage,
+        Integer pageSize,
+        Integer totalPages
 ) {
     @Builder
     public record Item(

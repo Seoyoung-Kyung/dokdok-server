@@ -10,6 +10,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,9 +33,7 @@ public interface MeetingListApi {
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "filter", description = "탭 필터 (ALL, UPCOMING, DONE, JOINED)",
-                            in = ParameterIn.QUERY, required = true),
-                    @Parameter(name = "page", description = "페이지 번호 (0부터 시작)", in = ParameterIn.QUERY),
-                    @Parameter(name = "size", description = "페이지 크기", in = ParameterIn.QUERY)
+                            in = ParameterIn.QUERY, required = true)
             }
     )
     @ApiResponses({
@@ -50,7 +51,7 @@ public interface MeetingListApi {
     ResponseEntity<ApiResponse<MeetingListResponse>> getMeetingList(
             @PathVariable Long gatheringId,
             @RequestParam MeetingListFilter filter,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size
+            @ParameterObject
+            @PageableDefault(size = 4) Pageable pageable
     );
 }
