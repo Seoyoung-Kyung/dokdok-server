@@ -56,6 +56,9 @@ class PersonalBookServiceTest {
     @Mock
     private UserValidator userValidator;
 
+    @Mock
+    private BookValidator bookValidator;
+
     private MockedStatic<SecurityUtil> securityUtilMock;
 
     @BeforeEach
@@ -98,7 +101,7 @@ class PersonalBookServiceTest {
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
         when(bookRepository.findByIsbn(request.isbn())).thenReturn(Optional.of(book));
-        when(personalBookRepository.findByUserIdAndBookId(userId, book.getId())).thenReturn(Optional.empty());
+        doNothing().when(bookValidator).validateDuplicatePersonalBook(userId, book.getId());
 
         // when
         PersonalBookCreateResponse response = personalBookService.createBook(request);
@@ -123,7 +126,7 @@ class PersonalBookServiceTest {
         verify(userValidator, times(1)).findUserOrThrow(userId);
         verify(bookRepository, times(1)).findByIsbn(request.isbn());
         verify(bookRepository, never()).save(any(Book.class));
-        verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, book.getId());
+        verify(bookValidator, times(1)).validateDuplicatePersonalBook(userId, book.getId());
     }
 
     @Test
@@ -181,7 +184,7 @@ class PersonalBookServiceTest {
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
         when(bookRepository.findByIsbn(request.isbn())).thenReturn(Optional.empty());
         when(bookRepository.save(any(Book.class))).thenReturn(savedBook);
-        when(personalBookRepository.findByUserIdAndBookId(userId, savedBook.getId())).thenReturn(Optional.empty());
+        doNothing().when(bookValidator).validateDuplicatePersonalBook(userId, savedBook.getId());
 
         // when
         PersonalBookCreateResponse response = personalBookService.createBook(request);
@@ -196,7 +199,7 @@ class PersonalBookServiceTest {
         verify(userValidator, times(1)).findUserOrThrow(userId);
         verify(bookRepository, times(1)).findByIsbn(request.isbn());
         verify(bookRepository, times(1)).save(any(Book.class));
-        verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, savedBook.getId());
+        verify(bookValidator, times(1)).validateDuplicatePersonalBook(userId, savedBook.getId());
         verify(personalBookRepository, times(1)).save(any(PersonalBook.class));
     }
 
@@ -233,7 +236,8 @@ class PersonalBookServiceTest {
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
         when(bookRepository.findByIsbn(request.isbn())).thenReturn(Optional.of(book));
-        when(personalBookRepository.findByUserIdAndBookId(userId, bookId)).thenReturn(Optional.of(existing));
+        doThrow(new BookException(BookErrorCode.BOOK_ALREADY_EXISTS))
+                .when(bookValidator).validateDuplicatePersonalBook(userId, bookId);
 
         // when & then
         assertThatThrownBy(() -> personalBookService.createBook(request))
@@ -243,7 +247,7 @@ class PersonalBookServiceTest {
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
         verify(bookRepository, times(1)).findByIsbn(request.isbn());
-        verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, bookId);
+        verify(bookValidator, times(1)).validateDuplicatePersonalBook(userId, bookId);
         verify(personalBookRepository, never()).save(any());
     }
 
@@ -354,7 +358,7 @@ class PersonalBookServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(personalBookRepository.findByUserIdAndBookId(userId, bookId)).thenReturn(Optional.of(personalBook));
+        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
 
         // when
         PersonalBookDetailResponse response = personalBookService.getPersonalBook(bookId);
@@ -367,7 +371,7 @@ class PersonalBookServiceTest {
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, bookId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
     }
 
     @Test
@@ -385,7 +389,8 @@ class PersonalBookServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(personalBookRepository.findByUserIdAndBookId(userId, bookId)).thenReturn(Optional.empty());
+        when(bookValidator.validateInBookShelf(userId, bookId))
+                .thenThrow(new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
 
         // when & then
         assertThatThrownBy(() -> personalBookService.getPersonalBook(bookId))
@@ -394,6 +399,6 @@ class PersonalBookServiceTest {
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, bookId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
     }
 }

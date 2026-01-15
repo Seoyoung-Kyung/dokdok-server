@@ -5,6 +5,8 @@ import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
 import com.dokdok.book.repository.BookReviewRepository;
+import com.dokdok.book.entity.PersonalBook;
+import com.dokdok.book.repository.PersonalBookRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,8 @@ public class BookValidator {
 
     private final BookRepository bookRepository;
     private final BookReviewRepository bookReviewRepository;
+    private final PersonalBookRepository personalBookRepository;
+
 
     // 책 존재 여부를 검증하고 엔티티를 반환합니다.
     public Book validateAndGetBook(Long bookId) {
@@ -26,5 +30,18 @@ public class BookValidator {
         if (bookReviewRepository.existsByBookIdAndUserId(bookId, userId)) {
             throw new BookException(BookErrorCode.BOOK_REVIEW_ALREADY_EXISTS);
         }
+    }  
+
+    public PersonalBook validateInBookShelf(Long userId, Long bookId) {
+        return personalBookRepository.findByUserIdAndBookId(userId, bookId)
+                .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
+    }
+
+    public void validateDuplicatePersonalBook(Long userId, Long bookId) {
+        personalBookRepository.findByUserIdAndBookId(userId, bookId)
+                .ifPresent(personalBook ->
+                {
+                    throw new BookException(BookErrorCode.BOOK_ALREADY_EXISTS);
+                });
     }
 }
