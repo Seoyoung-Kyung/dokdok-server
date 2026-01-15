@@ -18,6 +18,11 @@ public class TopicValidator {
     private final TopicRepository topicRepository;
     private final TopicAnswerRepository topicAnswerRepository;
 
+    public Topic getTopic(Long topicId) {
+        return topicRepository.findDetailById(topicId)
+                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
+    }
+
     /**
      * 해당 약속에 속한 주제인지 검증하고 Topic을 반환한다.
      */
@@ -71,5 +76,6 @@ public class TopicValidator {
             throw new TopicException(TopicErrorCode.TOPIC_USER_CANNOT_DELETE);
         }
     }
+
 
 }
