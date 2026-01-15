@@ -7,7 +7,11 @@ import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
-import com.dokdok.topic.dto.response.*;
+import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
+import com.dokdok.topic.dto.response.ConfirmedTopicsResponse;
+import com.dokdok.topic.dto.response.SuggestTopicResponse;
+import com.dokdok.topic.dto.response.TopicLikeResponse;
+import com.dokdok.topic.dto.response.TopicsPageResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicLike;
 import com.dokdok.topic.entity.TopicMessage;
@@ -134,6 +138,26 @@ public class TopicService {
         }
 
         return ConfirmTopicsResponse.from(meetingId);
+    }
+
+    @Transactional(readOnly = true)
+    public ConfirmedTopicsResponse getConfirmedTopics(
+            Long gatheringId,
+            Long meetingId
+    ) {
+        gatheringValidator.validateGathering(gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
+
+        List<Topic> topics = topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
+                meetingId,
+                TopicStatus.CONFIRMED
+        );
+
+        List<ConfirmedTopicsResponse.ConfirmedTopicDto> topicDtos = topics.stream()
+                .map(ConfirmedTopicsResponse.ConfirmedTopicDto::from)
+                .toList();
+
+        return ConfirmedTopicsResponse.from(meetingId, topicDtos);
     }
 
     @Transactional
