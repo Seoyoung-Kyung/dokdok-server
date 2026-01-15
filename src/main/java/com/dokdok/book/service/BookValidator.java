@@ -48,8 +48,14 @@ public class BookValidator {
                 });
     }
 
-    // 사용자의 책 리뷰 존재 여부를 검증하고 반환합니다.
-    public BookReview validateAndGetReview(Long bookId, Long userId) {
+    // 삭제되지 않은 책 리뷰 존재 여부를 검증하고 반환합니다.
+    public BookReview validateAndGetActiveReview(Long bookId, Long userId) {
+        return bookReviewRepository.findByBookIdAndUserId(bookId, userId)
+                .orElseThrow(() -> new BookException(BookErrorCode.BOOK_REVIEW_NOT_FOUND));
+    }
+
+    // 수정/삭제를 위한 활성(삭제되지 않은) 책 리뷰를 조회합니다.
+    public BookReview validateAndGetReviewForUpdate(Long bookId, Long userId) {
         return bookReviewRepository.findByBookIdAndUserId(bookId, userId)
                 .orElseThrow(() -> new BookException(BookErrorCode.BOOK_REVIEW_NOT_FOUND));
     }
@@ -59,7 +65,7 @@ public class BookValidator {
         if (rating == null) {
             return;
         }
-        BigDecimal min = new BigDecimal("0.5");
+        BigDecimal min = new BigDecimal("0.0");
         BigDecimal max = new BigDecimal("5.0");
         if (rating.compareTo(min) < 0 || rating.compareTo(max) > 0) {
             throw new BookException(BookErrorCode.BOOK_REVIEW_INVALID_RATING);

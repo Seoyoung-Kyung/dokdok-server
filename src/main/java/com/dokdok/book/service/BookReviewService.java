@@ -45,7 +45,7 @@ public class BookReviewService {
     public BookReviewResponse getMyReview(Long bookId) {
         Long userId = SecurityUtil.getCurrentUserId();
 
-        BookReview review = bookValidator.validateAndGetReview(bookId, userId);
+        BookReview review = bookValidator.validateAndGetActiveReview(bookId, userId);
 
         return BookReviewResponse.from(review);
     }
@@ -55,7 +55,7 @@ public class BookReviewService {
         Long userId = SecurityUtil.getCurrentUserId();
         bookValidator.validateRating(request.rating());
 
-        BookReview review = bookValidator.validateAndGetReview(bookId, userId);
+        BookReview review = bookValidator.validateAndGetReviewForUpdate(bookId, userId);
 
         Keyword keyword = keywordValidator.validateAndGetSelectableKeyword(
                 request.keywordId()
@@ -64,6 +64,14 @@ public class BookReviewService {
         review.updateReview(request.rating(), keyword);
 
         return BookReviewResponse.from(review);
+    }
+
+    @Transactional
+    public void deleteMyReview(Long bookId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        BookReview review = bookValidator.validateAndGetReviewForUpdate(bookId, userId);
+        review.deleteReview();
     }
 
 }
