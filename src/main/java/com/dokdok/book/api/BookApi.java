@@ -210,4 +210,37 @@ public interface BookApi {
             @Parameter(description = "조회할 책 ID", required = true, example = "1")
             @PathVariable Long bookId
     );
+
+    @Operation(
+            summary = "내 책장에서 책 삭제",
+            description = """
+                    내 책장에 등록된 책을 삭제합니다.
+                    - 로그인한 사용자 소유의 책만 삭제할 수 있습니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "책 삭제 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "DELETED",
+                                              "message": "책 삭제 성공"
+                                            }
+                                            """
+                            ))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @DeleteMapping("/{bookId}")
+    ResponseEntity<ApiResponse<Void>> deleteMyBook(
+            @Parameter(description = "삭제할 책 ID", required = true, example = "1")
+            @PathVariable Long bookId
+    );
 }

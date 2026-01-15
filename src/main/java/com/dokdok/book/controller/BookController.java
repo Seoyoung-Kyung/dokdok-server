@@ -50,4 +50,11 @@ public class BookController implements BookApi {
         PersonalBookDetailResponse personalBook = personalBookService.getPersonalBook(bookId);
         return ApiResponse.success(personalBook, "책 상세 정보 조회 성공");
     }
+
+    @Override
+    @DeleteMapping("/{bookId}")
+    public ResponseEntity<ApiResponse<Void>> deleteMyBook(@PathVariable Long bookId) {
+        personalBookService.deleteBook(bookId);
+        return ApiResponse.deleted("책 삭제 성공");
+    }
 }
