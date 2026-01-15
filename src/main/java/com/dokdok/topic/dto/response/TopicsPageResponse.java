@@ -6,6 +6,7 @@ import lombok.Builder;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.Set;
 
 @Builder
 public record TopicsPageResponse(
@@ -24,14 +25,16 @@ public record TopicsPageResponse(
         @Schema(description = "전체 페이지 수")
         Integer totalPages
 ) {
-    public static TopicsPageResponse from(Page<Topic> page) {
-        List<TopicsResponse.TopicDto> topics =
-                page.getContent().stream()
-                        .map(TopicsResponse.TopicDto::from)
-                        .toList();
+    public static TopicsPageResponse from(Page<Topic> page, Set<Long> deletableTopicIds) {
+        List<TopicsResponse.TopicDto> topicDtos = page.getContent().stream()
+                .map(topic -> TopicsResponse.TopicDto.from(
+                        topic,
+                        deletableTopicIds.contains(topic.getId())
+                ))
+                .toList();
 
         return TopicsPageResponse.builder()
-                .topics(topics)
+                .topics(topicDtos)
                 .totalCount((int) page.getTotalElements())
                 .currentPage(page.getNumber())
                 .pageSize(page.getSize())

@@ -2,6 +2,8 @@ package com.dokdok.book.service;
 
 import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.response.PersonalBookCreateResponse;
+import com.dokdok.book.dto.response.PersonalBookDetailResponse;
+import com.dokdok.book.dto.response.PersonalBookListResponse;
 import com.dokdok.book.entity.Book;
 import com.dokdok.book.entity.BookReadingStatus;
 import com.dokdok.book.entity.PersonalBook;
@@ -13,7 +15,7 @@ import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.exception.UserErrorCode;
 import com.dokdok.user.exception.UserException;
-import com.dokdok.user.repository.UserRepository;
+import com.dokdok.user.service.UserValidator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +26,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +54,7 @@ class PersonalBookServiceTest {
     private BookRepository bookRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserValidator userValidator;
 
     private MockedStatic<SecurityUtil> securityUtilMock;
 
@@ -89,7 +96,7 @@ class PersonalBookServiceTest {
                 .build();
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
         when(bookRepository.findByIsbn(request.isbn())).thenReturn(Optional.of(book));
         when(personalBookRepository.findByUserIdAndBookId(userId, book.getId())).thenReturn(Optional.empty());
 
@@ -113,7 +120,7 @@ class PersonalBookServiceTest {
         assertThat(response.addedAt()).isEqualTo(savedPersonalBook.getAddedAt());
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
-        verify(userRepository, times(1)).findById(userId);
+        verify(userValidator, times(1)).findUserOrThrow(userId);
         verify(bookRepository, times(1)).findByIsbn(request.isbn());
         verify(bookRepository, never()).save(any(Book.class));
         verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, book.getId());
@@ -129,7 +136,7 @@ class PersonalBookServiceTest {
                 .build();
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userValidator.findUserOrThrow(userId)).thenThrow(new UserException(UserErrorCode.USER_NOT_FOUND));
 
         // when & then
         assertThatThrownBy(() -> personalBookService.createBook(request))
@@ -137,7 +144,7 @@ class PersonalBookServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
-        verify(userRepository, times(1)).findById(userId);
+        verify(userValidator, times(1)).findUserOrThrow(userId);
         verify(bookRepository, never()).findByIsbn(anyString());
         verify(personalBookRepository, never()).save(any());
     }
@@ -171,7 +178,7 @@ class PersonalBookServiceTest {
                 .build();
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
         when(bookRepository.findByIsbn(request.isbn())).thenReturn(Optional.empty());
         when(bookRepository.save(any(Book.class))).thenReturn(savedBook);
         when(personalBookRepository.findByUserIdAndBookId(userId, savedBook.getId())).thenReturn(Optional.empty());
@@ -186,7 +193,7 @@ class PersonalBookServiceTest {
         assertThat(response.addedAt()).isNotNull();
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
-        verify(userRepository, times(1)).findById(userId);
+        verify(userValidator, times(1)).findUserOrThrow(userId);
         verify(bookRepository, times(1)).findByIsbn(request.isbn());
         verify(bookRepository, times(1)).save(any(Book.class));
         verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, savedBook.getId());
@@ -224,7 +231,7 @@ class PersonalBookServiceTest {
         PersonalBook existing = PersonalBook.create(user, book, BookReadingStatus.READING);
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
         when(bookRepository.findByIsbn(request.isbn())).thenReturn(Optional.of(book));
         when(personalBookRepository.findByUserIdAndBookId(userId, bookId)).thenReturn(Optional.of(existing));
 
@@ -234,9 +241,159 @@ class PersonalBookServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_ALREADY_EXISTS);
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
-        verify(userRepository, times(1)).findById(userId);
+        verify(userValidator, times(1)).findUserOrThrow(userId);
         verify(bookRepository, times(1)).findByIsbn(request.isbn());
         verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, bookId);
         verify(personalBookRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("내 책장 목록 조회 시 PersonalBookListResponse로 매핑")
+    void getPersonalBookList_Success() {
+        // given
+        Long userId = 1L;
+        Pageable pageable = PageRequest.of(0, 10);
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        Book book = Book.builder()
+                .id(10L)
+                .bookName("테스트 책")
+                .publisher("테스트 출판사")
+                .author("테스트 저자")
+                .build();
+
+        PersonalBook personalBook = PersonalBook.builder()
+                .id(100L)
+                .user(user)
+                .book(book)
+                .readingStatus(BookReadingStatus.READING)
+                .build();
+
+        Page<PersonalBook> page = new PageImpl<>(List.of(personalBook), pageable, 1);
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(personalBookRepository.findByUserId(userId, pageable)).thenReturn(page);
+
+        // when
+        Page<PersonalBookListResponse> responses = personalBookService.getPersonalBookList(pageable);
+
+        // then
+        assertThat(responses.getContent()).hasSize(1);
+        PersonalBookListResponse response = responses.getContent().getFirst();
+        assertThat(response.title()).isEqualTo(book.getBookName());
+        assertThat(response.publisher()).isEqualTo(book.getPublisher());
+        assertThat(response.authors()).isEqualTo(book.getAuthor());
+        assertThat(response.bookReadingStatus()).isEqualTo(BookReadingStatus.READING);
+
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(personalBookRepository, times(1)).findByUserId(userId, pageable);
+    }
+
+    @Test
+    @DisplayName("내 책장 목록이 비어있으면 BookException 발생")
+    void getPersonalBookList_Empty() {
+        // given
+        Long userId = 1L;
+        Pageable pageable = PageRequest.of(0, 10);
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        Page<PersonalBook> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(personalBookRepository.findByUserId(userId, pageable)).thenReturn(emptyPage);
+
+        // when & then
+        assertThatThrownBy(() -> personalBookService.getPersonalBookList(pageable))
+                .isInstanceOf(BookException.class)
+                .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_IN_SHELF);
+
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(personalBookRepository, times(1)).findByUserId(userId, pageable);
+    }
+
+    @Test
+    @DisplayName("내 책장 단일 조회 시 PersonalBookDetailResponse로 매핑")
+    void getPersonalBookDetail_Success() {
+        // given
+        Long userId = 1L;
+        Long bookId = 10L;
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        Book book = Book.builder()
+                .id(bookId)
+                .bookName("테스트 책")
+                .publisher("테스트 출판사")
+                .author("테스트 저자")
+                .build();
+
+        PersonalBook personalBook = PersonalBook.builder()
+                .id(100L)
+                .user(user)
+                .book(book)
+                .readingStatus(BookReadingStatus.COMPLETED)
+                .build();
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(personalBookRepository.findByUserIdAndBookId(userId, bookId)).thenReturn(Optional.of(personalBook));
+
+        // when
+        PersonalBookDetailResponse response = personalBookService.getPersonalBook(bookId);
+
+        // then
+        assertThat(response.title()).isEqualTo(book.getBookName());
+        assertThat(response.publisher()).isEqualTo(book.getPublisher());
+        assertThat(response.authors()).isEqualTo(book.getAuthor());
+        assertThat(response.bookReadingStatus()).isEqualTo(BookReadingStatus.COMPLETED);
+
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, bookId);
+    }
+
+    @Test
+    @DisplayName("내 책장 단일 조회 시 책이 없으면 BookException 발생")
+    void getPersonalBookDetail_NotFound() {
+        // given
+        Long userId = 1L;
+        Long bookId = 10L;
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(personalBookRepository.findByUserIdAndBookId(userId, bookId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> personalBookService.getPersonalBook(bookId))
+                .isInstanceOf(BookException.class)
+                .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_IN_SHELF);
+
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(personalBookRepository, times(1)).findByUserIdAndBookId(userId, bookId);
     }
 }

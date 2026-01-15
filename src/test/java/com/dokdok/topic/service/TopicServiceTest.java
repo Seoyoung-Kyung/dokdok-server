@@ -20,7 +20,6 @@ import com.dokdok.topic.dto.response.TopicsPageResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicLike;
-import com.dokdok.topic.entity.TopicMessage;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.exception.TopicErrorCode;
@@ -43,6 +42,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -399,10 +399,11 @@ class TopicServiceTest {
     class GetTopicsTest {
 
         @Test
-        @DisplayName("정상적으로 주제 목록을 조회한다")
-        void getTopics_Success() {
+        @DisplayName("정상적으로 주제 목록을 조회한다 - 로그인 사용자")
+        void getTopics_Success_WithAuthenticatedUser() {
             Long gatheringId = 1L;
             Long meetingId = 1L;
+            Long userId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
 
             User user1 = User.builder()
@@ -442,34 +443,95 @@ class TopicServiceTest {
             List<Topic> topics = List.of(topic1, topic2);
             Page<Topic> topicPage = new PageImpl<>(topics, pageable, topics.size());
 
-            doNothing().when(gatheringValidator)
-                    .validateGathering(gatheringId);
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
 
-            doNothing().when(meetingValidator)
-                    .validateMeetingInGathering(meetingId, gatheringId);
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
 
-            given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
-                    .willReturn(topicPage);
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
 
-            TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
+                given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
+                        .willReturn(topicPage);
 
-            assertThat(response).isNotNull();
-            assertThat(response.topics()).hasSize(2);
-            assertThat(response.totalCount()).isEqualTo(2);
-            assertThat(response.currentPage()).isEqualTo(0);
-            assertThat(response.pageSize()).isEqualTo(10);
-            assertThat(response.totalPages()).isEqualTo(1);
+                given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
+                        .willReturn(Set.of(1L));
 
-            assertThat(response.topics().get(0).title()).isEqualTo("의미 있는 이름 짓기");
-            assertThat(response.topics().get(0).likeCount()).isEqualTo(5);
-            assertThat(response.topics().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+                TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
 
-            assertThat(response.topics().get(1).title()).isEqualTo("함수 작성 원칙");
-            assertThat(response.topics().get(1).likeCount()).isEqualTo(3);
+                assertThat(response).isNotNull();
+                assertThat(response.topics()).hasSize(2);
+                assertThat(response.totalCount()).isEqualTo(2);
+                assertThat(response.currentPage()).isEqualTo(0);
+                assertThat(response.pageSize()).isEqualTo(10);
+                assertThat(response.totalPages()).isEqualTo(1);
 
-            verify(gatheringValidator).validateGathering(gatheringId);
-            verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
-            verify(topicRepository).findTopicsByMeetingId(eq(meetingId), any(Pageable.class));
+                assertThat(response.topics().get(0).title()).isEqualTo("의미 있는 이름 짓기");
+                assertThat(response.topics().get(0).likeCount()).isEqualTo(5);
+                assertThat(response.topics().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+                assertThat(response.topics().get(0).canDelete()).isTrue();
+
+                assertThat(response.topics().get(1).title()).isEqualTo("함수 작성 원칙");
+                assertThat(response.topics().get(1).likeCount()).isEqualTo(3);
+                assertThat(response.topics().get(1).canDelete()).isFalse();
+
+                verify(gatheringValidator).validateGathering(gatheringId);
+                verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
+                verify(topicRepository).findTopicsByMeetingId(eq(meetingId), any(Pageable.class));
+                verify(topicRepository).findDeletableTopicIds(any(), eq(userId));
+            }
+        }
+
+        @Test
+        @DisplayName("정상적으로 주제 목록을 조회한다 - 비로그인 사용자")
+        void getTopics_Success_WithAnonymousUser() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+            Pageable pageable = PageRequest.of(0, 10);
+
+            User user1 = User.builder()
+                    .id(1L)
+                    .userName("김독서")
+                    .nickname("책벌레김")
+                    .build();
+
+            Topic topic1 = Topic.builder()
+                    .id(1L)
+                    .meeting(testMeeting)
+                    .proposedBy(user1)
+                    .title("의미 있는 이름 짓기")
+                    .description("변수명, 함수명, 클래스명을 짓는 원칙에 대해 토론합니다.")
+                    .topicType(TopicType.DISCUSSION)
+                    .topicStatus(TopicStatus.PROPOSED)
+                    .likeCount(5)
+                    .build();
+
+            List<Topic> topics = List.of(topic1);
+            Page<Topic> topicPage = new PageImpl<>(topics, pageable, topics.size());
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(null);
+
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
+
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
+
+                given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
+                        .willReturn(topicPage);
+
+                TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
+
+                assertThat(response).isNotNull();
+                assertThat(response.topics()).hasSize(1);
+                assertThat(response.topics().get(0).canDelete()).isFalse();
+
+                verify(topicRepository, never()).findDeletableTopicIds(any(), any());
+            }
         }
 
         @Test
@@ -477,31 +539,38 @@ class TopicServiceTest {
         void getTopics_EmptyList() {
             Long gatheringId = 1L;
             Long meetingId = 1L;
+            Long userId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
 
             Page<Topic> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
-            doNothing().when(gatheringValidator)
-                    .validateGathering(gatheringId);
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
 
-            doNothing().when(meetingValidator)
-                    .validateMeetingInGathering(meetingId, gatheringId);
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
 
-            given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
-                    .willReturn(emptyPage);
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
 
-            TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
+                given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
+                        .willReturn(emptyPage);
 
-            assertThat(response).isNotNull();
-            assertThat(response.topics()).isEmpty();
-            assertThat(response.totalCount()).isEqualTo(0);
-            assertThat(response.currentPage()).isEqualTo(0);
-            assertThat(response.pageSize()).isEqualTo(10);
-            assertThat(response.totalPages()).isEqualTo(0);
+                TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
 
-            verify(gatheringValidator).validateGathering(gatheringId);
-            verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
-            verify(topicRepository).findTopicsByMeetingId(eq(meetingId), any(Pageable.class));
+                assertThat(response).isNotNull();
+                assertThat(response.topics()).isEmpty();
+                assertThat(response.totalCount()).isEqualTo(0);
+                assertThat(response.currentPage()).isEqualTo(0);
+                assertThat(response.pageSize()).isEqualTo(10);
+                assertThat(response.totalPages()).isEqualTo(0);
+
+                verify(gatheringValidator).validateGathering(gatheringId);
+                verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
+                verify(topicRepository).findTopicsByMeetingId(eq(meetingId), any(Pageable.class));
+                verify(topicRepository, never()).findDeletableTopicIds(any(), any());
+            }
         }
 
         @Test
@@ -509,6 +578,7 @@ class TopicServiceTest {
         void getTopics_WithPagination() {
             Long gatheringId = 1L;
             Long meetingId = 1L;
+            Long userId = 1L;
             Pageable pageable = PageRequest.of(1, 5);
 
             List<Topic> topics = List.of(
@@ -524,25 +594,34 @@ class TopicServiceTest {
             );
             Page<Topic> topicPage = new PageImpl<>(topics, pageable, 11);
 
-            doNothing().when(gatheringValidator)
-                    .validateGathering(gatheringId);
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
 
-            doNothing().when(meetingValidator)
-                    .validateMeetingInGathering(meetingId, gatheringId);
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
 
-            given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
-                    .willReturn(topicPage);
+                doNothing().when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
 
-            TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
+                given(topicRepository.findTopicsByMeetingId(eq(meetingId), any(Pageable.class)))
+                        .willReturn(topicPage);
 
-            assertThat(response).isNotNull();
-            assertThat(response.topics()).hasSize(1);
-            assertThat(response.totalCount()).isEqualTo(11);
-            assertThat(response.currentPage()).isEqualTo(1);
-            assertThat(response.pageSize()).isEqualTo(5);
-            assertThat(response.totalPages()).isEqualTo(3);
+                given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
+                        .willReturn(Set.of(6L));
 
-            verify(topicRepository).findTopicsByMeetingId(eq(meetingId), any(Pageable.class));
+                TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
+
+                assertThat(response).isNotNull();
+                assertThat(response.topics()).hasSize(1);
+                assertThat(response.totalCount()).isEqualTo(11);
+                assertThat(response.currentPage()).isEqualTo(1);
+                assertThat(response.pageSize()).isEqualTo(5);
+                assertThat(response.totalPages()).isEqualTo(3);
+                assertThat(response.topics().get(0).canDelete()).isTrue();
+
+                verify(topicRepository).findTopicsByMeetingId(eq(meetingId), any(Pageable.class));
+            }
         }
 
         @Test
@@ -550,20 +629,26 @@ class TopicServiceTest {
         void getTopics_GatheringNotFound_ThrowsException() {
             Long gatheringId = 999L;
             Long meetingId = 1L;
+            Long userId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
 
-            doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
-                    .when(gatheringValidator)
-                    .validateGathering(gatheringId);
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
 
-            assertThatThrownBy(() ->
-                    topicService.getTopics(gatheringId, meetingId, pageable))
-                    .isInstanceOf(GatheringException.class)
-                    .hasFieldOrPropertyWithValue("errorCode",
-                            GatheringErrorCode.GATHERING_NOT_FOUND);
+                doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
+                        .when(gatheringValidator)
+                        .validateGathering(gatheringId);
 
-            verify(meetingValidator, never()).validateMeetingInGathering(any(), any());
-            verify(topicRepository, never()).findTopicsByMeetingId(any(), any());
+                assertThatThrownBy(() ->
+                        topicService.getTopics(gatheringId, meetingId, pageable))
+                        .isInstanceOf(GatheringException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                GatheringErrorCode.GATHERING_NOT_FOUND);
+
+                verify(meetingValidator, never()).validateMeetingInGathering(any(), any());
+                verify(topicRepository, never()).findTopicsByMeetingId(any(), any());
+            }
         }
 
         @Test
@@ -571,22 +656,28 @@ class TopicServiceTest {
         void getTopics_MeetingNotInGathering_ThrowsException() {
             Long gatheringId = 1L;
             Long meetingId = 999L;
+            Long userId = 1L;
             Pageable pageable = PageRequest.of(0, 10);
 
-            doNothing().when(gatheringValidator)
-                    .validateGathering(gatheringId);
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                        .thenReturn(userId);
 
-            doThrow(new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING))
-                    .when(meetingValidator)
-                    .validateMeetingInGathering(meetingId, gatheringId);
+                doNothing().when(gatheringValidator)
+                        .validateGathering(gatheringId);
 
-            assertThatThrownBy(() ->
-                    topicService.getTopics(gatheringId, meetingId, pageable))
-                    .isInstanceOf(MeetingException.class)
-                    .hasFieldOrPropertyWithValue("errorCode",
-                            MeetingErrorCode.NOT_GATHERING_MEETING);
+                doThrow(new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING))
+                        .when(meetingValidator)
+                        .validateMeetingInGathering(meetingId, gatheringId);
 
-            verify(topicRepository, never()).findTopicsByMeetingId(any(), any());
+                assertThatThrownBy(() ->
+                        topicService.getTopics(gatheringId, meetingId, pageable))
+                        .isInstanceOf(MeetingException.class)
+                        .hasFieldOrPropertyWithValue("errorCode",
+                                MeetingErrorCode.NOT_GATHERING_MEETING);
+
+                verify(topicRepository, never()).findTopicsByMeetingId(any(), any());
+            }
         }
     }
 

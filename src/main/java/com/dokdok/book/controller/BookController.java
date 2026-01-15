@@ -4,11 +4,15 @@ import com.dokdok.book.api.BookApi;
 import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.response.KakaoBookResponse;
 import com.dokdok.book.dto.response.PersonalBookCreateResponse;
+import com.dokdok.book.dto.response.PersonalBookDetailResponse;
+import com.dokdok.book.dto.response.PersonalBookListResponse;
 import com.dokdok.book.service.BookService;
 import com.dokdok.book.service.PersonalBookService;
 import com.dokdok.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,5 +35,19 @@ public class BookController implements BookApi {
     public ResponseEntity<ApiResponse<PersonalBookCreateResponse>> createBook(@Valid @RequestBody BookCreateRequest bookCreateRequest) {
         PersonalBookCreateResponse book = personalBookService.createBook(bookCreateRequest);
         return ApiResponse.created(book, "내 책장에 책 등록 성공");
+    }
+
+    @Override
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(Pageable pageable) {
+        Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(pageable);
+        return ApiResponse.success(personalBookList, "책 리스트 조회 성공");
+    }
+
+    @Override
+    @GetMapping("/{bookId}")
+    public ResponseEntity<ApiResponse<PersonalBookDetailResponse>> getMyBook(@PathVariable Long bookId) {
+        PersonalBookDetailResponse personalBook = personalBookService.getPersonalBook(bookId);
+        return ApiResponse.success(personalBook, "책 상세 정보 조회 성공");
     }
 }
