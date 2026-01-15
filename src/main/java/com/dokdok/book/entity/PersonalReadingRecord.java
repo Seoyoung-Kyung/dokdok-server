@@ -37,4 +37,14 @@ public class PersonalReadingRecord extends BaseTimeEntity {
     @Column(name = "is_published", nullable = false)
     @Builder.Default
     private Boolean isPublished = false;
+
+
+    public static PersonalReadingRecord create(PersonalBook personalBook, User user, String recordContent) {
+        return PersonalReadingRecord.builder()
+                .personalBook(personalBook)
+                .user(user)
+                .recordContent(recordContent)
+                .build();
+
+    }
 }

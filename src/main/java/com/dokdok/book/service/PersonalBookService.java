@@ -59,19 +59,19 @@ public class PersonalBookService {
         return page.map(PersonalBookListResponse::from);
     }
 
-    public PersonalBookDetailResponse getPersonalBook(Long bookId) {
+    public PersonalBookDetailResponse getPersonalBook(Long personalBookId) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
         // 책 정보 GET Logic
-        PersonalBook entity = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
+        PersonalBook entity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
 
         return PersonalBookDetailResponse.from(entity);
     }
 
     @Transactional
-    public void deleteBook(Long bookId) {
+    public void deleteBook(Long personalBookId) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
 
-        PersonalBook personalBook = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
+        PersonalBook personalBook = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
 
         personalBookRepository.delete(personalBook);
     }

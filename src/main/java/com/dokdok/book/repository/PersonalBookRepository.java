@@ -10,6 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long> {
+    Optional<PersonalBook> findByUserIdAndId(Long userId, Long Id);
     Optional<PersonalBook> findByUserIdAndBookId(Long userId, Long bookId);
     Page<PersonalBook> findByUserId(Long userId, Pageable pageable);
 }

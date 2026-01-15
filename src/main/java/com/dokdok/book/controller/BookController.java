@@ -2,12 +2,11 @@ package com.dokdok.book.controller;
 
 import com.dokdok.book.api.BookApi;
 import com.dokdok.book.dto.request.BookCreateRequest;
-import com.dokdok.book.dto.response.KakaoBookResponse;
-import com.dokdok.book.dto.response.PersonalBookCreateResponse;
-import com.dokdok.book.dto.response.PersonalBookDetailResponse;
-import com.dokdok.book.dto.response.PersonalBookListResponse;
+import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
+import com.dokdok.book.dto.response.*;
 import com.dokdok.book.service.BookService;
 import com.dokdok.book.service.PersonalBookService;
+import com.dokdok.book.service.PersonalReadingRecordService;
 import com.dokdok.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +22,7 @@ public class BookController implements BookApi {
 
     private final BookService bookService;
     private final PersonalBookService personalBookService;
+    private final PersonalReadingRecordService personalReadingRecordService;
 
     @Override
     @GetMapping("/search")
@@ -45,16 +45,23 @@ public class BookController implements BookApi {
     }
 
     @Override
-    @GetMapping("/{bookId}")
-    public ResponseEntity<ApiResponse<PersonalBookDetailResponse>> getMyBook(@PathVariable Long bookId) {
-        PersonalBookDetailResponse personalBook = personalBookService.getPersonalBook(bookId);
+    @GetMapping("/{personalBookId}")
+    public ResponseEntity<ApiResponse<PersonalBookDetailResponse>> getMyBook(@PathVariable Long personalBookId) {
+        PersonalBookDetailResponse personalBook = personalBookService.getPersonalBook(personalBookId);
         return ApiResponse.success(personalBook, "책 상세 정보 조회 성공");
     }
 
     @Override
-    @DeleteMapping("/{bookId}")
-    public ResponseEntity<ApiResponse<Void>> deleteMyBook(@PathVariable Long bookId) {
-        personalBookService.deleteBook(bookId);
+    @DeleteMapping("/{personalBookId}")
+    public ResponseEntity<ApiResponse<Void>> deleteMyBook(@PathVariable Long personalBookId) {
+        personalBookService.deleteBook(personalBookId);
         return ApiResponse.deleted("책 삭제 성공");
+    }
+
+    @Override
+    @PostMapping("/{personalBookId}")
+    public ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> createMyReadingRecord(@PathVariable Long personalBookId, @RequestBody PersonalReadingRecordCreateRequest request) {
+        PersonalReadingRecordCreateResponse response = personalReadingRecordService.create(personalBookId, request);
+        return ApiResponse.created(response, "기록 등록 성공");
     }
 }
