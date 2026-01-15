@@ -7,14 +7,17 @@ import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.service.GatheringService;
 import com.dokdok.global.response.ApiResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/gatherings")
 @RequiredArgsConstructor
+@Validated
 public class GatheringController implements GatheringApi {
 
     private final GatheringService gatheringService;
@@ -28,9 +31,20 @@ public class GatheringController implements GatheringApi {
         return ApiResponse.created(response, "모임 생성에 성공하였습니다.");
     }
 
-    @PostMapping("/join/{invitationLink}")
-    public ResponseEntity<ApiResponse<GatheringJoinResponse>> joinGathering(@PathVariable("invitationLink")  String invitationLink) {
+    @Override
+    @GetMapping("/join/{invitationLink}")
+    public ResponseEntity<ApiResponse<GatheringCreateResponse>> joinGatheringInfo(
+            @PathVariable("invitationLink") @NotBlank(message = "초대링크는 필수입니다") String invitationLink
+    ) {
+        GatheringCreateResponse response = gatheringService.getJoinGatheringInfo(invitationLink);
+        return ApiResponse.success(response);
+    }
 
+    @Override
+    @PostMapping("/join/{invitationLink}")
+    public ResponseEntity<ApiResponse<GatheringJoinResponse>> joinGathering(
+            @PathVariable("invitationLink") @NotBlank(message = "초대링크는 필수입니다") String invitationLink
+    ) {
         GatheringJoinResponse response = gatheringService.joinGathering(invitationLink);
         return ApiResponse.success(response);
     }

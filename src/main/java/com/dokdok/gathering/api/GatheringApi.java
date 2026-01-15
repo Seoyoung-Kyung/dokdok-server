@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import com.dokdok.gathering.dto.response.GatheringJoinResponse;
 
 @Tag(name = "모임", description = "모임 관련 API")
 @RequestMapping("/api/gatherings")
@@ -66,6 +68,94 @@ public interface GatheringApi {
     ResponseEntity<ApiResponse<GatheringCreateResponse>> createGathering(
             @Parameter(description = "모임 생성 요청", required = true)
             @Valid @RequestBody GatheringCreateRequest request
+    );
+
+    @Operation(
+            summary = "초대링크로 모임 정보 조회",
+            description = """
+              초대링크를 통해 모임의 기본 정보를 조회합니다.
+              - 모임 가입 전 모임 정보를 미리 확인할 수 있습니다.
+              - 로그인 없이도 조회 가능합니다.
+              """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GatheringCreateResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 - 초대링크가 비어있음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임을 찾을 수 없음 - 유효하지 않은 초대링크"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @GetMapping("/join/{invitationLink}")
+    ResponseEntity<ApiResponse<GatheringCreateResponse>> joinGatheringInfo(
+            @Parameter(
+                    description = "모임 초대링크",
+                    required = true,
+                    example = "ABC123XYZ"
+            )
+            @PathVariable @NotBlank(message = "초대링크는 필수입니다") String invitationLink
+    );
+
+    @Operation(
+            summary = "모임 가입 요청",
+            description = """
+              초대링크를 통해 모임에 가입을 요청합니다.
+              - 가입 요청 후 모임장의 승인을 기다려야 합니다.
+              - 이미 가입된 모임이거나 가입 요청 중인 경우 실패합니다.
+              """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "가입 요청 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GatheringJoinResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 - 초대링크가 비어있음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임을 찾을 수 없음 - 유효하지 않은 초대링크"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "이미 가입된 모임이거나 가입 요청 중"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @PostMapping("/join/{invitationLink}")
+    ResponseEntity<ApiResponse<GatheringJoinResponse>> joinGathering(
+            @Parameter(
+                    description = "모임 초대링크",
+                    required = true,
+                    example = "ABC123XYZ"
+            )
+            @PathVariable @NotBlank(message = "초대링크는 필수입니다") String invitationLink
     );
 
     @Operation(

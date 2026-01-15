@@ -76,6 +76,9 @@ public class GatheringValidator {
      * 추후 초대링크 갱신기능 추가 시 만료 여부도 검증하도록 추가될 수 있습니다.
      */
     public Gathering validateInvitationLink(String invitationLink) {
+        if (invitationLink == null || invitationLink.isBlank()) {
+            throw new GatheringException(GatheringErrorCode.INVALID_INVITATION_LINK);
+        }
         return gatheringRepository.findGatheringByInvitationLink(invitationLink)
                 .orElseThrow(() -> new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND));
     }
