@@ -37,4 +37,8 @@ public class Keyword extends BaseTimeEntity {
 
     @Column(name = "sort_order")
     private Integer sortOrder;
+
+    @Column(name = "is_selectable", nullable = false)
+    @Builder.Default
+    private Boolean isSelectable = true;
 }
