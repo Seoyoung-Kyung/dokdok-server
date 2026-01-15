@@ -100,7 +100,7 @@ public interface GatheringApi {
                     description = "서버 오류"
             )
     })
-    @GetMapping("/join/{invitationLink}")
+    @GetMapping("/join-request/{invitationLink}")
     ResponseEntity<ApiResponse<GatheringCreateResponse>> joinGatheringInfo(
             @Parameter(
                     description = "모임 초대링크",
@@ -148,7 +148,7 @@ public interface GatheringApi {
                     description = "서버 오류"
             )
     })
-    @PostMapping("/join/{invitationLink}")
+    @PostMapping("/join-request/{invitationLink}")
     ResponseEntity<ApiResponse<GatheringJoinResponse>> joinGathering(
             @Parameter(
                     description = "모임 초대링크",

@@ -32,7 +32,7 @@ public class GatheringController implements GatheringApi {
     }
 
     @Override
-    @GetMapping("/join/{invitationLink}")
+    @GetMapping("/join-request/{invitationLink}")
     public ResponseEntity<ApiResponse<GatheringCreateResponse>> joinGatheringInfo(
             @PathVariable("invitationLink") @NotBlank(message = "초대링크는 필수입니다") String invitationLink
     ) {
@@ -41,7 +41,7 @@ public class GatheringController implements GatheringApi {
     }
 
     @Override
-    @PostMapping("/join/{invitationLink}")
+    @PostMapping("/join-request/{invitationLink}")
     public ResponseEntity<ApiResponse<GatheringJoinResponse>> joinGathering(
             @PathVariable("invitationLink") @NotBlank(message = "초대링크는 필수입니다") String invitationLink
     ) {
