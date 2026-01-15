@@ -1,6 +1,7 @@
 package com.dokdok.book.service;
 
 import com.dokdok.book.entity.Book;
+import com.dokdok.book.entity.BookReview;
 import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
@@ -43,5 +44,11 @@ public class BookValidator {
                 {
                     throw new BookException(BookErrorCode.BOOK_ALREADY_EXISTS);
                 });
+    }
+
+    // 사용자의 책 리뷰 존재 여부를 검증하고 반환합니다.
+    public BookReview validateAndGetReview(Long bookId, Long userId) {
+        return bookReviewRepository.findByBookIdAndUserId(bookId, userId)
+                .orElseThrow(() -> new BookException(BookErrorCode.BOOK_REVIEW_NOT_FOUND));
     }
 }
