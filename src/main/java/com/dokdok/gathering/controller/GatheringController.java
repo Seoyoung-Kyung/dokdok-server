@@ -50,10 +50,12 @@ public class GatheringController implements GatheringApi {
         return ApiResponse.success(response);
     }
 
-    @PatchMapping("{gathering-id}/join-requests/{member-id}")
-    public ResponseEntity<ApiResponse<Void>> handleJoinRequest(@PathVariable("gathering-id") Long gatheringId,
-                                                               @PathVariable("member-id") Long memberId,
-                                                               @RequestBody @Valid JoinGatheringMemberRequest request) {
+    @Override
+    @PatchMapping("/{gatheringId}/join-requests/{memberId}")
+    public ResponseEntity<ApiResponse<Void>> handleJoinRequest(
+            @PathVariable("gatheringId") Long gatheringId,
+            @PathVariable("memberId") Long memberId,
+            @Valid @RequestBody JoinGatheringMemberRequest request) {
 
         gatheringService.handleJoinRequest(gatheringId, memberId, request);
         return ApiResponse.success("해당 멤버가 " + request.approve_type().getDescription() + " 되었습니다.");
