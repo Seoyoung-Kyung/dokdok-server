@@ -740,6 +740,79 @@ class GatheringServiceTest {
 	}
 
 	@Test
+	@DisplayName("모임 정보 조회 성공 - 유효한 초대링크로 모임 정보 조회")
+	void getJoinGatheringInfo_Success() {
+		// given
+		String invitationLink = "https://invite.link/abc123";
+
+		given(gatheringValidator.validateInvitationLink(invitationLink)).willReturn(gathering1);
+
+		// when
+		GatheringCreateResponse response = gatheringService.getJoinGatheringInfo(invitationLink);
+
+		// then
+		assertThat(response).isNotNull();
+		assertThat(response.gatheringName()).isEqualTo("독서 모임");
+		assertThat(response.invitationLink()).isEqualTo("https://invite.link/abc123");
+		assertThat(response.totalMembers()).isEqualTo(1);
+		assertThat(response.totalMeetings()).isEqualTo(1);
+		assertThat(response.daysFromCreation()).isEqualTo(gathering1.getDaysFromCreation());
+
+		verify(gatheringValidator, times(1)).validateInvitationLink(invitationLink);
+	}
+
+	@Test
+	@DisplayName("모임 정보 조회 실패 - 유효하지 않은 초대링크")
+	void getJoinGatheringInfo_Fail_InvalidInvitationLink() {
+		// given
+		String invalidLink = "https://invite.link/invalid";
+
+		doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
+				.when(gatheringValidator).validateInvitationLink(invalidLink);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.getJoinGatheringInfo(invalidLink))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.GATHERING_NOT_FOUND.getMessage());
+
+		verify(gatheringValidator, times(1)).validateInvitationLink(invalidLink);
+	}
+
+	@Test
+	@DisplayName("모임 정보 조회 실패 - 빈 초대링크")
+	void getJoinGatheringInfo_Fail_EmptyInvitationLink() {
+		// given
+		String emptyLink = "";
+
+		doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
+				.when(gatheringValidator).validateInvitationLink(emptyLink);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.getJoinGatheringInfo(emptyLink))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.GATHERING_NOT_FOUND.getMessage());
+
+		verify(gatheringValidator, times(1)).validateInvitationLink(emptyLink);
+	}
+
+	@Test
+	@DisplayName("모임 정보 조회 실패 - null 초대링크")
+	void getJoinGatheringInfo_Fail_NullInvitationLink() {
+		// given
+		String nullLink = null;
+
+		doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
+				.when(gatheringValidator).validateInvitationLink(nullLink);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.getJoinGatheringInfo(nullLink))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.GATHERING_NOT_FOUND.getMessage());
+
+		verify(gatheringValidator, times(1)).validateInvitationLink(nullLink);
+	}
+
+	@Test
 	@DisplayName("모임 가입 성공 - 신규 사용자가 초대링크로 가입 요청")
 	void joinGathering_Success() {
 		// given

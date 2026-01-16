@@ -4,6 +4,7 @@ import com.dokdok.global.response.ApiResponse;
 import com.dokdok.meeting.dto.MeetingCreateRequest;
 import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.dto.MeetingStatusResponse;
+import com.dokdok.meeting.dto.MeetingTabCountsResponse;
 import com.dokdok.meeting.dto.MeetingUpdateRequest;
 import com.dokdok.meeting.dto.MeetingUpdateResponse;
 import com.dokdok.meeting.entity.MeetingStatus;
@@ -186,6 +187,35 @@ public interface MeetingApi {
             @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             Long meetingId,
             MeetingUpdateRequest request
+    );
+
+    @Operation(
+            summary = "약속 탭 카운트 조회",
+            description = """
+            모임의 약속 탭별 카운트를 조회합니다.
+            - 전체: 확정된 약속
+            - 다가오는 약속: 3일 이내 시작하는 확정된 약속
+            - 완료된 약속: 종료된 약속
+            - 내가 참여한 약속: 완료된 약속 중 참여한 약속
+            """,
+            parameters = {
+                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.QUERY, required = true)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "약속 탭 카운트 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = MeetingTabCountsResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 멤버가 아님"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    ResponseEntity<ApiResponse<MeetingTabCountsResponse>> getMeetingTabCounts(
+            Long gatheringId
     );
 
 }

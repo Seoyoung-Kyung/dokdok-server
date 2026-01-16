@@ -6,6 +6,7 @@ import lombok.Builder;
 
 @Builder
 public record PersonalBookListResponse(
+        Long personalBookId,
         Long bookId,
         String title,
         String publisher,
@@ -16,7 +17,8 @@ public record PersonalBookListResponse(
     public static PersonalBookListResponse from(PersonalBook entity) {
         // TODO: 참여한 약속(모임) 수 계산 후 응답에 포함한다.
         return PersonalBookListResponse.builder()
-                .bookId(entity.getId())
+                .personalBookId(entity.getId())
+                .bookId(entity.getBook().getId())
                 .title(entity.getBook().getBookName())
                 .publisher(entity.getBook().getPublisher())
                 .authors(entity.getBook().getAuthor())

@@ -114,4 +114,14 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("topicIds") List<Long> topicIds,
             @Param("userId") Long userId
     );
+
+    @Query("""
+            SELECT t.meeting.id, t.topicType
+            FROM Topic t
+            WHERE t.meeting.id IN :meetingIds
+            AND t.deletedAt IS NULL
+            """)
+    List<Object[]> findTopicTypesByMeetingIds(
+            @Param("meetingIds") List<Long> meetingIds
+    );
 }
