@@ -116,7 +116,7 @@ public class GatheringService {
 		List<GatheringSimpleResponse> gatheringResponses = gatheringMemberPage.getContent()
 				.stream()
 				.map(gatheringMember -> {
-					int totalMembers = gatheringMemberRepository.countActiveMembers(gatheringMember.getGathering().getId());
+					int totalMembers = gatheringMemberRepository.countActiveMembersByStatus(gatheringMember.getGathering().getId());
 					int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gatheringMember.getGathering().getId(), MeetingStatus.DONE);
 
 					return GatheringSimpleResponse.from(gatheringMember, totalMembers,totalMeetings, gatheringMember.getRole());
