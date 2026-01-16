@@ -25,7 +25,7 @@ public class GatheringValidator {
 		boolean isGathering = gatheringRepository.existsById(gatheringId);
 
 		if (!isGathering) {
-			throw new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER);
+			throw new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND);
 		}
 	}
 
@@ -45,7 +45,10 @@ public class GatheringValidator {
      * 모임의 모임장인지 검증한다.
      */
 	public void validateLeader(Long gatheringId, Long userId) {
-		GatheringMember member = gatheringMemberRepository
+
+        validateGathering(gatheringId);
+
+        GatheringMember member = gatheringMemberRepository
 				.findByGatheringIdAndUserId(gatheringId, userId)
 				.orElseThrow(() -> new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER));
 
