@@ -10,6 +10,7 @@ import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 @Entity
 @Table(name = "gathering")
@@ -69,8 +70,10 @@ public class Gathering extends BaseTimeEntity {
      * 모임 정보를 수정합니다.
      */
     public void updateGatheringInfo(String gatheringName, String description){
-        this.gatheringName = gatheringName;
-        if(description != null){
+        if(gatheringName != null && !gatheringName.equals(this.gatheringName)){
+            this.gatheringName = gatheringName;
+        }
+        if(description != null && !Objects.equals(description, this.description)){
             this.description = description;
         }
     }
