@@ -15,6 +15,7 @@ import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
+import com.dokdok.topic.dto.response.ConfirmedTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicsPageResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
@@ -195,6 +196,74 @@ class TopicServiceTest {
                     topicService.confirmTopics(gatheringId, meetingId, request))
                     .isInstanceOf(TopicException.class)
                     .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_NOT_FOUND);
+        }
+    }
+
+    @Nested
+    @DisplayName("getConfirmedTopics - 확정 주제 조회")
+    class GetConfirmedTopicsTest {
+
+        @Test
+        @DisplayName("확정된 주제를 순서대로 조회한다")
+        void getConfirmedTopics_Success() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+
+            Topic topic1 = Topic.builder()
+                    .id(12L)
+                    .meeting(testMeeting)
+                    .title("첫 번째 주제")
+                    .description("첫 번째 설명")
+                    .topicType(TopicType.DISCUSSION)
+                    .topicStatus(TopicStatus.CONFIRMED)
+                    .confirmOrder(1)
+                    .build();
+            Topic topic2 = Topic.builder()
+                    .id(13L)
+                    .meeting(testMeeting)
+                    .title("두 번째 주제")
+                    .description("두 번째 설명")
+                    .topicType(TopicType.DISCUSSION)
+                    .topicStatus(TopicStatus.CONFIRMED)
+                    .confirmOrder(2)
+                    .build();
+
+            doNothing().when(gatheringValidator).validateGathering(gatheringId);
+            doNothing().when(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
+            given(topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
+                    meetingId, TopicStatus.CONFIRMED))
+                    .willReturn(List.of(topic1, topic2));
+
+            ConfirmedTopicsResponse response =
+                    topicService.getConfirmedTopics(gatheringId, meetingId);
+
+            assertThat(response.meetingId()).isEqualTo(meetingId);
+            assertThat(response.topics()).hasSize(2);
+            assertThat(response.topics().get(0).topicId()).isEqualTo(12L);
+            assertThat(response.topics().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+            assertThat(response.topics().get(1).confirmOrder()).isEqualTo(2);
+
+            verify(gatheringValidator).validateGathering(gatheringId);
+            verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
+            verify(topicRepository).findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
+                    meetingId, TopicStatus.CONFIRMED);
+        }
+
+        @Test
+        @DisplayName("모임이 없으면 예외가 발생한다")
+        void getConfirmedTopics_ThrowsWhenGatheringMissing() {
+            Long gatheringId = 1L;
+            Long meetingId = 1L;
+
+            doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
+                    .when(gatheringValidator).validateGathering(gatheringId);
+
+            assertThatThrownBy(() -> topicService.getConfirmedTopics(gatheringId, meetingId))
+                    .isInstanceOf(GatheringException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", GatheringErrorCode.GATHERING_NOT_FOUND);
+
+            verify(topicRepository, never())
+                    .findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(any(), any());
         }
     }
 
