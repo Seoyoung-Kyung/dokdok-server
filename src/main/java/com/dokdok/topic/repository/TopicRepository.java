@@ -1,6 +1,7 @@
 package com.dokdok.topic.repository;
 
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,6 +20,11 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     List<Topic> findAllByMeetingId(Long meetingId);
 
     List<Topic> findAllByIdInAndMeetingId(List<Long> topicIds, Long meetingId);
+
+    List<Topic> findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
+            Long meetingId,
+            TopicStatus topicStatus
+    );
 
     @Query("SELECT t " +
             "FROM Topic t " +
@@ -107,5 +113,15 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     Set<Long> findDeletableTopicIds(
             @Param("topicIds") List<Long> topicIds,
             @Param("userId") Long userId
+    );
+
+    @Query("""
+            SELECT t.meeting.id, t.topicType
+            FROM Topic t
+            WHERE t.meeting.id IN :meetingIds
+            AND t.deletedAt IS NULL
+            """)
+    List<Object[]> findTopicTypesByMeetingIds(
+            @Param("meetingIds") List<Long> meetingIds
     );
 }

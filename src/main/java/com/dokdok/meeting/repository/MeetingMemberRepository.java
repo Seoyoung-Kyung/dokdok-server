@@ -1,6 +1,10 @@
 package com.dokdok.meeting.repository;
 
 import com.dokdok.meeting.entity.MeetingMember;
+import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.meeting.entity.Meeting;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -49,5 +53,56 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
     boolean existsByIdAndUserId(
             Long meetingId,
             Long userId
+    );
+
+    @Query("""
+      SELECT mm.meeting.id FROM MeetingMember mm
+      WHERE mm.user.id = :userId
+      AND mm.canceledAt IS NULL
+      AND mm.meeting.gathering.id = :gatheringId
+      """)
+    List<Long> findActiveMeetingIdsByUserIdAndGatheringId(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId
+    );
+
+    @Query("""
+      SELECT count(mm) FROM MeetingMember mm
+      JOIN mm.meeting m
+      WHERE mm.user.id = :userId
+      AND mm.canceledAt IS NULL
+      AND m.gathering.id = :gatheringId
+      AND m.meetingStatus = :meetingStatus
+      """)
+    int countMeetingsByUserIdAndStatus(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId,
+            @Param("meetingStatus") MeetingStatus meetingStatus
+    );
+
+    @Query(
+            value = """
+              SELECT m FROM MeetingMember mm
+              JOIN mm.meeting m
+              JOIN FETCH m.book
+              WHERE mm.user.id = :userId
+              AND mm.canceledAt IS NULL
+              AND m.gathering.id = :gatheringId
+              AND m.meetingStatus = :meetingStatus
+              """,
+            countQuery = """
+              SELECT count(mm) FROM MeetingMember mm
+              JOIN mm.meeting m
+              WHERE mm.user.id = :userId
+              AND mm.canceledAt IS NULL
+              AND m.gathering.id = :gatheringId
+              AND m.meetingStatus = :meetingStatus
+              """
+    )
+    Page<Meeting> findMeetingsByUserIdAndStatus(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId,
+            @Param("meetingStatus") MeetingStatus meetingStatus,
+            Pageable pageable
     );
 }
