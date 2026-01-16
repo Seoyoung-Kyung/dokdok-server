@@ -145,7 +145,9 @@ public class TopicService {
             Long gatheringId,
             Long meetingId
     ) {
-        gatheringValidator.validateGathering(gatheringId);
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        gatheringValidator.validateMembership(gatheringId, userId);
         meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
 
         List<Topic> topics = topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
