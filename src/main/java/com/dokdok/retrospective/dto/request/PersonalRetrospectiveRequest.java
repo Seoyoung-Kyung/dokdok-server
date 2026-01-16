@@ -43,9 +43,9 @@ public record PersonalRetrospectiveRequest(
     ) {}
 
     public record FreeTextRequest(
-            @Size(max = 40)
+            @Size(max = 40, message = "자유 서술 제목은 공백 포함 40자 이내여야 합니다.")
             String title,
-            @Size(max = 100_000)
+            @Size(max = 100_000, message = "자유 서술 내용은 공백 포함 100,000자 이내여야 합니다.")
             String content
     ) {}
 }
