@@ -51,6 +51,16 @@ public class GatheringService {
     }
 
     /**
+     * 초대링크로 진입한 모임의 정보를 Summery정보를 보여줍니다.
+     */
+    @Transactional(readOnly = true)
+    public GatheringCreateResponse getJoinGatheringInfo(String invitationLink) {
+
+        Gathering gathering = gatheringValidator.validateInvitationLink(invitationLink);
+        return GatheringCreateResponse.from(gathering);
+    }
+
+    /**
      * 초대링크를 통해 들어온 사용자가 모임에 가입 요청을 합니다.
      */
     @Transactional
