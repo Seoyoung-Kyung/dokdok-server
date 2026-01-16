@@ -48,7 +48,11 @@ public class GatheringService {
 
         saveGatheringMember(savedGathering, user, GatheringRole.LEADER, GatheringMemberStatus.ACTIVE);
 
-        return GatheringCreateResponse.from(savedGathering, getActiveMemberCount(savedGathering.getId()));
+        return GatheringCreateResponse.from(
+                savedGathering,
+                getActiveMemberCount(savedGathering.getId()),
+                getMeetingCount(savedGathering.getId())
+        );
     }
 
     /**
@@ -57,7 +61,11 @@ public class GatheringService {
     public GatheringCreateResponse getJoinGatheringInfo(String invitationLink) {
 
         Gathering gathering = gatheringValidator.validateInvitationLink(invitationLink);
-        return GatheringCreateResponse.from(gathering, getActiveMemberCount(gathering.getId()));
+        return GatheringCreateResponse.from(
+                gathering,
+                getActiveMemberCount(gathering.getId()),
+                getMeetingCount(gathering.getId())
+        );
     }
 
     /**
@@ -227,5 +235,13 @@ public class GatheringService {
      */
     private int getActiveMemberCount(Long gatheringId) {
         return gatheringMemberRepository.countActiveMembersByStatus(gatheringId);
+    }
+
+    /**
+     * 공통 메서드
+     * 완료된 모임(미팅) 수를 조회합니다.
+     */
+    private int getMeetingCount(Long gatheringId) {
+        return meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE);
     }
 }
