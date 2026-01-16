@@ -5,7 +5,6 @@ import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicAnswerRepository;
-import com.dokdok.topic.repository.TopicLikeRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -51,6 +50,10 @@ public class TopicValidator {
     public TopicAnswer getTopicAnswer(Long topicId, Long userId) {
         return topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+    }
+
+    public TopicAnswer getPreOpinion(Long topicId, Long userId) {
+        return topicAnswerRepository.findPreOpinion(topicId, userId);
     }
 
     /**

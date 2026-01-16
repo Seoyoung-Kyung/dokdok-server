@@ -1,6 +1,9 @@
 package com.dokdok.retrospective.entity;
 
 import com.dokdok.global.BaseTimeEntity;
+import com.dokdok.meeting.entity.MeetingMember;
+import com.dokdok.topic.entity.Topic;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -8,6 +11,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+
+import java.util.Optional;
 
 @Entity
 @Table(name = "retrospective_others_perspective")
@@ -27,8 +32,13 @@ public class RetrospectiveOthersPerspective extends BaseTimeEntity {
     @JoinColumn(name = "personal_meeting_retrospective_id", nullable = false)
     private PersonalMeetingRetrospective personalMeetingRetrospective;
 
-    @Column(name = "topic_name", length = 255)
-    private String topicName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "topic_id")
+    private Topic topic;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "meeting_member_id", nullable = false)
+    private MeetingMember meetingMember;
 
     @Column(name = "opinion_content", columnDefinition = "TEXT")
     private String opinionContent;
@@ -41,14 +51,16 @@ public class RetrospectiveOthersPerspective extends BaseTimeEntity {
 
     public static RetrospectiveOthersPerspective of(
             PersonalMeetingRetrospective personalMeetingRetrospective,
-            String topicName,
+            @Nullable Topic topic,
+            MeetingMember meetingMember,
             String opinionContent,
             String impressiveReason,
             Integer sortOrder
     ) {
         return RetrospectiveOthersPerspective.builder()
                 .personalMeetingRetrospective(personalMeetingRetrospective)
-                .topicName(topicName)
+                .topic(topic)
+                .meetingMember(meetingMember)
                 .opinionContent(opinionContent)
                 .impressiveReason(impressiveReason)
                 .sortOrder(sortOrder)
@@ -61,8 +73,7 @@ public class RetrospectiveOthersPerspective extends BaseTimeEntity {
     }
 
     // 비즈니스 메서드
-    public void updateContent(String topicName, String opinionContent, String impressiveReason) {
-        this.topicName = topicName;
+    public void updateContent(String opinionContent, String impressiveReason) {
         this.opinionContent = opinionContent;
         this.impressiveReason = impressiveReason;
     }

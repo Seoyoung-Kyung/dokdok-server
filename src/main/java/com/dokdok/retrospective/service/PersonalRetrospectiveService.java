@@ -1,8 +1,10 @@
 package com.dokdok.retrospective.service;
 
+import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
 import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
+import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,8 @@ import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.user.entity.User;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -28,6 +32,7 @@ import com.dokdok.user.entity.User;
 public class PersonalRetrospectiveService {
 
     private final PersonalRetrospectiveRepository personalRetrospectiveRepository;
+    private final TopicRepository topicRepository;
     private final MeetingValidator meetingValidator;
     private final UserValidator userValidator;
     private final RetrospectiveValidator retrospectiveValidator;
@@ -43,7 +48,7 @@ public class PersonalRetrospectiveService {
 
         retrospectiveValidator.validateRetrospective(meetingId, userId);
 
-        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.of(meeting, user, request.isShared());
+        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.of(meeting, user);
 
         // ChangedThoughts 추가
         if (request.changedThoughts() != null) {
@@ -51,7 +56,7 @@ public class PersonalRetrospectiveService {
                 Topic topic = topicValidator.getTopic(thought.topicId());
 
                 // preOpinion은 TopicAnswer에서 조회
-                TopicAnswer topicAnswer = topicValidator.getTopicAnswer(topic.getId(), userId);
+                TopicAnswer topicAnswer = topicValidator.getPreOpinion(topic.getId(), userId);
                 String preOpinion = topicAnswer != null ? topicAnswer.getContent() : null;
 
                 RetrospectiveChangedThought changedThought = RetrospectiveChangedThought.of(
@@ -70,9 +75,15 @@ public class PersonalRetrospectiveService {
         // OthersPerspectives 추가
         if (request.othersPerspectives() != null) {
             for (var perspective : request.othersPerspectives()) {
+                Optional<Topic> topic = Optional.ofNullable(perspective.topicId())
+                        .flatMap(topicRepository::findById);
+
+                MeetingMember meetingMember = meetingValidator.getMeetingMember(meetingId, perspective.meetingMemberId());
+
                 RetrospectiveOthersPerspective othersPerspective = RetrospectiveOthersPerspective.of(
                         retrospective,
-                        perspective.topicName(),
+                        topic.orElse(null),
+                        meetingMember,
                         perspective.opinionContent(),
                         perspective.impressiveReason(),
                         perspective.sortOrder()

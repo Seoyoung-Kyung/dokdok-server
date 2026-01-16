@@ -22,9 +22,9 @@ public interface PersonalRetrospectiveApi {
 
     @Operation(
             summary = "개인 회고 작성",
-            description = "모임에 대한 개인 회고를 작성합니다.",
+            description = "약속에 대한 개인 회고를 작성합니다.",
             parameters = {
-                    @Parameter(name = "meetingId", description = "모임 식별자", in = ParameterIn.PATH, required = true)
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
@@ -36,7 +36,7 @@ public interface PersonalRetrospectiveApi {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임 또는 사용자를 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 해당 모임에 대한 회고가 존재함"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 해당 약속에 대한 회고가 존재함"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

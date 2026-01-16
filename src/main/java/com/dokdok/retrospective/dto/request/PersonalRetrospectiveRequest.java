@@ -6,8 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record PersonalRetrospectiveRequest(
-        @NotNull(message = "isShared는 필수입니다")
-        Boolean isShared,
 
         @Valid
         List<ChangedThoughtRequest> changedThoughts,
@@ -27,7 +25,9 @@ public record PersonalRetrospectiveRequest(
     ) {}
 
     public record OthersPerspectiveRequest(
-            String topicName,
+            Long topicId,
+            @NotNull(message = "meetingMemberId는 필수입니다")
+            Long meetingMemberId,
             String opinionContent,
             String impressiveReason,
             Integer sortOrder

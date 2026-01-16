@@ -37,9 +37,6 @@ public class PersonalMeetingRetrospective extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "is_shared", nullable = false)
-    private Boolean isShared;
-
     @OneToMany(mappedBy = "personalMeetingRetrospective", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<RetrospectiveOthersPerspective> othersPerspectives = new ArrayList<>();
@@ -52,11 +49,10 @@ public class PersonalMeetingRetrospective extends BaseTimeEntity {
     @Builder.Default
     private List<RetrospectiveChangedThought> changedThoughts = new ArrayList<>();
 
-    public static PersonalMeetingRetrospective of(Meeting meeting, User user, Boolean isShared) {
+    public static PersonalMeetingRetrospective of(Meeting meeting, User user) {
         return PersonalMeetingRetrospective.builder()
                 .meeting(meeting)
                 .user(user)
-                .isShared(isShared)
                 .build();
     }
 
@@ -74,10 +70,5 @@ public class PersonalMeetingRetrospective extends BaseTimeEntity {
     public void addChangedThought(RetrospectiveChangedThought changedThought) {
         this.changedThoughts.add(changedThought);
         changedThought.setPersonalMeetingRetrospective(this);
-    }
-
-    // 비즈니스 메서드
-    public void updateSharedStatus(Boolean isShared) {
-        this.isShared = isShared;
     }
 }
