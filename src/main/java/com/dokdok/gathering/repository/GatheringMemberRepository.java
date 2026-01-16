@@ -67,4 +67,13 @@ public interface GatheringMemberRepository extends JpaRepository<GatheringMember
             "WHERE gm.gathering.id = :gatheringId " +
             "AND gm.removedAt IS NULL")
     List<GatheringMember> findAllMembersByGatheringId(@Param("gatheringId") Long gatheringId);
+
+    /**
+     * 특정 모임의 ACTIVE 상태 멤버 수 조회
+     */
+    @Query("SELECT count(gm) FROM GatheringMember gm " +
+            "WHERE gm.gathering.id = :gatheringId " +
+            "AND gm.memberStatus = 'ACTIVE' " +
+            "AND gm.removedAt IS NULL")
+    int countActiveMembersByStatus(@Param("gatheringId") Long gatheringId);
 }

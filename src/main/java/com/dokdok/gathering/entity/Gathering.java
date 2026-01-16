@@ -54,7 +54,7 @@ public class Gathering extends BaseTimeEntity {
     }
 
     /**
-     * 생성일일로부터 경과한 일수를 계산합니다.
+     * 생성일로부터 경과한 일수를 계산합니다. (1일차부터 시작)
      */
     public Integer getDaysFromCreation(){
         if(this.getCreatedAt()== null){
@@ -62,7 +62,7 @@ public class Gathering extends BaseTimeEntity {
         }
         return (int) ChronoUnit.DAYS.between(
                 this.getCreatedAt().toLocalDate(), LocalDate.now()
-        );
+        ) + 1;
     }
 
     /**

@@ -180,6 +180,7 @@ class GatheringServiceTest {
 			given(gatheringRepository.existsByInvitationLink("INVITE_CODE")).willReturn(false);
 			given(gatheringRepository.save(any(Gathering.class))).willAnswer(invocation -> invocation.getArgument(0));
 			given(gatheringMemberRepository.save(any(GatheringMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+			given(gatheringMemberRepository.countActiveMembersByStatus(any())).willReturn(1);
 
 			// when
 			GatheringCreateResponse response = gatheringService.createGathering(request);
@@ -214,6 +215,7 @@ class GatheringServiceTest {
 			given(gatheringRepository.existsByInvitationLink("UNIQUE_CODE")).willReturn(false);
 			given(gatheringRepository.save(any(Gathering.class))).willAnswer(invocation -> invocation.getArgument(0));
 			given(gatheringMemberRepository.save(any(GatheringMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+			given(gatheringMemberRepository.countActiveMembersByStatus(any())).willReturn(1);
 
 			// when
 			GatheringCreateResponse response = gatheringService.createGathering(request);
@@ -747,6 +749,7 @@ class GatheringServiceTest {
 		String invitationLink = "https://invite.link/abc123";
 
 		given(gatheringValidator.validateInvitationLink(invitationLink)).willReturn(gathering1);
+		given(gatheringMemberRepository.countActiveMembersByStatus(gathering1.getId())).willReturn(2);
 
 		// when
 		GatheringCreateResponse response = gatheringService.getJoinGatheringInfo(invitationLink);
@@ -755,11 +758,12 @@ class GatheringServiceTest {
 		assertThat(response).isNotNull();
 		assertThat(response.gatheringName()).isEqualTo("독서 모임");
 		assertThat(response.invitationLink()).isEqualTo("https://invite.link/abc123");
-		assertThat(response.totalMembers()).isEqualTo(1);
+		assertThat(response.totalMembers()).isEqualTo(2);
 		assertThat(response.totalMeetings()).isEqualTo(1);
 		assertThat(response.daysFromCreation()).isEqualTo(gathering1.getDaysFromCreation());
 
 		verify(gatheringValidator, times(1)).validateInvitationLink(invitationLink);
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(gathering1.getId());
 	}
 
 	@Test

@@ -48,7 +48,7 @@ public class GatheringService {
 
         saveGatheringMember(savedGathering, user, GatheringRole.LEADER, GatheringMemberStatus.ACTIVE);
 
-        return GatheringCreateResponse.from(savedGathering);
+        return GatheringCreateResponse.from(savedGathering, getActiveMemberCount(savedGathering.getId()));
     }
 
     /**
@@ -57,7 +57,7 @@ public class GatheringService {
     public GatheringCreateResponse getJoinGatheringInfo(String invitationLink) {
 
         Gathering gathering = gatheringValidator.validateInvitationLink(invitationLink);
-        return GatheringCreateResponse.from(gathering);
+        return GatheringCreateResponse.from(gathering, getActiveMemberCount(gathering.getId()));
     }
 
     /**
@@ -219,5 +219,13 @@ public class GatheringService {
 
         GatheringMember gatheringMember = GatheringMember.of(gathering, user, role, status);
         return gatheringMemberRepository.save(gatheringMember);
+    }
+
+    /**
+     * 공통 메서드
+     * ACTIVE 상태인 모임 멤버 수를 조회합니다.
+     */
+    private int getActiveMemberCount(Long gatheringId) {
+        return gatheringMemberRepository.countActiveMembersByStatus(gatheringId);
     }
 }
