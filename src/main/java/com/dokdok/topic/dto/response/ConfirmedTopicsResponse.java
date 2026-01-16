@@ -17,7 +17,8 @@ public record ConfirmedTopicsResponse(
             String title,
             String description,
             TopicType topicType,
-            Integer confirmOrder
+            Integer confirmOrder,
+            CreatedByInfo createdByInfo
     ) {
         public static ConfirmedTopicDto from(Topic topic) {
             return ConfirmedTopicDto.builder()
@@ -26,6 +27,12 @@ public record ConfirmedTopicsResponse(
                     .description(topic.getDescription())
                     .topicType(topic.getTopicType())
                     .confirmOrder(topic.getConfirmOrder())
+                    .createdByInfo(
+                            CreatedByInfo.of(
+                                    topic.getProposedBy().getId(),
+                                    topic.getProposedBy().getNickname()
+                            )
+                    )
                     .build();
         }
     }

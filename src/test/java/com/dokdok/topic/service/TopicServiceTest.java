@@ -208,10 +208,12 @@ class TopicServiceTest {
         void getConfirmedTopics_Success() {
             Long gatheringId = 1L;
             Long meetingId = 1L;
+            Long userId = 1L;
 
             Topic topic1 = Topic.builder()
                     .id(12L)
                     .meeting(testMeeting)
+                    .proposedBy(testUser)
                     .title("첫 번째 주제")
                     .description("첫 번째 설명")
                     .topicType(TopicType.DISCUSSION)
@@ -221,6 +223,7 @@ class TopicServiceTest {
             Topic topic2 = Topic.builder()
                     .id(13L)
                     .meeting(testMeeting)
+                    .proposedBy(testUser)
                     .title("두 번째 주제")
                     .description("두 번째 설명")
                     .topicType(TopicType.DISCUSSION)
@@ -228,25 +231,29 @@ class TopicServiceTest {
                     .confirmOrder(2)
                     .build();
 
-            doNothing().when(gatheringValidator).validateGathering(gatheringId);
-            doNothing().when(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
-            given(topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
-                    meetingId, TopicStatus.CONFIRMED))
-                    .willReturn(List.of(topic1, topic2));
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
-            ConfirmedTopicsResponse response =
-                    topicService.getConfirmedTopics(gatheringId, meetingId);
+                doNothing().when(gatheringValidator).validateMembership(gatheringId, userId);
+                doNothing().when(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
+                given(topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
+                        meetingId, TopicStatus.CONFIRMED))
+                        .willReturn(List.of(topic1, topic2));
 
-            assertThat(response.meetingId()).isEqualTo(meetingId);
-            assertThat(response.topics()).hasSize(2);
-            assertThat(response.topics().get(0).topicId()).isEqualTo(12L);
-            assertThat(response.topics().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
-            assertThat(response.topics().get(1).confirmOrder()).isEqualTo(2);
+                ConfirmedTopicsResponse response =
+                        topicService.getConfirmedTopics(gatheringId, meetingId);
 
-            verify(gatheringValidator).validateGathering(gatheringId);
-            verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
-            verify(topicRepository).findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
-                    meetingId, TopicStatus.CONFIRMED);
+                assertThat(response.meetingId()).isEqualTo(meetingId);
+                assertThat(response.topics()).hasSize(2);
+                assertThat(response.topics().get(0).topicId()).isEqualTo(12L);
+                assertThat(response.topics().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+                assertThat(response.topics().get(1).confirmOrder()).isEqualTo(2);
+
+                verify(gatheringValidator).validateMembership(gatheringId, userId);
+                verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
+                verify(topicRepository).findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
+                        meetingId, TopicStatus.CONFIRMED);
+            }
         }
 
         @Test
@@ -254,16 +261,21 @@ class TopicServiceTest {
         void getConfirmedTopics_ThrowsWhenGatheringMissing() {
             Long gatheringId = 1L;
             Long meetingId = 1L;
+            Long userId = 1L;
 
-            doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
-                    .when(gatheringValidator).validateGathering(gatheringId);
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
-            assertThatThrownBy(() -> topicService.getConfirmedTopics(gatheringId, meetingId))
-                    .isInstanceOf(GatheringException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", GatheringErrorCode.GATHERING_NOT_FOUND);
+                doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
+                        .when(gatheringValidator).validateMembership(gatheringId, userId);
 
-            verify(topicRepository, never())
-                    .findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(any(), any());
+                assertThatThrownBy(() -> topicService.getConfirmedTopics(gatheringId, meetingId))
+                        .isInstanceOf(GatheringException.class)
+                        .hasFieldOrPropertyWithValue("errorCode", GatheringErrorCode.NOT_GATHERING_MEMBER);
+
+                verify(topicRepository, never())
+                        .findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(any(), any());
+            }
         }
     }
 
