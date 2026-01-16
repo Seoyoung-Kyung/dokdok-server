@@ -78,17 +78,17 @@ class PersonalRetrospectiveServiceTest {
 
         PersonalRetrospectiveRequest.ChangedThoughtRequest changedThoughtRequest =
                 new PersonalRetrospectiveRequest.ChangedThoughtRequest(
-                        topicId, "핵심 쟁점", "모임 후 의견", 1
+                        topicId, "핵심 쟁점", "모임 후 의견"
                 );
 
         PersonalRetrospectiveRequest.OthersPerspectiveRequest othersPerspectiveRequest =
                 new PersonalRetrospectiveRequest.OthersPerspectiveRequest(
-                        topicId, meetingMemberId, "타인의 의견", "인상 깊었던 이유", 1
+                        topicId, meetingMemberId, "타인의 의견", "인상 깊었던 이유"
                 );
 
         PersonalRetrospectiveRequest.FreeTextRequest freeTextRequest =
                 new PersonalRetrospectiveRequest.FreeTextRequest(
-                        "자유 서술 제목", "자유 서술 내용", 1
+                        "자유 서술 제목", "자유 서술 내용"
                 );
 
         PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(
@@ -185,11 +185,11 @@ class PersonalRetrospectiveServiceTest {
 
         Meeting meeting = Meeting.builder().id(meetingId).build();
         User user = User.builder().id(userId).build();
-        Topic topic = Topic.builder().id(topicId).title("토픽 제목").build();
+        Topic topic = Topic.builder().id(topicId).title("주제 제목").build();
 
         PersonalRetrospectiveRequest.ChangedThoughtRequest changedThoughtRequest =
                 new PersonalRetrospectiveRequest.ChangedThoughtRequest(
-                        topicId, "핵심 쟁점", "모임 후 의견", 1
+                        topicId, "핵심 쟁점", "약속 후 의견"
                 );
 
         PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(
@@ -224,7 +224,7 @@ class PersonalRetrospectiveServiceTest {
     }
 
     @Test
-    @DisplayName("모임이 없으면 예외가 발생한다")
+    @DisplayName("약속이 없으면 예외가 발생한다")
     void createPersonalRetrospective_throwsWhenMeetingNotFound() {
         // given
         Long meetingId = 999L;
@@ -234,12 +234,12 @@ class PersonalRetrospectiveServiceTest {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
 
             when(meetingValidator.findMeetingOrThrow(meetingId))
-                    .thenThrow(new IllegalArgumentException("모임을 찾을 수 없습니다."));
+                    .thenThrow(new IllegalArgumentException("약속을 찾을 수 없습니다."));
 
             // when & then
             assertThatThrownBy(() -> personalRetrospectiveService.createPersonalRetrospective(meetingId, request))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("모임을 찾을 수 없습니다.");
+                    .hasMessage("약속을 찾을 수 없습니다.");
 
             verify(personalRetrospectiveRepository, never()).save(any());
         }
@@ -285,13 +285,13 @@ class PersonalRetrospectiveServiceTest {
 
             when(meetingValidator.findMeetingOrThrow(meetingId)).thenReturn(meeting);
             when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-            doThrow(new IllegalStateException("이미 해당 모임에 대한 회고가 존재합니다."))
+            doThrow(new IllegalStateException("이미 해당 약속에 대한 회고가 존재합니다."))
                     .when(retrospectiveValidator).validateRetrospective(meetingId, userId);
 
             // when & then
             assertThatThrownBy(() -> personalRetrospectiveService.createPersonalRetrospective(meetingId, request))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("이미 해당 모임에 대한 회고가 존재합니다.");
+                    .hasMessage("이미 해당 약속에 대한 회고가 존재합니다.");
 
             verify(personalRetrospectiveRepository, never()).save(any());
         }
@@ -330,7 +330,7 @@ class PersonalRetrospectiveServiceTest {
 
         PersonalRetrospectiveRequest.ChangedThoughtRequest changedThoughtRequest =
                 new PersonalRetrospectiveRequest.ChangedThoughtRequest(
-                        topicId, "핵심 쟁점", "모임 후 의견", 1
+                        topicId, "핵심 쟁점", "모임 후 의견"
                 );
 
         PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(
@@ -374,18 +374,18 @@ class PersonalRetrospectiveServiceTest {
         MeetingMember meetingMember2 = MeetingMember.builder().id(meetingMemberId2).build();
 
         List<PersonalRetrospectiveRequest.ChangedThoughtRequest> changedThoughts = List.of(
-                new PersonalRetrospectiveRequest.ChangedThoughtRequest(10L, "쟁점1", "의견1", 1),
-                new PersonalRetrospectiveRequest.ChangedThoughtRequest(20L, "쟁점2", "의견2", 2)
+                new PersonalRetrospectiveRequest.ChangedThoughtRequest(10L, "쟁점1", "의견1"),
+                new PersonalRetrospectiveRequest.ChangedThoughtRequest(20L, "쟁점2", "의견2")
         );
 
         List<PersonalRetrospectiveRequest.OthersPerspectiveRequest> othersPerspectives = List.of(
-                new PersonalRetrospectiveRequest.OthersPerspectiveRequest(10L, meetingMemberId1, "의견1", "이유1", 1),
-                new PersonalRetrospectiveRequest.OthersPerspectiveRequest(20L, meetingMemberId2, "의견2", "이유2", 2)
+                new PersonalRetrospectiveRequest.OthersPerspectiveRequest(10L, meetingMemberId1, "의견1", "이유1"),
+                new PersonalRetrospectiveRequest.OthersPerspectiveRequest(20L, meetingMemberId2, "의견2", "이유2")
         );
 
         List<PersonalRetrospectiveRequest.FreeTextRequest> freeTexts = List.of(
-                new PersonalRetrospectiveRequest.FreeTextRequest("제목1", "내용1", 1),
-                new PersonalRetrospectiveRequest.FreeTextRequest("제목2", "내용2", 2)
+                new PersonalRetrospectiveRequest.FreeTextRequest("제목1", "내용1"),
+                new PersonalRetrospectiveRequest.FreeTextRequest("제목2", "내용2")
         );
 
         PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(

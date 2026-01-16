@@ -46,16 +46,12 @@ public class RetrospectiveOthersPerspective extends BaseTimeEntity {
     @Column(name = "impressive_reason", columnDefinition = "TEXT")
     private String impressiveReason;
 
-    @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
-
     public static RetrospectiveOthersPerspective of(
             PersonalMeetingRetrospective personalMeetingRetrospective,
             @Nullable Topic topic,
             MeetingMember meetingMember,
             String opinionContent,
-            String impressiveReason,
-            Integer sortOrder
+            String impressiveReason
     ) {
         return RetrospectiveOthersPerspective.builder()
                 .personalMeetingRetrospective(personalMeetingRetrospective)
@@ -63,7 +59,6 @@ public class RetrospectiveOthersPerspective extends BaseTimeEntity {
                 .meetingMember(meetingMember)
                 .opinionContent(opinionContent)
                 .impressiveReason(impressiveReason)
-                .sortOrder(sortOrder)
                 .build();
     }
 
@@ -78,7 +73,4 @@ public class RetrospectiveOthersPerspective extends BaseTimeEntity {
         this.impressiveReason = impressiveReason;
     }
 
-    public void updateSortOrder(Integer sortOrder) {
-        this.sortOrder = sortOrder;
-    }
 }

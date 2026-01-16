@@ -36,9 +36,6 @@ public class RetrospectiveFreeText extends BaseTimeEntity {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
-
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -46,14 +43,12 @@ public class RetrospectiveFreeText extends BaseTimeEntity {
     public static RetrospectiveFreeText of(
             PersonalMeetingRetrospective personalMeetingRetrospective,
             String title,
-            String content,
-            Integer sortOrder
+            String content
     ) {
         return RetrospectiveFreeText.builder()
                 .personalMeetingRetrospective(personalMeetingRetrospective)
                 .title(title)
                 .content(content)
-                .sortOrder(sortOrder)
                 .build();
     }
 
@@ -66,9 +61,5 @@ public class RetrospectiveFreeText extends BaseTimeEntity {
     public void updateContent(String title, String content) {
         this.title = title;
         this.content = content;
-    }
-
-    public void updateSortOrder(Integer sortOrder) {
-        this.sortOrder = sortOrder;
     }
 }

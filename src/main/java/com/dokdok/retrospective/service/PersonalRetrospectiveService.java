@@ -64,8 +64,7 @@ public class PersonalRetrospectiveService {
                         retrospective,
                         thought.keyIssue(),
                         preOpinion,
-                        thought.postOpinion(),
-                        thought.sortOrder()
+                        thought.postOpinion()
                 );
 
                 retrospective.addChangedThought(changedThought);
@@ -85,8 +84,7 @@ public class PersonalRetrospectiveService {
                         topic.orElse(null),
                         meetingMember,
                         perspective.opinionContent(),
-                        perspective.impressiveReason(),
-                        perspective.sortOrder()
+                        perspective.impressiveReason()
                 );
 
                 retrospective.addOthersPerspective(othersPerspective);
@@ -99,8 +97,7 @@ public class PersonalRetrospectiveService {
                 RetrospectiveFreeText text = RetrospectiveFreeText.of(
                         retrospective,
                         freeText.title(),
-                        freeText.content(),
-                        freeText.sortOrder()
+                        freeText.content()
                 );
 
                 retrospective.addFreeText(text);

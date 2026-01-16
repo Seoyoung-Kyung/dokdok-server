@@ -41,16 +41,12 @@ public class RetrospectiveChangedThought extends BaseTimeEntity {
     @Column(name = "post_opinion", columnDefinition = "TEXT")
     private String postOpinion;
 
-    @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
-
     public static RetrospectiveChangedThought of(
             Topic topic,
             PersonalMeetingRetrospective personalMeetingRetrospective,
             String keyIssue,
             String preOpinion,
-            String postOpinion,
-            Integer sortOrder
+            String postOpinion
     ) {
         return RetrospectiveChangedThought.builder()
                 .topic(topic)
@@ -58,7 +54,6 @@ public class RetrospectiveChangedThought extends BaseTimeEntity {
                 .keyIssue(keyIssue)
                 .preOpinion(preOpinion)
                 .postOpinion(postOpinion)
-                .sortOrder(sortOrder)
                 .build();
     }
 
@@ -71,10 +66,6 @@ public class RetrospectiveChangedThought extends BaseTimeEntity {
     public void updateContent(String keyIssue, String postOpinion) {
         this.keyIssue = keyIssue;
         this.postOpinion = postOpinion;
-    }
-
-    public void updateSortOrder(Integer sortOrder) {
-        this.sortOrder = sortOrder;
     }
 
     public void updateTopic(Topic topic) {
