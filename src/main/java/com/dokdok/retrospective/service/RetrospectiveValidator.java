@@ -1,0 +1,24 @@
+package com.dokdok.retrospective.service;
+
+import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
+import com.dokdok.retrospective.exception.RetrospectiveException;
+import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class RetrospectiveValidator {
+
+    private final PersonalRetrospectiveRepository personalRetrospectiveRepository;
+
+    public void validateRetrospective(Long meetingId, Long userId){
+        boolean exists = personalRetrospectiveRepository.existsByMeetingIdAndUserId(meetingId, userId);
+
+        if(exists) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_ALREADY_EXISTS);
+        }
+    }
+
+
+}
