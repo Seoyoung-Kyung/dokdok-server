@@ -2,6 +2,7 @@ package com.dokdok.gathering.controller;
 
 import com.dokdok.gathering.api.GatheringApi;
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
+import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
 import com.dokdok.gathering.dto.response.*;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.service.GatheringService;
@@ -47,6 +48,17 @@ public class GatheringController implements GatheringApi {
     ) {
         GatheringJoinResponse response = gatheringService.joinGathering(invitationLink);
         return ApiResponse.success(response);
+    }
+
+    @Override
+    @PatchMapping("/{gatheringId}/join-requests/{memberId}")
+    public ResponseEntity<ApiResponse<Void>> handleJoinRequest(
+            @PathVariable("gatheringId") Long gatheringId,
+            @PathVariable("memberId") Long memberId,
+            @Valid @RequestBody JoinGatheringMemberRequest request) {
+
+        gatheringService.handleJoinRequest(gatheringId, memberId, request);
+        return ApiResponse.success("해당 멤버가 " + request.approve_type().getDescription() + " 되었습니다.");
     }
 
     @Override

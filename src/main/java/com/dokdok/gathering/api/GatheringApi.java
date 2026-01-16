@@ -28,7 +28,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
 import com.dokdok.gathering.dto.response.GatheringJoinResponse;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 
 @Tag(name = "모임", description = "모임 관련 API")
 @RequestMapping("/api/gatherings")
@@ -374,5 +376,126 @@ public interface GatheringApi {
             @PathVariable Long gatheringId,
             @Parameter(description = "강퇴할 유저 ID", required = true, example = "456")
             @PathVariable Long userId
+    );
+
+    @Operation(
+            summary = "가입 요청 승인/거절",
+            description = """
+                모임장이 가입 요청한 멤버를 승인하거나 거절합니다.
+                - 모임장만 처리할 수 있습니다.
+                - PENDING 상태의 멤버만 처리할 수 있습니다.
+                - approve_type은 ACTIVE(승인) 또는 REJECTED(거절)만 허용됩니다.
+                - 승인 시 joinedAt이 현재 시간으로 설정됩니다.
+                """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "처리 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "승인 성공",
+                                            value = """
+                                                {
+                                                    "success": true,
+                                                    "message": "해당 멤버가 가입승인 되었습니다.",
+                                                    "data": null
+                                                }
+                                                """
+                                    ),
+                                    @ExampleObject(
+                                            name = "거절 성공",
+                                            value = """
+                                                {
+                                                    "success": true,
+                                                    "message": "해당 멤버가 가입거절 되었습니다.",
+                                                    "data": null
+                                                }
+                                                """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 - approve_type이 PENDING이거나, 대상 멤버가 PENDING 상태가 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "잘못된 approve_type",
+                                            value = """
+                                                {
+                                                    "success": false,
+                                                    "message": "승인 상태는 ACTIVE 또는 REJECTED만 가능합니다.",
+                                                    "data": null
+                                                }
+                                                """
+                                    ),
+                                    @ExampleObject(
+                                            name = "PENDING 상태 아님",
+                                            value = """
+                                                {
+                                                    "success": false,
+                                                    "message": "대기 중인 가입 요청만 처리할 수 있습니다.",
+                                                    "data": null
+                                                }
+                                                """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 모임장만 가입 요청을 처리할 수 있습니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임 또는 멤버를 찾을 수 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @PatchMapping("/{gatheringId}/join-requests/{memberId}")
+    ResponseEntity<ApiResponse<Void>> handleJoinRequest(
+            @Parameter(description = "모임 ID", required = true, example = "1")
+            @PathVariable("gatheringId") Long gatheringId,
+            @Parameter(description = "처리할 멤버의 유저 ID", required = true, example = "5")
+            @PathVariable("memberId") Long memberId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "승인/거절 요청",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = JoinGatheringMemberRequest.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "승인 요청",
+                                            value = """
+                                                {
+                                                    "approve_type": "ACTIVE"
+                                                }
+                                                """
+                                    ),
+                                    @ExampleObject(
+                                            name = "거절 요청",
+                                            value = """
+                                                {
+                                                    "approve_type": "REJECTED"
+                                                }
+                                                """
+                                    )
+                            }
+                    )
+            )
+            @Valid @RequestBody JoinGatheringMemberRequest request
     );
 }

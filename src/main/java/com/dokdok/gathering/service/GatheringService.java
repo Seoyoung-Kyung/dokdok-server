@@ -2,6 +2,7 @@ package com.dokdok.gathering.service;
 
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
+import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
 import com.dokdok.gathering.dto.response.*;
 import com.dokdok.gathering.entity.*;
 import com.dokdok.gathering.exception.GatheringErrorCode;
@@ -53,7 +54,6 @@ public class GatheringService {
     /**
      * 초대링크로 진입한 모임의 정보를 Summery정보를 보여줍니다.
      */
-    @Transactional(readOnly = true)
     public GatheringCreateResponse getJoinGatheringInfo(String invitationLink) {
 
         Gathering gathering = gatheringValidator.validateInvitationLink(invitationLink);
@@ -74,6 +74,30 @@ public class GatheringService {
         GatheringMember member = saveGatheringMember(gathering, user, GatheringRole.MEMBER, GatheringMemberStatus.PENDING);
 
         return GatheringJoinResponse.from(member);
+    }
+
+    /**
+     * 모임장이 가입 요청을 한 멤버에 대해 승인|거절을 처리합니다.
+     */
+    @Transactional
+    public void handleJoinRequest(Long gatheringId, Long memberId, JoinGatheringMemberRequest request) {
+
+        User user = SecurityUtil.getCurrentUserEntity();
+        gatheringValidator.validateLeader(gatheringId, user.getId());
+
+        GatheringMemberStatus approveType = request.approve_type();
+        if (approveType == GatheringMemberStatus.PENDING) {
+            throw new GatheringException(GatheringErrorCode.INVALID_APPROVE_TYPE);
+        }
+
+        GatheringMember gatheringMember = gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId, memberId)
+                .orElseThrow(() -> new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER));
+
+        if (gatheringMember.getMemberStatus() != GatheringMemberStatus.PENDING) {
+            throw new GatheringException(GatheringErrorCode.NOT_PENDING_STATUS);
+        }
+
+        gatheringMember.handleJoinRequest(approveType);
     }
 
 	public MyGatheringListResponse getMyGatherings(Pageable pageable) {

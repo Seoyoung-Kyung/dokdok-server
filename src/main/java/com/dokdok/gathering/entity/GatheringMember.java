@@ -2,6 +2,7 @@ package com.dokdok.gathering.entity;
 
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
@@ -49,8 +50,7 @@ import java.time.temporal.ChronoUnit;
     @Builder.Default
     private GatheringRole role = GatheringRole.MEMBER;
 
-    @CreatedDate
-    @Column(name = "joined_at", nullable = false, updatable = false)
+    @Column(name = "joined_at")
     private LocalDateTime joinedAt;
 
     @LastModifiedDate
@@ -85,5 +85,12 @@ import java.time.temporal.ChronoUnit;
 
     public void remove() {
         this.removedAt = LocalDateTime.now();
+    }
+
+    public void handleJoinRequest(GatheringMemberStatus status) {
+        if (status == GatheringMemberStatus.ACTIVE) {
+            this.joinedAt = LocalDateTime.now();
+        }
+        this.memberStatus = status;
     }
 }
