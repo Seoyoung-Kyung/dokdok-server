@@ -31,7 +31,7 @@ public class PersonalRetrospectiveController implements PersonalRetrospectiveApi
     }
 
     @Override
-    @GetMapping("/form")
+    @GetMapping
     public ResponseEntity<ApiResponse<PersonalRetrospectiveFormResponse>> getPersonalRetrospectiveForm(
             @PathVariable Long meetingId
     ) {

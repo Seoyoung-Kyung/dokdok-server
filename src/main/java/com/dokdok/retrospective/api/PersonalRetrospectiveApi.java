@@ -66,7 +66,7 @@ public interface PersonalRetrospectiveApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 해당 약속에 대한 회고가 존재함"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @GetMapping(value = "/form", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<PersonalRetrospectiveFormResponse>> getPersonalRetrospectiveForm(
             @PathVariable Long meetingId
     );
