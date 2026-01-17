@@ -11,12 +11,12 @@ public record GatheringCreateResponse(
         Integer totalMeetings,
         String invitationLink
 ) {
-    public static GatheringCreateResponse from(Gathering gathering) {
+    public static GatheringCreateResponse from(Gathering gathering, int activeMembers, int totalMeetings) {
         return GatheringCreateResponse.builder()
                 .gatheringName(gathering.getGatheringName())
-                .totalMembers(1)
+                .totalMembers(activeMembers)
                 .daysFromCreation(gathering.getDaysFromCreation())
-                .totalMeetings(1)
+                .totalMeetings(totalMeetings)
                 .invitationLink(gathering.getInvitationLink())
                 .build();
     }

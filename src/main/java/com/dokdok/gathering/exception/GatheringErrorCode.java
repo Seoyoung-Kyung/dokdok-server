@@ -18,7 +18,9 @@ public enum GatheringErrorCode implements BaseErrorCode {
     INVITATION_CODE_GENERATION_FAILED("G007", "초대 코드 생성에 실패했습니다. 다시 시도해주세요.", HttpStatus.INTERNAL_SERVER_ERROR),
     ALREADY_GATHERING_MEMBER("G008", "이미 가입된 모임입니다.", HttpStatus.CONFLICT),
     JOIN_REQUEST_ALREADY_PENDING("G009", "이미 가입 요청이 진행 중입니다.", HttpStatus.CONFLICT),
-    INVALID_INVITATION_LINK("G010", "초대링크는 필수입니다.", HttpStatus.BAD_REQUEST);
+    INVALID_INVITATION_LINK("G010", "초대링크는 필수입니다.", HttpStatus.BAD_REQUEST),
+    NOT_PENDING_STATUS("G011", "대기 중인 가입 요청만 처리할 수 있습니다.", HttpStatus.BAD_REQUEST),
+    INVALID_APPROVE_TYPE("G012", "승인 상태는 ACTIVE 또는 REJECTED만 가능합니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

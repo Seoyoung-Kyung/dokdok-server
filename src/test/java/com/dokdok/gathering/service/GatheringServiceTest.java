@@ -1,6 +1,7 @@
 package com.dokdok.gathering.service;
 
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
+import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
 import com.dokdok.gathering.dto.response.GatheringCreateResponse;
 import com.dokdok.gathering.dto.response.GatheringDetailResponse;
 import com.dokdok.gathering.dto.response.GatheringJoinResponse;
@@ -37,6 +38,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static com.dokdok.gathering.entity.GatheringRole.LEADER;
 import static com.dokdok.gathering.entity.GatheringRole.MEMBER;
@@ -157,7 +159,6 @@ class GatheringServiceTest {
 				.isFavorite(false)
 				.role(MEMBER)
 				.memberStatus(GatheringMemberStatus.PENDING)
-				.joinedAt(LocalDateTime.now().minusDays(1))
 				.build();
 	}
 
@@ -179,6 +180,8 @@ class GatheringServiceTest {
 			given(gatheringRepository.existsByInvitationLink("INVITE_CODE")).willReturn(false);
 			given(gatheringRepository.save(any(Gathering.class))).willAnswer(invocation -> invocation.getArgument(0));
 			given(gatheringMemberRepository.save(any(GatheringMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+			given(gatheringMemberRepository.countActiveMembersByStatus(any())).willReturn(1);
+			given(meetingRepository.countByGatheringIdAndMeetingStatus(any(), eq(MeetingStatus.DONE))).willReturn(0);
 
 			// when
 			GatheringCreateResponse response = gatheringService.createGathering(request);
@@ -188,7 +191,7 @@ class GatheringServiceTest {
 			assertThat(response.gatheringName()).isEqualTo("새 모임");
 			assertThat(response.invitationLink()).isEqualTo("INVITE_CODE");
 			assertThat(response.totalMembers()).isEqualTo(1);
-			assertThat(response.totalMeetings()).isEqualTo(1);
+			assertThat(response.totalMeetings()).isEqualTo(0);
 
 			securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
 			verify(gatheringRepository, times(1)).existsByInvitationLink("INVITE_CODE");
@@ -213,6 +216,8 @@ class GatheringServiceTest {
 			given(gatheringRepository.existsByInvitationLink("UNIQUE_CODE")).willReturn(false);
 			given(gatheringRepository.save(any(Gathering.class))).willAnswer(invocation -> invocation.getArgument(0));
 			given(gatheringMemberRepository.save(any(GatheringMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+			given(gatheringMemberRepository.countActiveMembersByStatus(any())).willReturn(1);
+			given(meetingRepository.countByGatheringIdAndMeetingStatus(any(), eq(MeetingStatus.DONE))).willReturn(0);
 
 			// when
 			GatheringCreateResponse response = gatheringService.createGathering(request);
@@ -280,8 +285,8 @@ class GatheringServiceTest {
 		Page<GatheringMember> memberPage = new PageImpl<>(members, pageable, members.size());
 
 		given(gatheringMemberRepository.findActiveGatheringsByUserId(userId, pageable)).willReturn(memberPage);
-		given(gatheringMemberRepository.countActiveMembers(1L)).willReturn(1);
-		given(gatheringMemberRepository.countActiveMembers(2L)).willReturn(1);
+		given(gatheringMemberRepository.countActiveMembersByStatus(1L)).willReturn(1);
+		given(gatheringMemberRepository.countActiveMembersByStatus(2L)).willReturn(1);
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE)).willReturn(3);
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE)).willReturn(5);
 
@@ -317,8 +322,8 @@ class GatheringServiceTest {
 
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
 		verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserId(eq(userId), any(Pageable.class));
-		verify(gatheringMemberRepository, times(1)).countActiveMembers(1L);
-		verify(gatheringMemberRepository, times(1)).countActiveMembers(2L);
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(1L);
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(2L);
 		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE);
 		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE);
 	}
@@ -746,6 +751,8 @@ class GatheringServiceTest {
 		String invitationLink = "https://invite.link/abc123";
 
 		given(gatheringValidator.validateInvitationLink(invitationLink)).willReturn(gathering1);
+		given(gatheringMemberRepository.countActiveMembersByStatus(gathering1.getId())).willReturn(2);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(gathering1.getId(), MeetingStatus.DONE)).willReturn(5);
 
 		// when
 		GatheringCreateResponse response = gatheringService.getJoinGatheringInfo(invitationLink);
@@ -754,11 +761,13 @@ class GatheringServiceTest {
 		assertThat(response).isNotNull();
 		assertThat(response.gatheringName()).isEqualTo("독서 모임");
 		assertThat(response.invitationLink()).isEqualTo("https://invite.link/abc123");
-		assertThat(response.totalMembers()).isEqualTo(1);
-		assertThat(response.totalMeetings()).isEqualTo(1);
+		assertThat(response.totalMembers()).isEqualTo(2);
+		assertThat(response.totalMeetings()).isEqualTo(5);
 		assertThat(response.daysFromCreation()).isEqualTo(gathering1.getDaysFromCreation());
 
 		verify(gatheringValidator, times(1)).validateInvitationLink(invitationLink);
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(gathering1.getId());
+		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(gathering1.getId(), MeetingStatus.DONE);
 	}
 
 	@Test
@@ -915,5 +924,176 @@ class GatheringServiceTest {
 		verify(gatheringValidator, times(1)).validateInvitationLink(invitationLink);
 		verify(gatheringValidator, times(1)).validateJoinedGathering(1L, 4L);
 		verify(gatheringMemberRepository, times(0)).save(any());
+	}
+
+	@Test
+	@DisplayName("가입 요청 승인 성공 - 리더가 PENDING 멤버를 ACTIVE로 승인")
+	void handleJoinRequest_Success_Approve() {
+		// given
+		Long gatheringId = 1L;
+		Long targetUserId = 4L;
+		JoinGatheringMemberRequest request = new JoinGatheringMemberRequest(GatheringMemberStatus.ACTIVE);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(leader);
+
+		given(gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId, targetUserId))
+				.willReturn(Optional.of(pendingMember));
+
+		// when
+		gatheringService.handleJoinRequest(gatheringId, targetUserId, request);
+
+		// then
+		assertThat(pendingMember.getMemberStatus()).isEqualTo(GatheringMemberStatus.ACTIVE);
+		assertThat(pendingMember.getJoinedAt()).isNotNull();
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, leader.getId());
+		verify(gatheringMemberRepository, times(1)).findByGatheringIdAndUserId(gatheringId, targetUserId);
+	}
+
+	@Test
+	@DisplayName("가입 요청 거절 성공 - 리더가 PENDING 멤버를 REJECTED로 거절")
+	void handleJoinRequest_Success_Reject() {
+		// given
+		Long gatheringId = 1L;
+		Long targetUserId = 4L;
+		JoinGatheringMemberRequest request = new JoinGatheringMemberRequest(GatheringMemberStatus.REJECTED);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(leader);
+
+		given(gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId, targetUserId))
+				.willReturn(Optional.of(pendingMember));
+
+		// when
+		gatheringService.handleJoinRequest(gatheringId, targetUserId, request);
+
+		// then
+		assertThat(pendingMember.getMemberStatus()).isEqualTo(GatheringMemberStatus.REJECTED);
+		assertThat(pendingMember.getJoinedAt()).isNull();
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, leader.getId());
+		verify(gatheringMemberRepository, times(1)).findByGatheringIdAndUserId(gatheringId, targetUserId);
+	}
+
+	@Test
+	@DisplayName("가입 요청 처리 실패 - 리더가 아닌 멤버가 처리 시도")
+	void handleJoinRequest_Fail_NotLeader() {
+		// given
+		Long gatheringId = 1L;
+		Long targetUserId = 4L;
+		JoinGatheringMemberRequest request = new JoinGatheringMemberRequest(GatheringMemberStatus.ACTIVE);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(member);
+
+		doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_LEADER))
+				.when(gatheringValidator).validateLeader(gatheringId, member.getId());
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.handleJoinRequest(gatheringId, targetUserId, request))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.NOT_GATHERING_LEADER.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, member.getId());
+		verify(gatheringMemberRepository, times(0)).findByGatheringIdAndUserId(any(), any());
+	}
+
+	@Test
+	@DisplayName("가입 요청 처리 실패 - 대상 멤버가 존재하지 않음")
+	void handleJoinRequest_Fail_MemberNotFound() {
+		// given
+		Long gatheringId = 1L;
+		Long targetUserId = 999L;
+		JoinGatheringMemberRequest request = new JoinGatheringMemberRequest(GatheringMemberStatus.ACTIVE);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(leader);
+
+		given(gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId, targetUserId))
+				.willReturn(Optional.empty());
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.handleJoinRequest(gatheringId, targetUserId, request))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.NOT_GATHERING_MEMBER.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, leader.getId());
+		verify(gatheringMemberRepository, times(1)).findByGatheringIdAndUserId(gatheringId, targetUserId);
+	}
+
+	@Test
+	@DisplayName("가입 요청 처리 실패 - 대상 멤버가 PENDING 상태가 아님 (이미 ACTIVE)")
+	void handleJoinRequest_Fail_NotPendingStatus_AlreadyActive() {
+		// given
+		Long gatheringId = 1L;
+		Long targetUserId = 2L;
+		JoinGatheringMemberRequest request = new JoinGatheringMemberRequest(GatheringMemberStatus.ACTIVE);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(leader);
+
+		given(gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId, targetUserId))
+				.willReturn(Optional.of(normalMember));
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.handleJoinRequest(gatheringId, targetUserId, request))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.NOT_PENDING_STATUS.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, leader.getId());
+		verify(gatheringMemberRepository, times(1)).findByGatheringIdAndUserId(gatheringId, targetUserId);
+	}
+
+	@Test
+	@DisplayName("가입 요청 처리 실패 - 대상 멤버가 PENDING 상태가 아님 (이미 REJECTED)")
+	void handleJoinRequest_Fail_NotPendingStatus_AlreadyRejected() {
+		// given
+		Long gatheringId = 1L;
+		Long targetUserId = 5L;
+		JoinGatheringMemberRequest request = new JoinGatheringMemberRequest(GatheringMemberStatus.ACTIVE);
+
+		GatheringMember rejectedMember = GatheringMember.builder()
+				.id(5L)
+				.gathering(gathering1)
+				.user(newUser)
+				.isFavorite(false)
+				.role(MEMBER)
+				.memberStatus(GatheringMemberStatus.REJECTED)
+				.build();
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(leader);
+
+		given(gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId, targetUserId))
+				.willReturn(Optional.of(rejectedMember));
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.handleJoinRequest(gatheringId, targetUserId, request))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.NOT_PENDING_STATUS.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, leader.getId());
+		verify(gatheringMemberRepository, times(1)).findByGatheringIdAndUserId(gatheringId, targetUserId);
+	}
+
+	@Test
+	@DisplayName("가입 요청 처리 실패 - approve_type이 PENDING인 경우")
+	void handleJoinRequest_Fail_InvalidApproveType_Pending() {
+		// given
+		Long gatheringId = 1L;
+		Long targetUserId = 4L;
+		JoinGatheringMemberRequest request = new JoinGatheringMemberRequest(GatheringMemberStatus.PENDING);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(leader);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.handleJoinRequest(gatheringId, targetUserId, request))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.INVALID_APPROVE_TYPE.getMessage());
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
+		verify(gatheringValidator, times(1)).validateLeader(gatheringId, leader.getId());
+		verify(gatheringMemberRepository, times(0)).findByGatheringIdAndUserId(any(), any());
 	}
 }

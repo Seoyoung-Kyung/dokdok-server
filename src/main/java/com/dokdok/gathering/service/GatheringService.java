@@ -2,6 +2,7 @@ package com.dokdok.gathering.service;
 
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
+import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
 import com.dokdok.gathering.dto.response.*;
 import com.dokdok.gathering.entity.*;
 import com.dokdok.gathering.exception.GatheringErrorCode;
@@ -47,17 +48,24 @@ public class GatheringService {
 
         saveGatheringMember(savedGathering, user, GatheringRole.LEADER, GatheringMemberStatus.ACTIVE);
 
-        return GatheringCreateResponse.from(savedGathering);
+        return GatheringCreateResponse.from(
+                savedGathering,
+                getActiveMemberCount(savedGathering.getId()),
+                getMeetingCount(savedGathering.getId())
+        );
     }
 
     /**
      * 초대링크로 진입한 모임의 정보를 Summery정보를 보여줍니다.
      */
-    @Transactional(readOnly = true)
     public GatheringCreateResponse getJoinGatheringInfo(String invitationLink) {
 
         Gathering gathering = gatheringValidator.validateInvitationLink(invitationLink);
-        return GatheringCreateResponse.from(gathering);
+        return GatheringCreateResponse.from(
+                gathering,
+                getActiveMemberCount(gathering.getId()),
+                getMeetingCount(gathering.getId())
+        );
     }
 
     /**
@@ -76,6 +84,30 @@ public class GatheringService {
         return GatheringJoinResponse.from(member);
     }
 
+    /**
+     * 모임장이 가입 요청을 한 멤버에 대해 승인|거절을 처리합니다.
+     */
+    @Transactional
+    public void handleJoinRequest(Long gatheringId, Long memberId, JoinGatheringMemberRequest request) {
+
+        User user = SecurityUtil.getCurrentUserEntity();
+        gatheringValidator.validateLeader(gatheringId, user.getId());
+
+        GatheringMemberStatus approveType = request.approve_type();
+        if (approveType == GatheringMemberStatus.PENDING) {
+            throw new GatheringException(GatheringErrorCode.INVALID_APPROVE_TYPE);
+        }
+
+        GatheringMember gatheringMember = gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId, memberId)
+                .orElseThrow(() -> new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER));
+
+        if (gatheringMember.getMemberStatus() != GatheringMemberStatus.PENDING) {
+            throw new GatheringException(GatheringErrorCode.NOT_PENDING_STATUS);
+        }
+
+        gatheringMember.handleJoinRequest(approveType);
+    }
+
 	public MyGatheringListResponse getMyGatherings(Pageable pageable) {
 		Long userId = SecurityUtil.getCurrentUserId();
 
@@ -84,7 +116,7 @@ public class GatheringService {
 		List<GatheringSimpleResponse> gatheringResponses = gatheringMemberPage.getContent()
 				.stream()
 				.map(gatheringMember -> {
-					int totalMembers = gatheringMemberRepository.countActiveMembers(gatheringMember.getGathering().getId());
+					int totalMembers = gatheringMemberRepository.countActiveMembersByStatus(gatheringMember.getGathering().getId());
 					int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gatheringMember.getGathering().getId(), MeetingStatus.DONE);
 
 					return GatheringSimpleResponse.from(gatheringMember, totalMembers,totalMeetings, gatheringMember.getRole());
@@ -195,5 +227,21 @@ public class GatheringService {
 
         GatheringMember gatheringMember = GatheringMember.of(gathering, user, role, status);
         return gatheringMemberRepository.save(gatheringMember);
+    }
+
+    /**
+     * 공통 메서드
+     * ACTIVE 상태인 모임 멤버 수를 조회합니다.
+     */
+    private int getActiveMemberCount(Long gatheringId) {
+        return gatheringMemberRepository.countActiveMembersByStatus(gatheringId);
+    }
+
+    /**
+     * 공통 메서드
+     * 완료된 모임(미팅) 수를 조회합니다.
+     */
+    private int getMeetingCount(Long gatheringId) {
+        return meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE);
     }
 }
