@@ -124,4 +124,14 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     List<Object[]> findTopicTypesByMeetingIds(
             @Param("meetingIds") List<Long> meetingIds
     );
+
+    @Query("""
+            SELECT t
+            FROM Topic t
+            WHERE t.meeting.id = :meetingId
+            AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+            """)
+    List<Topic> findTopicsInfoByMeetingId(
+            @Param("meetingId") Long meetingId
+    );
 }
