@@ -50,7 +50,7 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
       """)
     int countActiveMembers(@Param("meetingId") Long meetingId);
 
-    boolean existsByIdAndUserId(
+    boolean existsByMeetingIdAndUserId(
             Long meetingId,
             Long userId
     );
@@ -99,10 +99,19 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
               AND m.meetingStatus = :meetingStatus
               """
     )
+
     Page<Meeting> findMeetingsByUserIdAndStatus(
             @Param("userId") Long userId,
             @Param("gatheringId") Long gatheringId,
             @Param("meetingStatus") MeetingStatus meetingStatus,
             Pageable pageable
     );
+
+    @Query("""
+                SELECT mm
+                FROM MeetingMember mm
+                JOIN FETCH mm.user u
+                WHERE mm.meeting.id = :meetingId
+            """)
+    List<MeetingMember> findByMeetingId(Long meetingId);
 }

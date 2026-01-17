@@ -1,9 +1,12 @@
 package com.dokdok.retrospective.service;
 
 import com.dokdok.meeting.entity.MeetingMember;
+import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.service.MeetingValidator;
+import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
 import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
+import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.service.UserValidator;
@@ -23,6 +26,7 @@ import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.user.entity.User;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -33,10 +37,13 @@ public class PersonalRetrospectiveService {
 
     private final PersonalRetrospectiveRepository personalRetrospectiveRepository;
     private final TopicRepository topicRepository;
+    private final MeetingMemberRepository meetingMemberRepository;
+    private final TopicAnswerRepository topicAnswerRepository;
     private final MeetingValidator meetingValidator;
     private final UserValidator userValidator;
     private final RetrospectiveValidator retrospectiveValidator;
     private final TopicValidator topicValidator;
+    private final PersonalRetrospectiveFormAssembler formAssembler;
 
     @Transactional
     public PersonalRetrospectiveResponse createPersonalRetrospective(Long meetingId, PersonalRetrospectiveRequest request) {
@@ -108,4 +115,26 @@ public class PersonalRetrospectiveService {
 
         return PersonalRetrospectiveResponse.from(saved);
     }
+
+    @Transactional(readOnly = true)
+    public PersonalRetrospectiveFormResponse getPersonalRetrospectiveForm(Long meetingId) {
+
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        meetingValidator.validateMeeting(meetingId);
+        meetingValidator.validateMeetingMember(meetingId, userId);
+        retrospectiveValidator.validateRetrospective(meetingId, userId);
+
+        List<Topic> topics = topicValidator.getConfirmedTopics(meetingId);
+        List<TopicAnswer> topicAnswers =  topicAnswerRepository.findByMeetingIdUserId(meetingId, userId);
+        List<MeetingMember> meetingMembers = meetingMemberRepository.findByMeetingId(meetingId);
+
+        return formAssembler.assemble(
+                meetingId,
+                topics,
+                topicAnswers,
+                meetingMembers
+        );
+    }
+
 }

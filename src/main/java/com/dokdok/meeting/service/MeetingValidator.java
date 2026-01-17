@@ -10,12 +10,22 @@ import com.dokdok.meeting.repository.MeetingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class MeetingValidator {
 
     private final MeetingRepository meetingRepository;
     private final MeetingMemberRepository meetingMemberRepository;
+
+    public void validateMeeting(Long meetingId) {
+        boolean isMeeting = meetingRepository.existsById(meetingId);
+
+        if (!isMeeting) {
+            throw new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND);
+        }
+    }
 
     /**
      * 약속이 모임에 속하는지 검증한다.
@@ -53,7 +63,7 @@ public class MeetingValidator {
      * 사용자의 약속 참여 여부를 확인한다.
      */
     public void validateMeetingMember(Long meetingId, Long userId) {
-        boolean isMeetingMember = meetingMemberRepository.existsByIdAndUserId(meetingId, userId);
+        boolean isMeetingMember = meetingMemberRepository.existsByMeetingIdAndUserId(meetingId, userId);
 
         if(!isMeetingMember) {
             throw new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER);
