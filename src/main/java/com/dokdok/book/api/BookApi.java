@@ -2,6 +2,7 @@ package com.dokdok.book.api;
 
 import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
+import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.*;
 import com.dokdok.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -278,6 +279,7 @@ public interface BookApi {
                                               "code": "CREATED",
                                               "message": "기록 등록 성공",
                                               "data": {
+                                                "recordId": 5,
                                                 "recordType": "QUOTE",
                                                 "recordContent": "오늘 기억하고 싶은 문장을 기록합니다.",
                                                 "meta": {
@@ -320,5 +322,74 @@ public interface BookApi {
                     )
             )
             @RequestBody PersonalReadingRecordCreateRequest request
+    );
+
+    @Operation(
+            summary = "독서 기록 수정",
+            description = """
+                    내 책장에 있는 책의 독서 기록을 수정합니다.
+                    - 경로의 personalBookId와 recordId로 대상을 지정합니다.
+                    - 요청 본문: recordType(MEMO/QUOTE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
+                    - recordType이 MEMO이면 meta는 null로 저장됩니다.
+                    - 로그인한 사용자 기준으로 본인 책에만 기록을 수정할 수 있습니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "독서 기록 수정 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "SUCCESS",
+                                              "message": "기록 수정 성공",
+                                              "data": {
+                                                "recordId": 5,
+                                                "recordType": "QUOTE",
+                                                "recordContent": "문장을 다시 손봤습니다.",
+                                                "meta": {
+                                                  "page": 30,
+                                                  "excerpt": "수정된 인용문"
+                                                },
+                                                "personalBookId": 10
+                                              }
+                                            }
+                                            """
+                            ))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청 (recordType 혹은 meta 오류)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 또는 기록을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PatchMapping("/{personalBookId}/records/{recordId}")
+    ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> updateMyReadingRecord(
+            @Parameter(description = "수정할 개인 책 ID", required = true, example = "10")
+            @PathVariable Long personalBookId,
+            @Parameter(description = "수정할 기록 ID", required = true, example = "5")
+            @PathVariable Long recordId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "수정할 독서 기록 내용 및 유형",
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PersonalReadingRecordUpdateRequest.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "recordType": "QUOTE",
+                                              "recordContent": "문장을 다시 손봤습니다.",
+                                              "meta": {
+                                                "page": 30,
+                                                "excerpt": "수정된 인용문"
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            )
+            @RequestBody PersonalReadingRecordUpdateRequest request
     );
 }

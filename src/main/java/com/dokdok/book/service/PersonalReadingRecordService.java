@@ -7,6 +7,7 @@ import com.dokdok.book.entity.PersonalReadingRecord;
 import com.dokdok.book.entity.RecordType;
 import com.dokdok.book.exception.RecordErrorCode;
 import com.dokdok.book.exception.RecordException;
+import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.repository.PersonalReadingRecordRepository;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.entity.User;
@@ -29,7 +30,9 @@ public class PersonalReadingRecordService {
     @Transactional
     public PersonalReadingRecordCreateResponse create(Long personalBookId, PersonalReadingRecordCreateRequest request) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
-        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(),personalBookId);
+        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+
+        Map<String, Object> normalizedMeta = normalizeMeta(request.recordType(), request.meta());
 
         PersonalReadingRecord personalReadingRecordEntity =
                 PersonalReadingRecord.create(
@@ -37,14 +40,38 @@ public class PersonalReadingRecordService {
                         userEntity,
                         request.recordType(),
                         request.recordContent(),
-                        normalizeMeta(request.recordType(), request.meta())
+                        normalizedMeta
                         );
         personalReadingRecordRepository.save(personalReadingRecordEntity);
 
         return PersonalReadingRecordCreateResponse.from(personalReadingRecordEntity);
     }
 
+    @Transactional
+    public PersonalReadingRecordCreateResponse update(Long personalBookId, Long recordId, PersonalReadingRecordUpdateRequest request) {
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+
+        PersonalReadingRecord personalReadingRecord = personalReadingRecordRepository
+                .findByIdAndPersonalBookIdAndUserId(recordId, personalBookEntity.getId(), userEntity.getId())
+                .orElseThrow(() -> new RecordException(RecordErrorCode.RECORD_NOT_FOUND));
+
+        Map<String, Object> normalizedMeta = normalizeMeta(request.recordType(), request.meta());
+
+        personalReadingRecord.update(
+                request.recordType(),
+                request.recordContent(),
+                normalizedMeta
+        );
+
+        return PersonalReadingRecordCreateResponse.from(personalReadingRecord);
+    }
+
     private Map<String, Object> normalizeMeta(RecordType recordType, Map<String, Object> meta) {
+        if (recordType == null) {
+            throw new RecordException(RecordErrorCode.INVALID_RECORD_TYPE);
+        }
+
         if (recordType == RecordType.MEMO) {
             return null;
         }

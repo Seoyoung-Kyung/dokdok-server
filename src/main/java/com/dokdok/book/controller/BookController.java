@@ -3,6 +3,7 @@ package com.dokdok.book.controller;
 import com.dokdok.book.api.BookApi;
 import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
+import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.*;
 import com.dokdok.book.service.BookService;
 import com.dokdok.book.service.PersonalBookService;
@@ -63,5 +64,12 @@ public class BookController implements BookApi {
     public ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> createMyReadingRecord(@PathVariable Long personalBookId, @RequestBody PersonalReadingRecordCreateRequest request) {
         PersonalReadingRecordCreateResponse response = personalReadingRecordService.create(personalBookId, request);
         return ApiResponse.created(response, "기록 등록 성공");
+    }
+
+    @Override
+    @PatchMapping("/{personalBookId}/records/{recordId}")
+    public ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> updateMyReadingRecord(@PathVariable Long personalBookId, @PathVariable Long recordId, @RequestBody PersonalReadingRecordUpdateRequest request) {
+        PersonalReadingRecordCreateResponse response = personalReadingRecordService.update(personalBookId, recordId, request);
+        return ApiResponse.success(response, "기록 수정 성공");
     }
 }

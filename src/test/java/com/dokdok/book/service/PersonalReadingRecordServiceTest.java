@@ -1,10 +1,12 @@
 package com.dokdok.book.service;
 
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
+import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.PersonalReadingRecordCreateResponse;
 import com.dokdok.book.entity.Book;
 import com.dokdok.book.entity.BookReadingStatus;
 import com.dokdok.book.entity.PersonalBook;
+import com.dokdok.book.entity.PersonalReadingRecord;
 import com.dokdok.book.entity.RecordType;
 import com.dokdok.book.exception.RecordErrorCode;
 import com.dokdok.book.exception.RecordException;
@@ -25,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -218,6 +221,174 @@ class PersonalReadingRecordServiceTest {
                 .isInstanceOf(RecordException.class)
                 .hasFieldOrPropertyWithValue("errorCode", RecordErrorCode.INVALID_RECORD_REQUEST);
 
+        verify(personalReadingRecordRepository, never()).save(any());
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
+    }
+
+    @Test
+    @DisplayName("독서 기록을 수정하면 내용과 meta가 업데이트된다")
+    void updateRecord_Success() {
+        // given
+        Long userId = 1L;
+        Long personalBookId = 40L;
+        Long recordId = 5L;
+
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("page", "30");
+        meta.put("excerpt", "수정된 인용문");
+
+        PersonalReadingRecordUpdateRequest request = new PersonalReadingRecordUpdateRequest(
+                RecordType.QUOTE,
+                "수정된 기록 내용",
+                meta
+        );
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(222L)
+                .nickname("editor")
+                .build();
+
+        PersonalBook personalBook = PersonalBook.builder()
+                .id(personalBookId)
+                .user(user)
+                .book(Book.builder().id(400L).isbn("9781111111111").bookName("책").author("저자").publisher("출판").build())
+                .readingStatus(BookReadingStatus.READING)
+                .build();
+
+        PersonalReadingRecord record = PersonalReadingRecord.builder()
+                .id(recordId)
+                .personalBook(personalBook)
+                .user(user)
+                .recordType(RecordType.MEMO)
+                .recordContent("이전 내용")
+                .build();
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(bookValidator.validateInBookShelf(userId, personalBookId)).thenReturn(personalBook);
+        when(personalReadingRecordRepository.findByIdAndPersonalBookIdAndUserId(recordId, personalBookId, userId))
+                .thenReturn(Optional.of(record));
+
+        // when
+        PersonalReadingRecordCreateResponse response = personalReadingRecordService.update(personalBookId, recordId, request);
+
+        // then
+        assertThat(response.recordId()).isEqualTo(recordId);
+        assertThat(response.recordContent()).isEqualTo(request.recordContent());
+        assertThat(response.recordType()).isEqualTo(RecordType.QUOTE);
+        assertThat(response.meta()).isNotNull();
+        assertThat(response.meta().get("page")).isEqualTo(30);
+        assertThat(response.meta().get("excerpt")).isEqualTo("수정된 인용문");
+
+        assertThat(record.getRecordContent()).isEqualTo(request.recordContent());
+        assertThat(record.getRecordType()).isEqualTo(RecordType.QUOTE);
+        assertThat(record.getMeta().get("page")).isEqualTo(30);
+
+        verify(personalReadingRecordRepository, times(1))
+                .findByIdAndPersonalBookIdAndUserId(recordId, personalBookId, userId);
+        verify(personalReadingRecordRepository, never()).save(any());
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 기록을 수정하려 하면 예외가 발생한다")
+    void updateRecord_NotFound() {
+        // given
+        Long userId = 1L;
+        Long personalBookId = 50L;
+        Long recordId = 999L;
+
+        PersonalReadingRecordUpdateRequest request = new PersonalReadingRecordUpdateRequest(
+                RecordType.MEMO,
+                "내용",
+                null
+        );
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(333L)
+                .nickname("reader")
+                .build();
+
+        PersonalBook personalBook = PersonalBook.builder()
+                .id(personalBookId)
+                .user(user)
+                .book(Book.builder().id(500L).isbn("9782222222222").bookName("책").author("저자").publisher("출판").build())
+                .readingStatus(BookReadingStatus.READING)
+                .build();
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(bookValidator.validateInBookShelf(userId, personalBookId)).thenReturn(personalBook);
+        when(personalReadingRecordRepository.findByIdAndPersonalBookIdAndUserId(recordId, personalBookId, userId))
+                .thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> personalReadingRecordService.update(personalBookId, recordId, request))
+                .isInstanceOf(RecordException.class)
+                .hasFieldOrPropertyWithValue("errorCode", RecordErrorCode.RECORD_NOT_FOUND);
+
+        verify(personalReadingRecordRepository, times(1))
+                .findByIdAndPersonalBookIdAndUserId(recordId, personalBookId, userId);
+        verify(personalReadingRecordRepository, never()).save(any());
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
+    }
+
+    @Test
+    @DisplayName("인용 기록 수정 시 meta가 없으면 RecordException이 발생한다")
+    void updateQuoteRecord_MissingMeta() {
+        // given
+        Long userId = 1L;
+        Long personalBookId = 60L;
+        Long recordId = 7L;
+
+        PersonalReadingRecordUpdateRequest request = new PersonalReadingRecordUpdateRequest(
+                RecordType.QUOTE,
+                "인용 수정",
+                null
+        );
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(444L)
+                .nickname("reader")
+                .build();
+
+        PersonalBook personalBook = PersonalBook.builder()
+                .id(personalBookId)
+                .user(user)
+                .book(Book.builder().id(600L).isbn("9783333333333").bookName("책").author("저자").publisher("출판").build())
+                .readingStatus(BookReadingStatus.READING)
+                .build();
+
+        PersonalReadingRecord record = PersonalReadingRecord.builder()
+                .id(recordId)
+                .personalBook(personalBook)
+                .user(user)
+                .recordType(RecordType.QUOTE)
+                .recordContent("기존 내용")
+                .build();
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(bookValidator.validateInBookShelf(userId, personalBookId)).thenReturn(personalBook);
+        when(personalReadingRecordRepository.findByIdAndPersonalBookIdAndUserId(recordId, personalBookId, userId))
+                .thenReturn(Optional.of(record));
+
+        // when & then
+        assertThatThrownBy(() -> personalReadingRecordService.update(personalBookId, recordId, request))
+                .isInstanceOf(RecordException.class)
+                .hasFieldOrPropertyWithValue("errorCode", RecordErrorCode.INVALID_RECORD_REQUEST);
+
+        verify(personalReadingRecordRepository, times(1))
+                .findByIdAndPersonalBookIdAndUserId(recordId, personalBookId, userId);
         verify(personalReadingRecordRepository, never()).save(any());
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
