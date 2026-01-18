@@ -10,10 +10,17 @@ import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.retrospective.dto.request.PersonalRetrospectiveRequest;
+import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
+import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
+import com.dokdok.retrospective.entity.RetrospectiveFreeText;
+import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
 import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
 import com.dokdok.retrospective.exception.RetrospectiveException;
+import com.dokdok.retrospective.repository.ChangedThoughtRepository;
+import com.dokdok.retrospective.repository.FreeTextRepository;
+import com.dokdok.retrospective.repository.OthersPerspectiveRepository;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicAnswerRepository;
@@ -69,7 +76,16 @@ class PersonalRetrospectiveServiceTest {
     private MeetingMemberRepository meetingMemberRepository;
 
     @Mock
-    private PersonalRetrospectiveFormAssembler formAssembler;
+    private ChangedThoughtRepository changedThoughtRepository;
+
+    @Mock
+    private OthersPerspectiveRepository othersPerspectiveRepository;
+
+    @Mock
+    private FreeTextRepository freeTextRepository;
+
+    @Mock
+    private PersonalRetrospectiveAssembler assembler;
 
     @InjectMocks
     private PersonalRetrospectiveService personalRetrospectiveService;
@@ -496,7 +512,7 @@ class PersonalRetrospectiveServiceTest {
             when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(topics);
             when(topicAnswerRepository.findByMeetingIdUserId(meetingId, userId)).thenReturn(topicAnswers);
             when(meetingMemberRepository.findByMeetingId(meetingId)).thenReturn(meetingMembers);
-            when(formAssembler.assemble(meetingId, topics, topicAnswers, meetingMembers))
+            when(assembler.assembleCreate(meetingId, topics, topicAnswers, meetingMembers))
                     .thenReturn(expectedResponse);
 
             // when
@@ -514,7 +530,7 @@ class PersonalRetrospectiveServiceTest {
             verify(topicValidator).getConfirmedTopics(meetingId);
             verify(topicAnswerRepository).findByMeetingIdUserId(meetingId, userId);
             verify(meetingMemberRepository).findByMeetingId(meetingId);
-            verify(formAssembler).assemble(meetingId, topics, topicAnswers, meetingMembers);
+            verify(assembler).assembleCreate(meetingId, topics, topicAnswers, meetingMembers);
         }
     }
 
@@ -549,7 +565,7 @@ class PersonalRetrospectiveServiceTest {
             when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(topics);
             when(topicAnswerRepository.findByMeetingIdUserId(meetingId, userId)).thenReturn(topicAnswers);
             when(meetingMemberRepository.findByMeetingId(meetingId)).thenReturn(meetingMembers);
-            when(formAssembler.assemble(meetingId, topics, topicAnswers, meetingMembers))
+            when(assembler.assembleCreate(meetingId, topics, topicAnswers, meetingMembers))
                     .thenReturn(expectedResponse);
 
             // when
@@ -667,6 +683,224 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() -> personalRetrospectiveService.getPersonalRetrospectiveForm(meetingId))
+                    .isInstanceOf(GlobalException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
+
+            verify(meetingValidator, never()).validateMeeting(any());
+        }
+    }
+
+    // ==================== getPersonalRetrospectiveEditForm 테스트 ====================
+
+    @Test
+    @DisplayName("개인 회고 수정 폼을 정상적으로 조회한다")
+    void getPersonalRetrospectiveEditForm_success() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+
+        Topic topic = mock(Topic.class);
+        when(topic.getId()).thenReturn(10L);
+
+        MeetingMember meetingMember = mock(MeetingMember.class);
+        when(meetingMember.getId()).thenReturn(5L);
+
+        RetrospectiveChangedThought changedThought = mock(RetrospectiveChangedThought.class);
+        when(changedThought.getTopic()).thenReturn(topic);
+        when(changedThought.getKeyIssue()).thenReturn("핵심 쟁점");
+        when(changedThought.getPostOpinion()).thenReturn("사후 의견");
+
+        RetrospectiveOthersPerspective othersPerspective = mock(RetrospectiveOthersPerspective.class);
+        when(othersPerspective.getTopic()).thenReturn(topic);
+        when(othersPerspective.getMeetingMember()).thenReturn(meetingMember);
+        when(othersPerspective.getOpinionContent()).thenReturn("타인 의견");
+        when(othersPerspective.getImpressiveReason()).thenReturn("인상 깊었던 이유");
+
+        RetrospectiveFreeText freeText = mock(RetrospectiveFreeText.class);
+        when(freeText.getTitle()).thenReturn("자유 서술 제목");
+        when(freeText.getContent()).thenReturn("자유 서술 내용");
+
+        List<RetrospectiveChangedThought> changedThoughts = List.of(changedThought);
+        List<RetrospectiveOthersPerspective> othersPerspectives = List.of(othersPerspective);
+        List<RetrospectiveFreeText> freeTexts = List.of(freeText);
+
+        PersonalRetrospectiveDetailResponse expectedResponse = PersonalRetrospectiveDetailResponse.from(
+                retrospectiveId,
+                List.of(new PersonalRetrospectiveDetailResponse.ChangedThought(10L, "핵심 쟁점", "사후 의견")),
+                List.of(new PersonalRetrospectiveDetailResponse.OthersPerspective(10L, 5L, "타인 의견", "인상 깊었던 이유")),
+                List.of(new PersonalRetrospectiveDetailResponse.FreeText("자유 서술 제목", "자유 서술 내용"))
+        );
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
+                    .thenReturn(changedThoughts);
+            when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))
+                    .thenReturn(othersPerspectives);
+            when(freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId))
+                    .thenReturn(freeTexts);
+            when(assembler.assembleDetail(retrospectiveId, changedThoughts, othersPerspectives, freeTexts))
+                    .thenReturn(expectedResponse);
+
+            // when
+            PersonalRetrospectiveDetailResponse response =
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId);
+
+            // then
+            assertThat(response.retrospectiveId()).isEqualTo(retrospectiveId);
+            assertThat(response.changedThoughts()).hasSize(1);
+            assertThat(response.othersPerspectives()).hasSize(1);
+            assertThat(response.freeTexts()).hasSize(1);
+
+            verify(meetingValidator).validateMeeting(meetingId);
+            verify(meetingValidator).validateMeetingMember(meetingId, userId);
+            verify(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            verify(changedThoughtRepository).findByPersonalMeetingRetrospective(retrospectiveId);
+            verify(othersPerspectiveRepository).findByPersonalMeetingRetrospective(retrospectiveId);
+            verify(freeTextRepository).findByPersonalMeetingRetrospective_Id(retrospectiveId);
+            verify(assembler).assembleDetail(retrospectiveId, changedThoughts, othersPerspectives, freeTexts);
+        }
+    }
+
+    @Test
+    @DisplayName("회고 내용이 없어도 수정 폼을 조회한다")
+    void getPersonalRetrospectiveEditForm_withEmptyContent_success() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+
+        List<RetrospectiveChangedThought> changedThoughts = List.of();
+        List<RetrospectiveOthersPerspective> othersPerspectives = List.of();
+        List<RetrospectiveFreeText> freeTexts = List.of();
+
+        PersonalRetrospectiveDetailResponse expectedResponse = PersonalRetrospectiveDetailResponse.from(
+                retrospectiveId,
+                List.of(),
+                List.of(),
+                List.of()
+        );
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
+                    .thenReturn(changedThoughts);
+            when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))
+                    .thenReturn(othersPerspectives);
+            when(freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId))
+                    .thenReturn(freeTexts);
+            when(assembler.assembleDetail(retrospectiveId, changedThoughts, othersPerspectives, freeTexts))
+                    .thenReturn(expectedResponse);
+
+            // when
+            PersonalRetrospectiveDetailResponse response =
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId);
+
+            // then
+            assertThat(response.changedThoughts()).isEmpty();
+            assertThat(response.othersPerspectives()).isEmpty();
+            assertThat(response.freeTexts()).isEmpty();
+        }
+    }
+
+    @Test
+    @DisplayName("약속이 존재하지 않으면 예외가 발생한다 - 수정 폼 조회")
+    void getPersonalRetrospectiveEditForm_throwsWhenMeetingNotFound() {
+        // given
+        Long meetingId = 999L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doThrow(new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND))
+                    .when(meetingValidator).validateMeeting(meetingId);
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId))
+                    .isInstanceOf(MeetingException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.MEETING_NOT_FOUND);
+
+            verify(changedThoughtRepository, never()).findByPersonalMeetingRetrospective(any());
+        }
+    }
+
+    @Test
+    @DisplayName("약속 멤버가 아니면 예외가 발생한다 - 수정 폼 조회")
+    void getPersonalRetrospectiveEditForm_throwsWhenNotMeetingMember() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 999L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doThrow(new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER))
+                    .when(meetingValidator).validateMeetingMember(meetingId, userId);
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId))
+                    .isInstanceOf(MeetingException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.NOT_MEETING_MEMBER);
+
+            verify(changedThoughtRepository, never()).findByPersonalMeetingRetrospective(any());
+        }
+    }
+
+    @Test
+    @DisplayName("개인 회고가 존재하지 않으면 예외가 발생한다 - 수정 폼 조회")
+    void getPersonalRetrospectiveEditForm_throwsWhenRetrospectiveNotFound() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 999L;
+        Long userId = 3L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            doThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND))
+                    .when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId))
+                    .isInstanceOf(RetrospectiveException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
+
+            verify(changedThoughtRepository, never()).findByPersonalMeetingRetrospective(any());
+        }
+    }
+
+    @Test
+    @DisplayName("인증 정보가 없으면 예외가 발생한다 - 수정 폼 조회")
+    void getPersonalRetrospectiveEditForm_throwsWhenUnauthenticated() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId))
                     .isInstanceOf(GlobalException.class)
                     .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
 

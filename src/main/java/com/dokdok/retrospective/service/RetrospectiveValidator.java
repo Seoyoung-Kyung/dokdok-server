@@ -20,5 +20,12 @@ public class RetrospectiveValidator {
         }
     }
 
+    public void validateRetrospective(Long retrospectiveId){
+        boolean exists = personalRetrospectiveRepository.existsById(retrospectiveId);
+
+        if(!exists) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
+        }
+    }
 
 }

@@ -1,7 +1,11 @@
 package com.dokdok.retrospective.service;
 
 import com.dokdok.meeting.entity.MeetingMember;
+import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
+import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
+import com.dokdok.retrospective.entity.RetrospectiveFreeText;
+import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
 import org.springframework.stereotype.Component;
@@ -12,9 +16,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-public class PersonalRetrospectiveFormAssembler {
+public class PersonalRetrospectiveAssembler {
 
-    public PersonalRetrospectiveFormResponse assemble(
+    public PersonalRetrospectiveFormResponse assembleCreate(
             Long meetingId,
             List<Topic> topics,
             List<TopicAnswer> topicAnswers,
@@ -59,6 +63,35 @@ public class PersonalRetrospectiveFormAssembler {
                 preOpinions,
                 topicDtos,
                 memberDtos
+        );
+    }
+
+    public PersonalRetrospectiveDetailResponse assembleDetail(
+            Long retrospectiveId,
+            List<RetrospectiveChangedThought> changedThoughts,
+            List<RetrospectiveOthersPerspective> othersPerspectives,
+            List<RetrospectiveFreeText> freeTexts
+    ) {
+        List<PersonalRetrospectiveDetailResponse.ChangedThought> changedThoughtList =
+                changedThoughts.stream()
+                        .map(PersonalRetrospectiveDetailResponse.ChangedThought::from)
+                        .toList();
+
+        List<PersonalRetrospectiveDetailResponse.OthersPerspective> othersPerspectiveList =
+                othersPerspectives.stream()
+                        .map(PersonalRetrospectiveDetailResponse.OthersPerspective::from)
+                        .toList();
+
+        List<PersonalRetrospectiveDetailResponse.FreeText> freeTextList =
+                freeTexts.stream()
+                        .map(PersonalRetrospectiveDetailResponse.FreeText::from)
+                        .toList();
+
+        return PersonalRetrospectiveDetailResponse.from(
+                retrospectiveId,
+                changedThoughtList,
+                othersPerspectiveList,
+                freeTextList
         );
     }
 }

@@ -3,8 +3,12 @@ package com.dokdok.retrospective.service;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.service.MeetingValidator;
+import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
+import com.dokdok.retrospective.repository.ChangedThoughtRepository;
+import com.dokdok.retrospective.repository.FreeTextRepository;
+import com.dokdok.retrospective.repository.OthersPerspectiveRepository;
 import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
@@ -36,6 +40,9 @@ import java.util.Optional;
 public class PersonalRetrospectiveService {
 
     private final PersonalRetrospectiveRepository personalRetrospectiveRepository;
+    private final ChangedThoughtRepository changedThoughtRepository;
+    private final OthersPerspectiveRepository othersPerspectiveRepository;
+    private final FreeTextRepository freeTextRepository;
     private final TopicRepository topicRepository;
     private final MeetingMemberRepository meetingMemberRepository;
     private final TopicAnswerRepository topicAnswerRepository;
@@ -43,7 +50,7 @@ public class PersonalRetrospectiveService {
     private final UserValidator userValidator;
     private final RetrospectiveValidator retrospectiveValidator;
     private final TopicValidator topicValidator;
-    private final PersonalRetrospectiveFormAssembler formAssembler;
+    private final PersonalRetrospectiveAssembler assembler;
 
     @Transactional
     public PersonalRetrospectiveResponse createPersonalRetrospective(Long meetingId, PersonalRetrospectiveRequest request) {
@@ -129,7 +136,7 @@ public class PersonalRetrospectiveService {
         List<TopicAnswer> topicAnswers =  topicAnswerRepository.findByMeetingIdUserId(meetingId, userId);
         List<MeetingMember> meetingMembers = meetingMemberRepository.findByMeetingId(meetingId);
 
-        return formAssembler.assemble(
+        return assembler.assembleCreate(
                 meetingId,
                 topics,
                 topicAnswers,
@@ -137,4 +144,33 @@ public class PersonalRetrospectiveService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public PersonalRetrospectiveDetailResponse getPersonalRetrospectiveEditForm(
+            Long meetingId,
+            Long retrospectiveId
+    ) {
+
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        meetingValidator.validateMeeting(meetingId);
+        meetingValidator.validateMeetingMember(meetingId, userId);
+
+        retrospectiveValidator.validateRetrospective(retrospectiveId);
+
+        List<RetrospectiveChangedThought> changedThoughts
+                = changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId);
+
+        List<RetrospectiveOthersPerspective> othersPerspectives
+                = othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId);
+
+        List<RetrospectiveFreeText> freeTexts =
+                freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId);
+
+        return assembler.assembleDetail(
+                retrospectiveId,
+                changedThoughts,
+                othersPerspectives,
+                freeTexts
+        );
+    }
 }
