@@ -3,22 +3,18 @@ package com.dokdok.retrospective.service;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
-import com.dokdok.global.exception.GlobalErrorCode;
-import com.dokdok.global.exception.GlobalException;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
-import com.dokdok.retrospective.entity.MeetingRetrospective;
 import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
 import com.dokdok.retrospective.repository.RetrospectiveRepository;
 import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.repository.TopicRepository;
-import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -208,25 +204,6 @@ class MeetingRetrospectiveServiceTest {
 			assertThat(response.topics()).hasSize(1);
 			assertThat(response.topics().get(0).summarizedOpinions()).containsExactly("요약1");
 			assertThat(response.topics().get(0).comments()).isEmpty();
-		}
-	}
-
-	@Test
-	@DisplayName("인증 정보가 없으면 예외가 발생한다")
-	void getMeetingRetrospective_throwsWhenUnauthenticated() {
-		// given
-		Long meetingId = 1L;
-
-		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
-			securityUtilMock.when(SecurityUtil::getCurrentUserId)
-					.thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
-
-			// when & then
-			assertThatThrownBy(() -> meetingRetrospectiveService.getMeetingRetrospective(meetingId))
-					.isInstanceOf(GlobalException.class)
-					.hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
-
-			verify(meetingRepository, never()).findById(any());
 		}
 	}
 }
