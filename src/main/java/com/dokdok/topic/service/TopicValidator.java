@@ -9,6 +9,9 @@ import com.dokdok.topic.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.List;
+
 
 @Component
 @RequiredArgsConstructor
@@ -21,6 +24,17 @@ public class TopicValidator {
         return topicRepository.findDetailById(topicId)
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
     }
+
+    public List<Topic> getConfirmedTopics(Long meetingId) {
+        List<Topic> topics = topicRepository.findTopicsInfoByMeetingId(meetingId);
+
+        if (topics.isEmpty()) {
+            throw new TopicException(TopicErrorCode.TOPIC_NOT_FOUND);
+        }
+
+        return topics;
+    }
+
 
     /**
      * 해당 약속에 속한 주제인지 검증하고 Topic을 반환한다.

@@ -61,4 +61,10 @@ public class PersonalReadingRecord extends BaseTimeEntity {
                 .build();
 
     }
+
+    public void update(RecordType recordType, String recordContent, Map<String, Object> meta) {
+        this.recordType = recordType;
+        this.recordContent = recordContent;
+        this.meta = meta;
+    }
 }

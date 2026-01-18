@@ -180,6 +180,8 @@ class GatheringServiceTest {
 			given(gatheringRepository.existsByInvitationLink("INVITE_CODE")).willReturn(false);
 			given(gatheringRepository.save(any(Gathering.class))).willAnswer(invocation -> invocation.getArgument(0));
 			given(gatheringMemberRepository.save(any(GatheringMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+			given(gatheringMemberRepository.countActiveMembersByStatus(any())).willReturn(1);
+			given(meetingRepository.countByGatheringIdAndMeetingStatus(any(), eq(MeetingStatus.DONE))).willReturn(0);
 
 			// when
 			GatheringCreateResponse response = gatheringService.createGathering(request);
@@ -189,7 +191,7 @@ class GatheringServiceTest {
 			assertThat(response.gatheringName()).isEqualTo("새 모임");
 			assertThat(response.invitationLink()).isEqualTo("INVITE_CODE");
 			assertThat(response.totalMembers()).isEqualTo(1);
-			assertThat(response.totalMeetings()).isEqualTo(1);
+			assertThat(response.totalMeetings()).isEqualTo(0);
 
 			securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
 			verify(gatheringRepository, times(1)).existsByInvitationLink("INVITE_CODE");
@@ -214,6 +216,8 @@ class GatheringServiceTest {
 			given(gatheringRepository.existsByInvitationLink("UNIQUE_CODE")).willReturn(false);
 			given(gatheringRepository.save(any(Gathering.class))).willAnswer(invocation -> invocation.getArgument(0));
 			given(gatheringMemberRepository.save(any(GatheringMember.class))).willAnswer(invocation -> invocation.getArgument(0));
+			given(gatheringMemberRepository.countActiveMembersByStatus(any())).willReturn(1);
+			given(meetingRepository.countByGatheringIdAndMeetingStatus(any(), eq(MeetingStatus.DONE))).willReturn(0);
 
 			// when
 			GatheringCreateResponse response = gatheringService.createGathering(request);
@@ -281,8 +285,8 @@ class GatheringServiceTest {
 		Page<GatheringMember> memberPage = new PageImpl<>(members, pageable, members.size());
 
 		given(gatheringMemberRepository.findActiveGatheringsByUserId(userId, pageable)).willReturn(memberPage);
-		given(gatheringMemberRepository.countActiveMembers(1L)).willReturn(1);
-		given(gatheringMemberRepository.countActiveMembers(2L)).willReturn(1);
+		given(gatheringMemberRepository.countActiveMembersByStatus(1L)).willReturn(1);
+		given(gatheringMemberRepository.countActiveMembersByStatus(2L)).willReturn(1);
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE)).willReturn(3);
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE)).willReturn(5);
 
@@ -318,8 +322,8 @@ class GatheringServiceTest {
 
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
 		verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserId(eq(userId), any(Pageable.class));
-		verify(gatheringMemberRepository, times(1)).countActiveMembers(1L);
-		verify(gatheringMemberRepository, times(1)).countActiveMembers(2L);
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(1L);
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(2L);
 		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE);
 		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE);
 	}
@@ -747,6 +751,8 @@ class GatheringServiceTest {
 		String invitationLink = "https://invite.link/abc123";
 
 		given(gatheringValidator.validateInvitationLink(invitationLink)).willReturn(gathering1);
+		given(gatheringMemberRepository.countActiveMembersByStatus(gathering1.getId())).willReturn(2);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(gathering1.getId(), MeetingStatus.DONE)).willReturn(5);
 
 		// when
 		GatheringCreateResponse response = gatheringService.getJoinGatheringInfo(invitationLink);
@@ -755,11 +761,13 @@ class GatheringServiceTest {
 		assertThat(response).isNotNull();
 		assertThat(response.gatheringName()).isEqualTo("독서 모임");
 		assertThat(response.invitationLink()).isEqualTo("https://invite.link/abc123");
-		assertThat(response.totalMembers()).isEqualTo(1);
-		assertThat(response.totalMeetings()).isEqualTo(1);
+		assertThat(response.totalMembers()).isEqualTo(2);
+		assertThat(response.totalMeetings()).isEqualTo(5);
 		assertThat(response.daysFromCreation()).isEqualTo(gathering1.getDaysFromCreation());
 
 		verify(gatheringValidator, times(1)).validateInvitationLink(invitationLink);
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(gathering1.getId());
+		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(gathering1.getId(), MeetingStatus.DONE);
 	}
 
 	@Test

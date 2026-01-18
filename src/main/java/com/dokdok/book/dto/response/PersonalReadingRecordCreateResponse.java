@@ -8,6 +8,7 @@ import java.util.Map;
 
 @Builder
 public record PersonalReadingRecordCreateResponse(
+        Long recordId,
         RecordType recordType,
         String recordContent,
         Map<String, Object> meta,
@@ -16,6 +17,7 @@ public record PersonalReadingRecordCreateResponse(
 
     public static PersonalReadingRecordCreateResponse from(PersonalReadingRecord personalReadingRecordEntity) {
         return PersonalReadingRecordCreateResponse.builder()
+                .recordId(personalReadingRecordEntity.getId())
                 .recordType(personalReadingRecordEntity.getRecordType())
                 .recordContent(personalReadingRecordEntity.getRecordContent())
                 .meta(personalReadingRecordEntity.getMeta())
@@ -23,5 +25,4 @@ public record PersonalReadingRecordCreateResponse(
                 .build();
     }
 }
-
 
