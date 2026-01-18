@@ -33,8 +33,9 @@ public class MeetingRetrospectiveService {
     private final RetrospectiveRepository retrospectiveRepository;
 
     public MeetingRetrospectiveResponse getMeetingRetrospective(Long meetingId){
-        // Meeting 조회
         Long userId = SecurityUtil.getCurrentUserId();
+
+        // Meeting 조회
         Meeting meeting = meetingRepository.findById(meetingId)
                 .orElseThrow(() -> new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND));
 
