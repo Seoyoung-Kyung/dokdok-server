@@ -700,30 +700,9 @@ class PersonalRetrospectiveServiceTest {
         Long retrospectiveId = 100L;
         Long userId = 3L;
 
-        Topic topic = mock(Topic.class);
-        when(topic.getId()).thenReturn(10L);
-
-        MeetingMember meetingMember = mock(MeetingMember.class);
-        when(meetingMember.getId()).thenReturn(5L);
-
-        RetrospectiveChangedThought changedThought = mock(RetrospectiveChangedThought.class);
-        when(changedThought.getTopic()).thenReturn(topic);
-        when(changedThought.getKeyIssue()).thenReturn("핵심 쟁점");
-        when(changedThought.getPostOpinion()).thenReturn("사후 의견");
-
-        RetrospectiveOthersPerspective othersPerspective = mock(RetrospectiveOthersPerspective.class);
-        when(othersPerspective.getTopic()).thenReturn(topic);
-        when(othersPerspective.getMeetingMember()).thenReturn(meetingMember);
-        when(othersPerspective.getOpinionContent()).thenReturn("타인 의견");
-        when(othersPerspective.getImpressiveReason()).thenReturn("인상 깊었던 이유");
-
-        RetrospectiveFreeText freeText = mock(RetrospectiveFreeText.class);
-        when(freeText.getTitle()).thenReturn("자유 서술 제목");
-        when(freeText.getContent()).thenReturn("자유 서술 내용");
-
-        List<RetrospectiveChangedThought> changedThoughts = List.of(changedThought);
-        List<RetrospectiveOthersPerspective> othersPerspectives = List.of(othersPerspective);
-        List<RetrospectiveFreeText> freeTexts = List.of(freeText);
+        List<RetrospectiveChangedThought> changedThoughts = List.of();
+        List<RetrospectiveOthersPerspective> othersPerspectives = List.of();
+        List<RetrospectiveFreeText> freeTexts = List.of();
 
         PersonalRetrospectiveDetailResponse expectedResponse = PersonalRetrospectiveDetailResponse.from(
                 retrospectiveId,

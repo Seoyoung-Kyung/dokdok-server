@@ -13,5 +13,4 @@ public interface PersonalRetrospectiveRepository extends JpaRepository<PersonalM
 
     boolean existsByMeetingIdAndUserId(Long meetingId, Long userId);
 
-    Optional<PersonalMeetingRetrospective> findById(Long retrospectiveId);
 }
