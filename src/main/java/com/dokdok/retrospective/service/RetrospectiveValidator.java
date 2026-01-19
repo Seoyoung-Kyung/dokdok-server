@@ -29,12 +29,14 @@ public class RetrospectiveValidator {
         }
     }
 
-    public void validateMeetingRetrospectiveAccess(Long gatheringId, Long meetingId, Long userId){
-        gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId,userId)
+    public void validateMeetingRetrospectiveAccess(Long gatheringId, Long meetingId, Long userId) {
+        gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId, userId)
                 .orElseThrow(() -> new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER));
 
         meetingMemberRepository.findByMeetingIdAndUserId(meetingId, userId)
                 .orElseThrow(() -> new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING));
+    }
+
     public void validateRetrospective(Long retrospectiveId){
         boolean exists = personalRetrospectiveRepository.existsById(retrospectiveId);
 
