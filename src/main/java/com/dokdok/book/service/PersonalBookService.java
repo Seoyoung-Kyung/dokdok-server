@@ -48,9 +48,11 @@ public class PersonalBookService {
     }
 
     // List
-    public Page<PersonalBookListResponse> getPersonalBookList(Pageable pageable) {
+    public Page<PersonalBookListResponse> getPersonalBookList(BookReadingStatus bookReadingStatus, Pageable pageable) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
-        Page<PersonalBook> page = personalBookRepository.findByUserId(userEntity.getId(), pageable);
+        Page<PersonalBook> page = (bookReadingStatus == null)
+                ? personalBookRepository.findByUserId(userEntity.getId(), pageable)
+                : personalBookRepository.findAllByUserIdAndReadingStatus(userEntity.getId(),bookReadingStatus, pageable);
 
         if (page.isEmpty()) {
             throw new BookException(BookErrorCode.BOOK_NOT_IN_SHELF);

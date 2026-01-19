@@ -4,6 +4,7 @@ import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.*;
+import com.dokdok.book.entity.BookReadingStatus;
 import com.dokdok.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -170,6 +171,7 @@ public interface BookApi {
     })
     @GetMapping
     ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(
+            @RequestParam(required = false) BookReadingStatus readingStatus,
             @ParameterObject
             @Parameter(
                     description = "페이징 정보 (page: 페이지 번호, size: 페이지 크기, sort: 정렬 기준)",

@@ -5,6 +5,7 @@ import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.*;
+import com.dokdok.book.entity.BookReadingStatus;
 import com.dokdok.book.service.BookService;
 import com.dokdok.book.service.PersonalBookService;
 import com.dokdok.book.service.PersonalReadingRecordService;
@@ -42,8 +43,8 @@ public class BookController implements BookApi {
 
     @Override
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(Pageable pageable) {
-        Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(pageable);
+    public ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(BookReadingStatus readingStatus, Pageable pageable) {
+        Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(readingStatus, pageable);
         return ApiResponse.success(personalBookList, "책 리스트 조회 성공");
     }
 
