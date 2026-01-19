@@ -46,6 +46,15 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("userId") Long userId
     );
 
+    @Modifying
+    @Query("""
+            UPDATE Topic t
+            SET t.deletedAt = CURRENT_TIMESTAMP
+            WHERE t.meeting.id = :meetingId
+            AND t.deletedAt IS NULL
+            """)
+    void softDeleteByMeetingId(@Param("meetingId") Long meetingId);
+
     @Query("SELECT t " +
             "FROM Topic t " +
             "JOIN FETCH t.proposedBy p " +

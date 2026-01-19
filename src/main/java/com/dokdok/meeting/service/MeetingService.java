@@ -22,6 +22,7 @@ import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicType;
+import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
@@ -47,6 +48,7 @@ public class MeetingService {
     private final MeetingRepository meetingRepository;
     private final MeetingMemberRepository meetingMemberRepository;
     private final TopicRepository topicRepository;
+    private final TopicAnswerRepository topicAnswerRepository;
     private final GatheringRepository gatheringRepository;
     private final GatheringMemberRepository gatheringMemberRepository;
     private final GatheringValidator gatheringValidator;
@@ -275,6 +277,45 @@ public class MeetingService {
         topicRepository.softDeleteByMeetingIdAndProposedById(meetingId, userId);
 
         return meetingId;
+    }
+
+    /**
+     * 약속을 삭제한다. 모임장만 삭제 가능
+     * 진행 전 상태의 약속만 삭제 가능
+     * 약속 시작 24시간 이내 삭제 불가
+     * @param meetingId 약속 식별자
+     */
+    @Transactional
+    public void deleteMeeting(Long meetingId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+
+        // 모임장만 약속 삭제 가능
+        gatheringValidator.validateLeader(meeting.getGathering().getId(), userId);
+
+        validateDeletableStatus(meeting);
+        validateDeletableMeetingStartDate(meeting);
+
+        topicAnswerRepository.softDeleteByMeetingId(meetingId);
+        topicRepository.softDeleteByMeetingId(meetingId);
+        meetingRepository.delete(meeting);
+    }
+
+    private void validateDeletableStatus(Meeting meeting) {
+        if (meeting.getMeetingStatus() == MeetingStatus.DONE) {
+            throw new MeetingException(
+                    MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
+                    "종료된 약속은 삭제할 수 없습니다."
+            );
+        }
+    }
+
+    private void validateDeletableMeetingStartDate(Meeting meeting) {
+        LocalDateTime meetingStartDate = meeting.getMeetingStartDate();
+        if (meetingStartDate != null
+                && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24))) {
+            throw new MeetingException(MeetingErrorCode.MEETING_DELETE_NOT_ALLOWED);
+        }
     }
 
     /**
