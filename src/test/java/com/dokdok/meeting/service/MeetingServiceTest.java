@@ -958,6 +958,106 @@ class MeetingServiceTest {
         }
     }
 
+    @DisplayName("모임장 약속 승인 리스트(PENDING)를 조회하면 아이템을 반환한다.")
+    @Test
+    void givenLeaderAndPending_whenGetApprovalMeetingList_thenReturnItems() {
+        // given
+        Long gatheringId = 100L;
+        Long userId = leader.getId();
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 15);
+        Book book = Book.builder().id(1L).bookName("book1").build();
+        Meeting pendingMeeting = Meeting.builder()
+                .id(1L)
+                .meetingName("meeting1")
+                .meetingStatus(MeetingStatus.PENDING)
+                .meetingStartDate(LocalDateTime.now())
+                .meetingEndDate(LocalDateTime.now().plusHours(2))
+                .gathering(gathering)
+                .book(book)
+                .build();
+        Page<Meeting> meetingPage = new PageImpl<>(List.of(pendingMeeting), pageable, 1);
+
+        given(meetingRepository.findByGatheringIdAndMeetingStatus(eq(gatheringId), eq(MeetingStatus.PENDING), any()))
+                .willReturn(meetingPage);
+        given(topicRepository.findTopicTypesByMeetingIds(List.of(1L)))
+                .willReturn(List.of());
+        given(meetingMemberRepository.findActiveMeetingIdsByUserIdAndGatheringId(userId, gatheringId))
+                .willReturn(List.of());
+
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            MeetingListResponse response = meetingService.getApprovalMeetingList(
+                    gatheringId,
+                    MeetingStatus.PENDING,
+                    pageable
+            );
+
+            // then
+            assertThat(response.items()).hasSize(1);
+            assertThat(response.items().get(0).meetingId()).isEqualTo(1L);
+            verify(gatheringValidator).validateLeader(gatheringId, userId);
+        }
+    }
+
+    @DisplayName("모임장이 아니면 약속 승인 리스트 조회가 실패한다.")
+    @Test
+    void givenNotLeader_whenGetApprovalMeetingList_thenThrowGatheringException() {
+        // given
+        Long gatheringId = 100L;
+        Long userId = 77L;
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 15);
+        doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_LEADER))
+                .when(gatheringValidator).validateLeader(gatheringId, userId);
+
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.getApprovalMeetingList(
+                    gatheringId,
+                    MeetingStatus.PENDING,
+                    pageable
+            ))
+                    .isInstanceOf(GatheringException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(GatheringErrorCode.NOT_GATHERING_LEADER);
+        }
+    }
+
+    @DisplayName("승인 리스트는 PENDING 또는 CONFIRMED만 조회할 수 있다.")
+    @Test
+    void givenInvalidStatus_whenGetApprovalMeetingList_thenThrowMeetingException() {
+        // given
+        Long gatheringId = 100L;
+        Long userId = leader.getId();
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 15);
+
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.getApprovalMeetingList(
+                    gatheringId,
+                    MeetingStatus.DONE,
+                    pageable
+            ))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE);
+
+            assertThatThrownBy(() -> meetingService.getApprovalMeetingList(
+                    gatheringId,
+                    MeetingStatus.REJECTED,
+                    pageable
+            ))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE);
+        }
+    }
+
     @DisplayName("약속 탭 카운트를 조회하면 각 탭의 개수를 반환한다.")
     @Test
     void givenGatheringId_whenGetMeetingTabCounts_thenReturnCounts() {
