@@ -65,4 +65,8 @@ public class User extends BaseTimeEntity {
     public void delete() {
         markDeletedNow();
     }
+
+    public void updateProfileImage(String imageUrl) {
+        this.profileImageUrl = imageUrl;
+    }
 }
