@@ -21,6 +21,7 @@ import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.topic.entity.TopicType;
+import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
@@ -61,6 +62,9 @@ class MeetingServiceTest {
 
     @Mock
     private TopicRepository topicRepository;
+
+    @Mock
+    private TopicAnswerRepository topicAnswerRepository;
 
     @Mock
     private GatheringRepository gatheringRepository;
@@ -149,6 +153,89 @@ class MeetingServiceTest {
                     .isInstanceOf(MeetingException.class)
                     .extracting("errorCode")
                     .isEqualTo(MeetingErrorCode.MEETING_NOT_FOUND);
+        }
+    }
+
+    @DisplayName("모임장이 약속을 삭제하면 연관 데이터가 soft delete 되고 약속이 삭제된다.")
+    @Test
+    void givenLeaderAndDeletableMeeting_whenDeleteMeeting_thenSoftDeleteAndRemove() {
+        // given
+        Long userId = leader.getId();
+        meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingStatus(MeetingStatus.CONFIRMED)
+                .meetingStartDate(LocalDateTime.now().plusDays(2))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            meetingService.deleteMeeting(meetingId);
+
+            // then
+            verify(gatheringValidator).validateLeader(gathering.getId(), userId);
+            verify(topicAnswerRepository).softDeleteByMeetingId(meetingId);
+            verify(topicRepository).softDeleteByMeetingId(meetingId);
+            verify(meetingRepository).delete(meeting);
+        }
+    }
+
+    @DisplayName("약속 시작 24시간 이내면 약속 삭제가 불가하다.")
+    @Test
+    void givenMeetingWithin24Hours_whenDeleteMeeting_thenThrowException() {
+        // given
+        Long userId = leader.getId();
+        meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingStatus(MeetingStatus.CONFIRMED)
+                .meetingStartDate(LocalDateTime.now().plusHours(23))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.deleteMeeting(meetingId))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.MEETING_DELETE_NOT_ALLOWED);
+        }
+    }
+
+    @DisplayName("완료된 약속은 삭제할 수 없다.")
+    @Test
+    void givenDoneMeeting_whenDeleteMeeting_thenThrowException() {
+        // given
+        Long userId = leader.getId();
+        meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingStatus(MeetingStatus.DONE)
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.deleteMeeting(meetingId))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE);
         }
     }
 
