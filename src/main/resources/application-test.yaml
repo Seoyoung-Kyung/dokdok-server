@@ -52,3 +52,10 @@ kakao:
   api:
     key: ${KAKAO_API_KEY:dummy}
     base-url: ${KAKAO_API_BASE_URL:https://dapi.kakao.com}
+
+# MinIO Configuration
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:dummy}
+  secret-key: ${MINIO_SECRET_KEY:dummy}
+  bucket: ${MINIO_BUCKET:dokdok-storage}

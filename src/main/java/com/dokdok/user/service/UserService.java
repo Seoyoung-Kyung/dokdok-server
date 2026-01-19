@@ -1,6 +1,7 @@
 package com.dokdok.user.service;
 
 import com.dokdok.global.util.SecurityUtil;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.user.dto.request.OnboardRequest;
 import com.dokdok.user.dto.request.UpdateUserInfoRequest;
 import com.dokdok.user.dto.response.UserDetailResponse;
@@ -8,10 +9,12 @@ import com.dokdok.user.entity.User;
 import com.dokdok.user.exception.UserErrorCode;
 import com.dokdok.user.exception.UserException;
 import com.dokdok.user.repository.UserRepository;
+import io.minio.MinioClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -21,11 +24,14 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final StorageService storageService;
+    private final MinioClient minioClient;
 
     @Transactional
-    public void onboard(OnboardRequest request) {
+    public void onboard(OnboardRequest request, MultipartFile file) {
 
         Long currentUserId = SecurityUtil.getCurrentUserId();
+        User user = getUserById(currentUserId);
 
         if (request.nickname() == null) {
             throw new UserException(UserErrorCode.NICKNAME_EMPTY);
@@ -33,9 +39,12 @@ public class UserService {
 
         String trimmedNickname = request.nickname().trim();
         validateNickname(trimmedNickname);
-
-        User user = getUserById(currentUserId);
         user.updateNickname(trimmedNickname);
+
+        if (file != null && !file.isEmpty()) {
+            String imageUrl = storageService.uploadProfileImage(file);
+            user.updateProfileImage(imageUrl);
+        }
 
         SecurityUtil.updateCurrentUserInContext(user);
     }
@@ -58,11 +67,13 @@ public class UserService {
     public UserDetailResponse getCurrentUserInfo() {
 
         User currentUser = SecurityUtil.getCurrentUserEntity();
-        return UserDetailResponse.from(currentUser);
+        String presignedProfileImage = storageService.getPresignedProfileImage(currentUser.getProfileImageUrl());
+
+        return UserDetailResponse.from(currentUser, presignedProfileImage);
     }
 
     /**
-     * 사용자의 정보응 변경합니다.
+     * 사용자의 정보를 변경합니다.
      */
     public UserDetailResponse updateUserInfo(UpdateUserInfoRequest request) {
 

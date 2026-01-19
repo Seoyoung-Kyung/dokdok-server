@@ -1,6 +1,7 @@
 package com.dokdok.user.service;
 
 import com.dokdok.global.util.SecurityUtil;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.user.dto.request.OnboardRequest;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.exception.UserErrorCode;
@@ -10,11 +11,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import jakarta.servlet.http.HttpSession;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +31,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private StorageService storageService;
 
     @InjectMocks
     private UserService userService;
@@ -284,7 +288,7 @@ class UserServiceTest {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when
-            userService.onboard(request);
+            userService.onboard(request, null);
 
             // then
             assertThat(user.getNickname()).isEqualTo(newNickname);
@@ -315,7 +319,7 @@ class UserServiceTest {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when
-            userService.onboard(request);
+            userService.onboard(request, null);
 
             // then
             assertThat(user.getNickname()).isEqualTo(trimmedNickname);
@@ -332,17 +336,19 @@ class UserServiceTest {
         String duplicateNickname = "기존닉네임";
         OnboardRequest request = new OnboardRequest(duplicateNickname);
 
+        User user = User.builder().id(userId).kakaoId(12345L).build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.findByNickname(duplicateNickname)).thenReturn(Optional.of(mockUser));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when & then
-            assertThatThrownBy(() -> userService.onboard(request))
+            assertThatThrownBy(() -> userService.onboard(request, null))
                     .isInstanceOf(UserException.class)
                     .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_ALREADY_EXISTS);
 
-            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, times(1)).findById(userId);
             securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
         }
     }
@@ -354,15 +360,18 @@ class UserServiceTest {
         Long userId = 1L;
         OnboardRequest request = new OnboardRequest(null);
 
+        User user = User.builder().id(userId).kakaoId(12345L).build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when & then
-            assertThatThrownBy(() -> userService.onboard(request))
+            assertThatThrownBy(() -> userService.onboard(request, null))
                     .isInstanceOf(UserException.class)
                     .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_EMPTY);
 
-            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, times(1)).findById(userId);
             verify(userRepository, never()).findByNickname(anyString());
             securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
         }
@@ -376,15 +385,18 @@ class UserServiceTest {
         String emptyNickname = "";
         OnboardRequest request = new OnboardRequest(emptyNickname);
 
+        User user = User.builder().id(userId).kakaoId(12345L).build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when & then
-            assertThatThrownBy(() -> userService.onboard(request))
+            assertThatThrownBy(() -> userService.onboard(request, null))
                     .isInstanceOf(UserException.class)
                     .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_EMPTY);
 
-            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, times(1)).findById(userId);
             verify(userRepository, never()).findByNickname(anyString());
             securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
         }
@@ -398,15 +410,18 @@ class UserServiceTest {
         String shortNickname = "a";
         OnboardRequest request = new OnboardRequest(shortNickname);
 
+        User user = User.builder().id(userId).kakaoId(12345L).build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when & then
-            assertThatThrownBy(() -> userService.onboard(request))
+            assertThatThrownBy(() -> userService.onboard(request, null))
                     .isInstanceOf(UserException.class)
                     .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_LENGTH_INVALID);
 
-            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, times(1)).findById(userId);
             securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
         }
     }
@@ -419,15 +434,18 @@ class UserServiceTest {
         String longNickname = "a".repeat(21);
         OnboardRequest request = new OnboardRequest(longNickname);
 
+        User user = User.builder().id(userId).kakaoId(12345L).build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when & then
-            assertThatThrownBy(() -> userService.onboard(request))
+            assertThatThrownBy(() -> userService.onboard(request, null))
                     .isInstanceOf(UserException.class)
                     .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_LENGTH_INVALID);
 
-            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, times(1)).findById(userId);
             securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
         }
     }
@@ -440,15 +458,18 @@ class UserServiceTest {
         String invalidNickname = "닉네임!@#";
         OnboardRequest request = new OnboardRequest(invalidNickname);
 
+        User user = User.builder().id(userId).kakaoId(12345L).build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when & then
-            assertThatThrownBy(() -> userService.onboard(request))
+            assertThatThrownBy(() -> userService.onboard(request, null))
                     .isInstanceOf(UserException.class)
                     .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.NICKNAME_FORMAT_INVALID);
 
-            verify(userRepository, never()).findById(anyLong());
+            verify(userRepository, times(1)).findById(userId);
             securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(any()), never());
         }
     }
@@ -462,13 +483,12 @@ class UserServiceTest {
         OnboardRequest request = new OnboardRequest(validNickname);
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
-        when(userRepository.findByNickname(validNickname)).thenReturn(Optional.empty());
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when & then
-            assertThatThrownBy(() -> userService.onboard(request))
+            assertThatThrownBy(() -> userService.onboard(request, null))
                     .isInstanceOf(UserException.class)
                     .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
 
@@ -487,6 +507,9 @@ class UserServiceTest {
                 .userEmail("test@test.com")
                 .profileImageUrl("https://example.com/profile.jpg")
                 .build();
+
+        when(storageService.getPresignedProfileImage("https://example.com/profile.jpg"))
+                .thenReturn("https://example.com/profile.jpg");
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserEntity).thenReturn(user);
@@ -782,6 +805,76 @@ class UserServiceTest {
                     .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
 
             verify(userRepository, times(1)).findById(userId);
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - 프로필 이미지와 함께 성공")
+    void onboard_WithProfileImage_Success() {
+        // given
+        Long userId = 1L;
+        String newNickname = "새로운닉네임";
+        String uploadedImageUrl = "profiles/1/uuid.jpg";
+        OnboardRequest request = new OnboardRequest(newNickname);
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .build();
+
+        MultipartFile mockProfileImage = mock(MultipartFile.class);
+        when(mockProfileImage.isEmpty()).thenReturn(false);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByNickname(newNickname)).thenReturn(Optional.empty());
+        when(storageService.uploadProfileImage(mockProfileImage)).thenReturn(uploadedImageUrl);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            userService.onboard(request, mockProfileImage);
+
+            // then
+            assertThat(user.getNickname()).isEqualTo(newNickname);
+            assertThat(user.getProfileImageUrl()).isEqualTo(uploadedImageUrl);
+            verify(storageService, times(1)).uploadProfileImage(mockProfileImage);
+            verify(userRepository, times(1)).findById(userId);
+            verify(userRepository, times(1)).findByNickname(newNickname);
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(user), times(1));
+        }
+    }
+
+    @Test
+    @DisplayName("온보딩 - 빈 프로필 이미지는 업로드하지 않음")
+    void onboard_WithEmptyProfileImage_SkipsUpload() {
+        // given
+        Long userId = 1L;
+        String newNickname = "새로운닉네임";
+        OnboardRequest request = new OnboardRequest(newNickname);
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .build();
+
+        MultipartFile emptyFile = mock(MultipartFile.class);
+        when(emptyFile.isEmpty()).thenReturn(true);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByNickname(newNickname)).thenReturn(Optional.empty());
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            userService.onboard(request, emptyFile);
+
+            // then
+            assertThat(user.getNickname()).isEqualTo(newNickname);
+            assertThat(user.getProfileImageUrl()).isNull();
+            verify(storageService, never()).uploadProfileImage(any());
+            securityUtilMock.verify(() -> SecurityUtil.updateCurrentUserInContext(user), times(1));
         }
     }
 }

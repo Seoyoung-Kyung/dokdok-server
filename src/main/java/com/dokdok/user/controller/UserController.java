@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
@@ -25,8 +26,10 @@ public class UserController implements UserApi {
 
     @Override
     @PatchMapping("/onboarding")
-    public ResponseEntity<ApiResponse<Void>> onboard(@Valid OnboardRequest request) {
-        userService.onboard(request);
+    public ResponseEntity<ApiResponse<Void>> onboard(
+            OnboardRequest request,
+            MultipartFile profileImage) {
+        userService.onboard(request, profileImage);
         return ApiResponse.success("온보딩 완료");
     }
 

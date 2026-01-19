@@ -20,7 +20,7 @@ jobs:
           host: ${{ secrets.EC2_DEV_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,DB_USERNAME,DB_PASSWORD,SPRING_PROFILE,KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,KAKAO_API_KEY,KAKAO_API_BASE_URL
+          envs: POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,DB_USERNAME,DB_PASSWORD,SPRING_PROFILE,KAKAO_CLIENT_ID,KAKAO_CLIENT_SECRET,KAKAO_API_KEY,KAKAO_API_BASE_URL,MINIO_ACCESS_KEY,MINIO_SECRET_KEY,MINIO_ENDPOINT,MINIO_BUCKET
           script: |
             set -e
             cd ${{ secrets.EC2_APP_DIR }}
@@ -48,6 +48,12 @@ jobs:
             # Kakao book API
             KAKAO_API_KEY=${KAKAO_API_KEY}
             KAKAO_API_BASE_URL=${KAKAO_API_BASE_URL}
+
+            # MinIO Configuration
+            MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+            MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+            MINIO_ENDPOINT=${MINIO_ENDPOINT}
+            MINIO_BUCKET=${MINIO_BUCKET}
             EOF
 
             # 앱 프로필만 빌드/재시작 (모니터링 스택은 건드리지 않음)
@@ -65,3 +71,7 @@ jobs:
           KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
           KAKAO_API_KEY: ${{ secrets.KAKAO_API_KEY }}
           KAKAO_API_BASE_URL: ${{ secrets.KAKAO_API_BASE_URL }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT }}
+          MINIO_BUCKET: ${{ secrets.MINIO_BUCKET }}
