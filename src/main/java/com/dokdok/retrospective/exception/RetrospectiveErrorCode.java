@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum RetrospectiveErrorCode implements BaseErrorCode {
 
-    RETROSPECTIVE_ALREADY_EXISTS("R101", "이미 해당 약속에 대한 회고가 존재합니다.", HttpStatus.CONFLICT);
+    RETROSPECTIVE_ALREADY_EXISTS("R101", "이미 해당 약속에 대한 회고가 존재합니다.", HttpStatus.CONFLICT),
+    RETROSPECTIVE_NOT_FOUND("R102", "개인 회고 내용을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
 
     private final String code;
     private final String message;

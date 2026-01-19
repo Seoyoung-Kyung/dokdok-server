@@ -35,6 +35,12 @@ public class RetrospectiveValidator {
 
         meetingMemberRepository.findByMeetingIdAndUserId(meetingId, userId)
                 .orElseThrow(() -> new MeetingException(MeetingErrorCode.NOT_GATHERING_MEETING));
+    public void validateRetrospective(Long retrospectiveId){
+        boolean exists = personalRetrospectiveRepository.existsById(retrospectiveId);
+
+        if(!exists) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
+        }
     }
 
 }
