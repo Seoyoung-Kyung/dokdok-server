@@ -11,7 +11,6 @@ import java.util.Optional;
 @Repository
 public interface TopicRetrospectiveSummaryRepository extends JpaRepository<TopicRetrospectiveSummary, Long> {
 
-    Optional<TopicRetrospectiveSummary> findByTopicId(Long topicId);
-
     List<TopicRetrospectiveSummary> findAllByTopicIdIn(Collection<Long> topicIds);
+
 }
