@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface MeetingRepository extends JpaRepository<Meeting, Long> {
@@ -49,4 +50,11 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    // Scheduler용: 종료 시간이 지난 CONFIRMED 상태의 Meeting 조회
+    List<Meeting> findByMeetingEndDateBeforeAndMeetingStatus(
+            LocalDateTime endDate,
+            MeetingStatus meetingStatus
+    );
+
 }
