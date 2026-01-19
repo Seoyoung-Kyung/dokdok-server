@@ -371,11 +371,10 @@ class MeetingServiceTest {
 
     @DisplayName("모임장이 약속을 확정하면 약속장이 멤버로 포함된다.")
     @Test
-    void givenMeetingStatus_whenChangeStatus_thenMeetingStatusChange() {
+    void givenMeetingStatus_whenConfirm_thenMeetingStatusChange() {
         // given
         Long meetingId = 1L;
         Long gatheringLeaderId = 10L;
-        MeetingStatus meetingStatus = MeetingStatus.CONFIRMED;
 
         given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
         given(meetingRepository.existsByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.CONFIRMED))
@@ -387,7 +386,7 @@ class MeetingServiceTest {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(gatheringLeaderId);
 
             // when
-            MeetingStatusResponse response = meetingService.changeMeetingStatus(meetingId, meetingStatus);
+            MeetingStatusResponse response = meetingService.confirmMeeting(meetingId);
 
             // then
             verify(gatheringValidator).validateLeader(gathering.getId(), gatheringLeaderId);
@@ -414,7 +413,7 @@ class MeetingServiceTest {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(gatheringLeaderId);
 
             // when + then
-            assertThatThrownBy(() -> meetingService.changeMeetingStatus(meetingId, MeetingStatus.CONFIRMED))
+            assertThatThrownBy(() -> meetingService.confirmMeeting(meetingId))
                     .isInstanceOf(MeetingException.class)
                     .extracting("errorCode")
                     .isEqualTo(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE);
@@ -435,7 +434,7 @@ class MeetingServiceTest {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(notLeaderId);
 
             // when + then
-            assertThatThrownBy(() -> meetingService.changeMeetingStatus(meetingId, MeetingStatus.CONFIRMED))
+            assertThatThrownBy(() -> meetingService.confirmMeeting(meetingId))
                     .isInstanceOf(GatheringException.class)
                     .extracting("errorCode")
                     .isEqualTo(GatheringErrorCode.NOT_GATHERING_LEADER);
@@ -462,16 +461,16 @@ class MeetingServiceTest {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(gatheringLeaderId);
 
             // when + then
-            assertThatThrownBy(() -> meetingService.changeMeetingStatus(meetingId, MeetingStatus.CONFIRMED))
+            assertThatThrownBy(() -> meetingService.confirmMeeting(meetingId))
                     .isInstanceOf(MeetingException.class)
                     .extracting("errorCode")
                     .isEqualTo(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE);
         }
     }
 
-    @DisplayName("확정된 약속은 다시 신청 상태로 되돌릴 수 없다.")
+    @DisplayName("확정된 약속은 거절할 수 없다.")
     @Test
-    void givenConfirmedMeeting_whenRollbackToPending_thenThrowMeetingException() {
+    void givenConfirmedMeeting_whenReject_thenThrowMeetingException() {
         // given
         Long meetingId = 1L;
         Long gatheringLeaderId = 10L;
@@ -488,7 +487,7 @@ class MeetingServiceTest {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(gatheringLeaderId);
 
             // when + then
-            assertThatThrownBy(() -> meetingService.changeMeetingStatus(meetingId, MeetingStatus.PENDING))
+            assertThatThrownBy(() -> meetingService.rejectMeeting(meetingId))
                     .isInstanceOf(MeetingException.class)
                     .extracting("errorCode")
                     .isEqualTo(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE);
