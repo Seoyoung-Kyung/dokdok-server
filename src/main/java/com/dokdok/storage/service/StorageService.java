@@ -25,7 +25,8 @@ public class StorageService {
 	);
 	private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-	private final MinioClient minioClient;
+	private final MinioClient internalMinioClient;
+	private final MinioClient externalMinioClient;
 
 	@Value("${minio.bucket}")
 	private String bucket;
@@ -42,12 +43,12 @@ public class StorageService {
 
 		try {
 			// 버킷이 없을 경우 생성합니다.
-			if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
-				minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+			if (!internalMinioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
+				internalMinioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
 			}
 
 			// 파일 업로드
-			minioClient.putObject(PutObjectArgs.builder()
+			internalMinioClient.putObject(PutObjectArgs.builder()
 					.bucket(bucket)
 					.object(fileName)
 					.stream(file.getInputStream(), file.getSize(), -1)
@@ -64,7 +65,7 @@ public class StorageService {
     public String getPresignedProfileImage(String profileImageUrl) {
 
         try {
-            return minioClient.getPresignedObjectUrl(
+            return externalMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucket)

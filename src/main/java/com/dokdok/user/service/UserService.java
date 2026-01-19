@@ -9,7 +9,6 @@ import com.dokdok.user.entity.User;
 import com.dokdok.user.exception.UserErrorCode;
 import com.dokdok.user.exception.UserException;
 import com.dokdok.user.repository.UserRepository;
-import io.minio.MinioClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final StorageService storageService;
-    private final MinioClient minioClient;
 
     @Transactional
     public void onboard(OnboardRequest request, MultipartFile file) {
