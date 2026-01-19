@@ -1,13 +1,13 @@
 package com.dokdok.book.service;
 
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
+import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.PersonalReadingRecordCreateResponse;
 import com.dokdok.book.entity.PersonalBook;
 import com.dokdok.book.entity.PersonalReadingRecord;
 import com.dokdok.book.entity.RecordType;
 import com.dokdok.book.exception.RecordErrorCode;
 import com.dokdok.book.exception.RecordException;
-import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.repository.PersonalReadingRecordRepository;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.entity.User;
@@ -65,6 +65,22 @@ public class PersonalReadingRecordService {
         );
 
         return PersonalReadingRecordCreateResponse.from(personalReadingRecord);
+    }
+
+    @Transactional
+    public void delete(Long personalBookId, Long recordId) {
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+
+        PersonalReadingRecord personalReadingRecord = personalReadingRecordRepository
+                .findByIdAndPersonalBookIdAndUserId(recordId, personalBookEntity.getId(), userEntity.getId())
+                .orElseThrow(() -> new RecordException(RecordErrorCode.RECORD_NOT_FOUND));
+
+        if (personalReadingRecord.isDeleted()) {
+            throw new RecordException(RecordErrorCode.RECORD_ALREADY_DELETED);
+        }
+
+        personalReadingRecord.delete();
     }
 
     private Map<String, Object> normalizeMeta(RecordType recordType, Map<String, Object> meta) {

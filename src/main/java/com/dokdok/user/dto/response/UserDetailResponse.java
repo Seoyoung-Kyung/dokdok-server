@@ -23,4 +23,14 @@ public record UserDetailResponse(
                 .createdAt(user.getCreatedAt())
                 .build();
     }
+
+    public static UserDetailResponse from(User user, String presignedProfileImage) {
+        return UserDetailResponse.builder()
+                .userId(user.getId())
+                .nickname(user.getNickname())
+                .email(user.getUserEmail())
+                .profileImageUrl(presignedProfileImage)
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
 }

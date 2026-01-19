@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "사용자", description = "사용자 관련 API")
 @RequestMapping("/api/users")
@@ -29,7 +31,12 @@ public interface UserApi {
 
     @Operation(
             summary = "사용자 온보딩",
-            description = "신규 사용자의 닉네임을 설정합니다. 인증된 사용자만 접근 가능하며, 닉네임 유효성 검사 및 중복 확인 후 SecurityContext를 업데이트합니다."
+            description = """
+                    신규 사용자의 닉네임과 프로필 이미지를 설정합니다.
+                    - 인증된 사용자만 접근 가능
+                    - 닉네임 유효성 검사 및 중복 확인 후 SecurityContext 업데이트
+                    - 프로필 이미지는 선택사항 (jpg, jpeg, png만 허용, 최대 5MB)
+                    """
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -63,6 +70,16 @@ public interface UserApi {
                                             name = "닉네임 형식 오류",
                                             description = "특수문자, 공백, 이모지 등이 포함된 경우",
                                             value = "{\"code\":\"U005\",\"message\":\"닉네임은 한글, 영문, 숫자만 사용 가능합니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "파일 형식 오류",
+                                            description = "지원하지 않는 이미지 형식인 경우",
+                                            value = "{\"code\":\"S003\",\"message\":\"지원하지 않는 파일 형식입니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "파일 크기 초과",
+                                            description = "파일 크기가 5MB를 초과한 경우",
+                                            value = "{\"code\":\"S004\",\"message\":\"파일 크기가 제한을 초과했습니다.\"}"
                                     )
                             }
                     )
@@ -99,12 +116,21 @@ public interface UserApi {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
-                    description = "서버 오류"
+                    description = "서버 오류 (파일 업로드 실패 등)",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"S001\",\"message\":\"파일 업로드에 실패했습니다.\"}"
+                            )
+                    )
             )
     })
-    @PatchMapping(value = "/onboarding", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PatchMapping(value = "/onboarding", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<Void>> onboard(
-            @Valid @RequestBody OnboardRequest request
+            @Parameter(description = "온보딩 요청 정보 (JSON)", required = true)
+            @Valid @RequestPart("request") OnboardRequest request,
+            @Parameter(description = "프로필 이미지 (jpg, jpeg, png / 최대 5MB)", schema = @Schema(type = "string", format = "binary"))
+            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
     );
 
     @Operation(

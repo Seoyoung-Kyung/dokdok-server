@@ -9,7 +9,6 @@ import lombok.Builder;
 public record UserInfoResponse(
         Long userId,
         String nickname,
-        String profileImageUrl,
         Boolean needsOnboarding
 ) {
     public static UserInfoResponse from(User user) {
@@ -18,7 +17,6 @@ public record UserInfoResponse(
         return UserInfoResponse.builder()
                 .userId(user.getId())
                 .nickname(user.getNickname())
-                .profileImageUrl(user.getProfileImageUrl())
                 .needsOnboarding(needsOnboarding ? true : null)  // 온보딩 필요한 경우만 포함
                 .build();
     }

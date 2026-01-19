@@ -31,7 +31,9 @@ import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.user.entity.User;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -57,66 +59,13 @@ public class PersonalRetrospectiveService {
         Long userId = SecurityUtil.getCurrentUserId();
 
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
-
         User user = userValidator.findUserOrThrow(userId);
 
         retrospectiveValidator.validateRetrospective(meetingId, userId);
 
-        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.of(meeting, user);
+        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.create(meeting, user);
 
-        // ChangedThoughts 추가
-        if (request.changedThoughts() != null) {
-            for (var thought : request.changedThoughts()) {
-                Topic topic = topicValidator.getTopic(thought.topicId());
-
-                // preOpinion은 TopicAnswer에서 조회
-                TopicAnswer topicAnswer = topicValidator.getPreOpinion(topic.getId(), userId);
-                String preOpinion = topicAnswer != null ? topicAnswer.getContent() : null;
-
-                RetrospectiveChangedThought changedThought = RetrospectiveChangedThought.of(
-                        topic,
-                        retrospective,
-                        thought.keyIssue(),
-                        preOpinion,
-                        thought.postOpinion()
-                );
-
-                retrospective.addChangedThought(changedThought);
-            }
-        }
-
-        // OthersPerspectives 추가
-        if (request.othersPerspectives() != null) {
-            for (var perspective : request.othersPerspectives()) {
-                Optional<Topic> topic = Optional.ofNullable(perspective.topicId())
-                        .flatMap(topicRepository::findById);
-
-                MeetingMember meetingMember = meetingValidator.getMeetingMember(meetingId, perspective.meetingMemberId());
-
-                RetrospectiveOthersPerspective othersPerspective = RetrospectiveOthersPerspective.of(
-                        retrospective,
-                        topic.orElse(null),
-                        meetingMember,
-                        perspective.opinionContent(),
-                        perspective.impressiveReason()
-                );
-
-                retrospective.addOthersPerspective(othersPerspective);
-            }
-        }
-
-        // FreeTexts 추가
-        if (request.freeTexts() != null) {
-            for (var freeText : request.freeTexts()) {
-                RetrospectiveFreeText text = RetrospectiveFreeText.of(
-                        retrospective,
-                        freeText.title(),
-                        freeText.content()
-                );
-
-                retrospective.addFreeText(text);
-            }
-        }
+        setRetrospectiveData(retrospective, request, meetingId, userId);
 
         PersonalMeetingRetrospective saved = personalRetrospectiveRepository.save(retrospective);
 
@@ -154,7 +103,6 @@ public class PersonalRetrospectiveService {
 
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
-
         retrospectiveValidator.validateRetrospective(retrospectiveId);
 
         List<RetrospectiveChangedThought> changedThoughts
@@ -172,5 +120,91 @@ public class PersonalRetrospectiveService {
                 othersPerspectives,
                 freeTexts
         );
+    }
+
+    @Transactional
+    public PersonalRetrospectiveResponse editPersonalRetrospective(
+            Long meetingId,
+            Long retrospectiveId,
+            PersonalRetrospectiveRequest request
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        meetingValidator.validateMeeting(meetingId);
+        meetingValidator.validateMeetingMember(meetingId, userId);
+
+        PersonalMeetingRetrospective retrospective
+                = retrospectiveValidator.getRetrospective(retrospectiveId);
+
+        retrospective.clearChangedThoughts();
+        retrospective.clearOthersPerspectives();
+        retrospective.clearFreeTexts();
+
+        setRetrospectiveData(retrospective, request, meetingId, userId);
+
+        PersonalMeetingRetrospective saved = personalRetrospectiveRepository.save(retrospective);
+
+        return PersonalRetrospectiveResponse.from(saved);
+    }
+
+    private void setRetrospectiveData(
+            PersonalMeetingRetrospective retrospective,
+            PersonalRetrospectiveRequest request,
+            Long meetingId,
+            Long userId
+    ) {
+        // ChangedThoughts 추가
+        if (request.changedThoughts() != null) {
+            for (var thought : request.changedThoughts()) {
+                Topic topic = topicValidator.getTopicInMeeting(thought.topicId(), meetingId);
+
+                // preOpinion은 TopicAnswer에서 조회
+                TopicAnswer topicAnswer = topicAnswerRepository.findPreOpinion(topic.getId(), userId);
+                String preOpinion = topicAnswer != null ? topicAnswer.getContent() : null;
+
+                RetrospectiveChangedThought changedThought = RetrospectiveChangedThought.create(
+                        topic,
+                        retrospective,
+                        thought.keyIssue(),
+                        preOpinion,
+                        thought.postOpinion()
+                );
+
+                retrospective.addChangedThought(changedThought);
+            }
+        }
+
+        // OthersPerspectives 추가
+        if (request.othersPerspectives() != null) {
+            for (var perspective : request.othersPerspectives()) {
+                Optional<Topic> topic = Optional.ofNullable(perspective.topicId())
+                        .flatMap(topicRepository::findById);
+
+                MeetingMember meetingMember = meetingValidator.getMeetingMember(meetingId, perspective.meetingMemberId());
+
+                RetrospectiveOthersPerspective othersPerspective = RetrospectiveOthersPerspective.create(
+                        retrospective,
+                        topic.orElse(null),
+                        meetingMember,
+                        perspective.opinionContent(),
+                        perspective.impressiveReason()
+                );
+
+                retrospective.addOthersPerspective(othersPerspective);
+            }
+        }
+
+        // FreeTexts 추가
+        if (request.freeTexts() != null) {
+            for (var freeText : request.freeTexts()) {
+                RetrospectiveFreeText text = RetrospectiveFreeText.of(
+                        retrospective,
+                        freeText.title(),
+                        freeText.content()
+                );
+
+                retrospective.addFreeText(text);
+            }
+        }
     }
 }

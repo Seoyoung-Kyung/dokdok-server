@@ -14,6 +14,8 @@ import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
 import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
 import com.dokdok.retrospective.entity.MeetingRetrospective;
 import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
+import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
+import com.dokdok.retrospective.exception.RetrospectiveException;
 import com.dokdok.retrospective.repository.RetrospectiveRepository;
 import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.topic.entity.Topic;
@@ -31,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -307,6 +310,89 @@ class MeetingRetrospectiveServiceTest {
 					.hasFieldOrPropertyWithValue("errorCode", GatheringErrorCode.NOT_GATHERING_MEMBER);
 
 			verify(retrospectiveRepository, never()).save(any());
+		}
+	}
+
+	@Test
+	@DisplayName("공동 회고 삭제를 정상적으로 수행한다")
+	void deleteMeetingRetrospective_success() {
+		Long meetingId = 1L;
+		Long retrospectiveId = 10L;
+		Long userId = 1L;
+
+		Gathering gathering = Gathering.builder().id(1L).build();
+		Meeting meeting = Meeting.builder().id(meetingId).gathering(gathering).build();
+		User user = User.builder().id(userId).build();
+		MeetingRetrospective retrospective = MeetingRetrospective.builder()
+				.id(retrospectiveId)
+				.meeting(meeting)
+				.createdBy(user)
+				.build();
+
+		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+			securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+			when(retrospectiveRepository.findByIdAndMeetingId(retrospectiveId, meetingId))
+					.thenReturn(Optional.of(retrospective));
+			doNothing().when(retrospectiveValidator)
+					.validateMeetingRetrospectiveDeletePermission(retrospective, userId);
+
+			meetingRetrospectiveService.deleteMeetingRetrospective(meetingId, retrospectiveId);
+
+			verify(retrospectiveRepository).delete(retrospective);
+		}
+	}
+
+	@Test
+	@DisplayName("공동 회고가 없으면 삭제 시 예외가 발생한다")
+	void deleteMeetingRetrospective_throwsWhenNotFound() {
+		Long meetingId = 1L;
+		Long retrospectiveId = 10L;
+		Long userId = 1L;
+
+		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+			securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+			when(retrospectiveRepository.findByIdAndMeetingId(retrospectiveId, meetingId))
+					.thenReturn(Optional.empty());
+
+			assertThatThrownBy(() -> meetingRetrospectiveService.deleteMeetingRetrospective(meetingId, retrospectiveId))
+					.isInstanceOf(RetrospectiveException.class)
+					.hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.MEETING_RETROSPECTIVE_NOT_FOUND);
+
+			verify(retrospectiveRepository, never()).delete(any());
+		}
+	}
+
+	@Test
+	@DisplayName("공동 회고 삭제 권한이 없으면 예외가 발생한다")
+	void deleteMeetingRetrospective_throwsWhenForbidden() {
+		Long meetingId = 1L;
+		Long retrospectiveId = 10L;
+		Long userId = 2L;
+
+		Gathering gathering = Gathering.builder().id(1L).build();
+		Meeting meeting = Meeting.builder().id(meetingId).gathering(gathering).build();
+		User user = User.builder().id(1L).build();
+		MeetingRetrospective retrospective = MeetingRetrospective.builder()
+				.id(retrospectiveId)
+				.meeting(meeting)
+				.createdBy(user)
+				.build();
+
+		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+			securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+			when(retrospectiveRepository.findByIdAndMeetingId(retrospectiveId, meetingId))
+					.thenReturn(Optional.of(retrospective));
+			doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_LEADER))
+					.when(retrospectiveValidator).validateMeetingRetrospectiveDeletePermission(retrospective, userId);
+
+			assertThatThrownBy(() -> meetingRetrospectiveService.deleteMeetingRetrospective(meetingId, retrospectiveId))
+					.isInstanceOf(GatheringException.class)
+					.hasFieldOrPropertyWithValue("errorCode", GatheringErrorCode.NOT_GATHERING_LEADER);
+
+			verify(retrospectiveRepository, never()).delete(any());
 		}
 	}
 }

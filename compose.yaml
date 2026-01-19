@@ -17,6 +17,11 @@ services:
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
       KAKAO_API_KEY: ${KAKAO_API_KEY}
       KAKAO_API_BASE_URL: ${KAKAO_API_BASE_URL}
+      MINIO_INTERNAL_ENDPOINT: ${MINIO_INTERNAL_ENDPOINT:-http://minio:9000}
+      MINIO_EXTERNAL_ENDPOINT: ${MINIO_EXTERNAL_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-dokdok-storage}
 
     ports:
       - '8080:8080'
@@ -45,9 +50,28 @@ services:
     networks:
       - dokdok-network
 
+  minio:
+    profiles: ["app", "local"]
+    image: minio/minio:latest
+    container_name: dokdok-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_SERVER_URL: ${MINIO_SERVER_URL:-http://localhost:9000}
+      TZ: Asia/Seoul
+    command: server /data --console-address ":9001"
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    networks:
+      - dokdok-network
+
 volumes:
   app_logs:
   postgres_data:
+  minio_data:
 
 networks:
   dokdok-network:
