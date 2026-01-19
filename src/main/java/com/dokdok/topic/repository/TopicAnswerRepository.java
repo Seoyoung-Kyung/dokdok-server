@@ -2,7 +2,9 @@ package com.dokdok.topic.repository;
 
 import com.dokdok.topic.entity.TopicAnswer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import javax.swing.*;
 import java.util.List;
@@ -29,4 +31,17 @@ public interface TopicAnswerRepository extends JpaRepository<TopicAnswer, Long> 
                     AND ta.user.id = :userId
             """)
     List<TopicAnswer> findByMeetingIdUserId(Long meetingId, Long userId);
+
+    @Modifying
+    @Query("""
+            UPDATE TopicAnswer ta
+            SET ta.deletedAt = CURRENT_TIMESTAMP
+            WHERE ta.topic.id IN (
+                SELECT t.id
+                FROM Topic t
+                WHERE t.meeting.id = :meetingId
+            )
+            AND ta.deletedAt IS NULL
+            """)
+    void softDeleteByMeetingId(@Param("meetingId") Long meetingId);
 }

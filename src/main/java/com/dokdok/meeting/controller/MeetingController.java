@@ -87,6 +87,15 @@ public class MeetingController implements MeetingApi {
     }
 
     @Override
+    @DeleteMapping(value = "/{meetingId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<Void>> deleteMeeting(
+            @PathVariable Long meetingId
+    ) {
+        meetingService.deleteMeeting(meetingId);
+        return ApiResponse.deleted("약속 삭제에 성공했습니다.");
+    }
+
+    @Override
     @GetMapping(value = "/tab-counts", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<MeetingTabCountsResponse>> getMeetingTabCounts(
             @RequestParam Long gatheringId

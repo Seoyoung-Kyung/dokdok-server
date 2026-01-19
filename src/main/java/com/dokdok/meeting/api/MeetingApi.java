@@ -190,6 +190,32 @@ public interface MeetingApi {
     );
 
     @Operation(
+            summary = "약속 삭제",
+            description = """
+            약속을 삭제합니다.
+            - 권한: 모임장
+            - 제약: 종료된 약속은 삭제 불가
+            - 제약: 약속 시작 24시간 이내 삭제 불가
+            - 약속 삭제 시 연관된 데이터도 삭제 처리
+            """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "약속 삭제 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임장 아님"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    ResponseEntity<ApiResponse<Void>> deleteMeeting(
+            @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
+            Long meetingId
+    );
+
+    @Operation(
             summary = "약속 탭 카운트 조회",
             description = """
             모임의 약속 탭별 카운트를 조회합니다.

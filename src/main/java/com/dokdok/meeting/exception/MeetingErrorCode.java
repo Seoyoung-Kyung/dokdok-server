@@ -23,6 +23,7 @@ public enum MeetingErrorCode implements BaseErrorCode {
     MEETING_ALREADY_JOINED("M010", "이미 참가한 약속입니다.", HttpStatus.BAD_REQUEST),
     MEETING_ALREADY_CANCELED("M011", "이미 취소된 약속입니다.", HttpStatus.BAD_REQUEST),
     MEETING_CANCEL_NOT_ALLOWED("M012", "약속 시작 24시간 이내에는 취소할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    MEETING_DELETE_NOT_ALLOWED("M015", "약속 시작 24시간 이내에는 삭제할 수 없습니다.", HttpStatus.BAD_REQUEST),
 
     INVALID_MAX_PARTICIPANTS("M013", "최대 참가 인원은 1명 이상이어야 하며, 모임 전체 인원을 초과할 수 없습니다.", HttpStatus.BAD_REQUEST),
     MAX_PARTICIPANTS_LESS_THAN_CURRENT("M014", "현재 참가 확정된 인원 수보다 적게 수정할 수 없습니다.", HttpStatus.BAD_REQUEST);
