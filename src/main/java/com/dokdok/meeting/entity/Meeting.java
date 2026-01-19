@@ -15,6 +15,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Entity
 @Table(name = "meeting")
@@ -128,4 +129,10 @@ public class Meeting extends BaseTimeEntity {
             this.maxParticipants = request.maxParticipants();
         }
     }
+
+    public String getFormattedTime() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        return meetingStartDate.format(formatter) + "-" + meetingEndDate.format(formatter);
+    }
+
 }
