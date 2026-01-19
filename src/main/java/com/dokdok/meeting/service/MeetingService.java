@@ -112,26 +112,42 @@ public class MeetingService {
     }
 
     /**
-     * 약속 상태를 변경한다. 모임장만 상태 변경 가능
+     * 약속을 확정한다. 모임장만 확정 가능
      * @param meetingId 약속 식별자
-     * @param meetingStatus 약속 상태
      * @return 약속 상태 응답 정보
      */
     @Transactional
-    public MeetingStatusResponse changeMeetingStatus(Long meetingId, MeetingStatus meetingStatus) {
+    public MeetingStatusResponse confirmMeeting(Long meetingId) {
 
         Long userId = SecurityUtil.getCurrentUserId();
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
 
-        // 모임장만 상태 변경 가능
+        // 모임장만 확정 가능
         gatheringValidator.validateLeader(meeting.getGathering().getId(), userId);
 
-        if (meetingStatus == MeetingStatus.CONFIRMED) {
-            validateConfirmable(meeting);
-            ensureLeaderMember(meeting);
-        }
+        validateConfirmable(meeting);
+        ensureLeaderMember(meeting);
 
-        meeting.changeStatus(meetingStatus);
+        meeting.changeStatus(MeetingStatus.CONFIRMED);
+
+        return MeetingStatusResponse.from(meeting);
+    }
+
+    /**
+     * 약속을 거절한다. 모임장만 거절 가능
+     * @param meetingId 약속 식별자
+     * @return 약속 상태 응답 정보
+     */
+    @Transactional
+    public MeetingStatusResponse rejectMeeting(Long meetingId) {
+
+        Long userId = SecurityUtil.getCurrentUserId();
+        Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+
+        // 모임장만 거절 가능
+        gatheringValidator.validateLeader(meeting.getGathering().getId(), userId);
+
+        meeting.changeStatus(MeetingStatus.REJECTED);
 
         return MeetingStatusResponse.from(meeting);
     }

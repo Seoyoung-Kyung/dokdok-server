@@ -8,21 +8,12 @@ import com.dokdok.meeting.dto.MeetingStatusResponse;
 import com.dokdok.meeting.dto.MeetingTabCountsResponse;
 import com.dokdok.meeting.dto.MeetingUpdateRequest;
 import com.dokdok.meeting.dto.MeetingUpdateResponse;
-import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.service.MeetingService;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,13 +39,21 @@ public class MeetingController implements MeetingApi {
     }
 
     @Override
-    @PatchMapping(value = "/{meetingId}/status", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<MeetingStatusResponse>> changeMeetingStatus(
-            @PathVariable Long meetingId,
-            @RequestParam MeetingStatus meetingStatus
+    @PostMapping(value = "/{meetingId}/confirm", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<MeetingStatusResponse>> confirmMeeting(
+            @PathVariable Long meetingId
     ) {
-        MeetingStatusResponse response = meetingService.changeMeetingStatus(meetingId, meetingStatus);
-        return ApiResponse.updated(response, "약속 상태 변경에 성공했습니다.");
+        MeetingStatusResponse response = meetingService.confirmMeeting(meetingId);
+        return ApiResponse.updated(response, "약속 확정에 성공했습니다.");
+    }
+
+    @Override
+    @PostMapping(value = "/{meetingId}/reject", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<MeetingStatusResponse>> rejectMeeting(
+            @PathVariable Long meetingId
+    ) {
+        MeetingStatusResponse response = meetingService.rejectMeeting(meetingId);
+        return ApiResponse.updated(response, "약속 거절에 성공했습니다.");
     }
 
     @Override
