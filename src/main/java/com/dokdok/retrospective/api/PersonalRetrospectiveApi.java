@@ -2,6 +2,7 @@ package com.dokdok.retrospective.api;
 
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.retrospective.dto.request.PersonalRetrospectiveRequest;
+import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,5 +70,30 @@ public interface PersonalRetrospectiveApi {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<PersonalRetrospectiveFormResponse>> getPersonalRetrospectiveForm(
             @PathVariable Long meetingId
+    );
+
+    @Operation(
+            summary = "개인 회고 조회",
+            description = "기존에 작성한 개인 회고를 수정하기 위한 데이터를 조회합니다.",
+            parameters = {
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "개인 회고 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PersonalRetrospectiveResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속 멤버가 아님"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속 또는 개인 회고를 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @GetMapping(value = "/{retrospectiveId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<PersonalRetrospectiveDetailResponse>> getPersonalRetrospectiveEditForm(
+            @PathVariable Long meetingId,
+            @PathVariable Long retrospectiveId
     );
 }
