@@ -2,14 +2,14 @@ package com.dokdok.retrospective.controller;
 
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.retrospective.api.MeetingRetrospectiveApi;
+import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
 import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
+import com.dokdok.retrospective.entity.MeetingRetrospective;
 import com.dokdok.retrospective.service.MeetingRetrospectiveService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,5 +24,15 @@ public class MeetingRetrospectiveController implements MeetingRetrospectiveApi {
         MeetingRetrospectiveResponse response = meetingRetrospectiveService.getMeetingRetrospective(meetingId);
 
         return ApiResponse.success(response,"공동 회고 조회 성공");
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<MeetingRetrospectiveResponse.CommentResponse>> createMeetingRetrospective(
+            @PathVariable Long meetingId,
+            @Valid @RequestBody MeetingRetrospectiveRequest request
+            ) {
+        MeetingRetrospectiveResponse.CommentResponse response = meetingRetrospectiveService.createMeetingRetrospective(meetingId, request);
+
+        return ApiResponse.created(response, "공동 회고 작성 완료");
     }
 }

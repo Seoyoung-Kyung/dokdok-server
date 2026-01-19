@@ -11,5 +11,4 @@ public interface RetrospectiveRepository extends JpaRepository<MeetingRetrospect
 
     List<MeetingRetrospective> findAllByMeetingId(Long meetingId);
 
-    List<MeetingRetrospective> findAllByTopicId(Long topicId);
 }

@@ -41,4 +41,13 @@ public class MeetingRetrospective extends BaseTimeEntity {
 
     @Column(name = "comment", columnDefinition = "TEXT")
     private String comment;
+
+    public static MeetingRetrospective of(Meeting meeting, User user, Topic topic, String comment){
+        return MeetingRetrospective.builder()
+                .meeting(meeting)
+                .createdBy(user)
+                .topic(topic)
+                .comment(comment).
+                build();
+    }
 }

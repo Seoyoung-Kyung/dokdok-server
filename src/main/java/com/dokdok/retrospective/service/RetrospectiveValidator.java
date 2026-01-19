@@ -1,13 +1,6 @@
 package com.dokdok.retrospective.service;
 
-import com.dokdok.gathering.exception.GatheringErrorCode;
-import com.dokdok.gathering.exception.GatheringException;
-import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.service.GatheringValidator;
-import com.dokdok.meeting.exception.MeetingErrorCode;
-import com.dokdok.meeting.exception.MeetingException;
-import com.dokdok.meeting.repository.MeetingMemberRepository;
-import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
 import com.dokdok.retrospective.exception.RetrospectiveException;
