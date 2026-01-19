@@ -9,7 +9,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.util.Optional;
@@ -19,7 +18,6 @@ import java.util.Optional;
 @Getter
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE retrospective_others_perspective SET deleted_at = NOW() WHERE others_perspective_id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class RetrospectiveOthersPerspective extends BaseTimeEntity {
 
