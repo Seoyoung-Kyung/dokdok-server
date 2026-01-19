@@ -469,6 +469,34 @@ public class MeetingService {
     }
 
     /**
+     * 모임장 약속 승인 리스트를 조회한다.
+     * 확정 대기(PENDING)와 확정 완료(CONFIRMED)만 조회 가능
+     */
+    public MeetingListResponse getApprovalMeetingList(
+            Long gatheringId,
+            MeetingStatus status,
+            Pageable pageable
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        gatheringValidator.validateLeader(gatheringId, userId);
+
+        if (status != MeetingStatus.PENDING && status != MeetingStatus.CONFIRMED) {
+            throw new MeetingException(
+                    MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
+                    "승인 리스트는 PENDING 또는 CONFIRMED만 조회할 수 있습니다."
+            );
+        }
+
+        Page<Meeting> meetingPage = meetingRepository.findByGatheringIdAndMeetingStatus(
+                gatheringId,
+                status,
+                pageable
+        );
+
+        return buildMeetingListResponse(meetingPage, userId, gatheringId);
+    }
+
+    /**
      * 모임의 약속 중 확정된 리스트를 전부 반환한다.
      */
     private MeetingListResponse getAllMeetings(

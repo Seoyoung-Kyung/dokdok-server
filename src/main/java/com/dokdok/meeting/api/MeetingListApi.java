@@ -3,6 +3,7 @@ package com.dokdok.meeting.api;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.meeting.dto.MeetingListFilter;
 import com.dokdok.meeting.dto.MeetingListResponse;
+import com.dokdok.meeting.entity.MeetingStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -53,5 +54,38 @@ public interface MeetingListApi {
             @RequestParam MeetingListFilter filter,
             @ParameterObject
             @PageableDefault(size = 4) Pageable pageable
+    );
+
+    @Operation(
+            summary = "모임장 약속 승인 리스트 조회",
+            description = """
+            모임장이 약속 승인 상태별 리스트를 조회합니다.
+            - 확정 대기: PENDING
+            - 확정 완료: CONFIRMED
+            - 거절(REJECTED)은 노출되지 않음
+            """,
+            parameters = {
+                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "status", description = "상태 (PENDING, CONFIRMED)",
+                            in = ParameterIn.QUERY, required = true)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "약속 승인 리스트 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = MeetingListResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임장 아님"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    ResponseEntity<ApiResponse<MeetingListResponse>> getApprovalMeetingList(
+            @PathVariable Long gatheringId,
+            @RequestParam MeetingStatus status,
+            @ParameterObject
+            @PageableDefault(size = 15) Pageable pageable
     );
 }
