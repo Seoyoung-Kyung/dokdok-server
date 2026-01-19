@@ -8,6 +8,8 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.math.BigDecimal;
 
 @Entity
@@ -36,25 +38,33 @@ public class BookReview extends BaseTimeEntity {
     @Column(name = "rating", precision = 2, scale = 1)
     private BigDecimal rating;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "keyword_id", nullable = false)
-    private Keyword keyword;
+    @OneToMany(mappedBy = "bookReview", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<BookReviewKeyword> keywords = new ArrayList<>();
 
-    public static BookReview create(Book book, User user, BigDecimal rating, Keyword keyword) {
-        return BookReview.builder()
+    public static BookReview create(Book book, User user, BigDecimal rating, List<Keyword> keywords) {
+        BookReview review = BookReview.builder()
                 .book(book)
                 .user(user)
                 .rating(rating)
-                .keyword(keyword)
                 .build();
+        review.replaceKeywords(keywords);
+        return review;
     }
 
-    public void updateReview(BigDecimal rating, Keyword keyword) {
+    public void updateReview(BigDecimal rating, List<Keyword> keywords) {
         this.rating = rating;
-        this.keyword = keyword;
+        replaceKeywords(keywords);
     }
 
     public void deleteReview() {
         this.markDeletedNow();
+    }
+
+    private void replaceKeywords(List<Keyword> keywords) {
+        this.keywords = new ArrayList<>();
+        for (Keyword keyword : keywords) {
+            this.keywords.add(BookReviewKeyword.create(this, keyword));
+        }
     }
 }
