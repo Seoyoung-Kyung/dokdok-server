@@ -1,5 +1,7 @@
 package com.dokdok.book.entity;
 
+import com.dokdok.book.exception.RecordErrorCode;
+import com.dokdok.book.exception.RecordException;
 import com.dokdok.global.BaseTimeEntity;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
@@ -66,5 +68,13 @@ public class PersonalReadingRecord extends BaseTimeEntity {
         this.recordType = recordType;
         this.recordContent = recordContent;
         this.meta = meta;
+    }
+
+    public void delete() {
+        if (isDeleted()) {
+            throw new RecordException(RecordErrorCode.RECORD_ALREADY_DELETED);
+        }
+
+        markDeletedNow();
     }
 }
