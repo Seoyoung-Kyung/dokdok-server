@@ -54,4 +54,16 @@ public class PersonalRetrospectiveController implements PersonalRetrospectiveApi
 
         return ApiResponse.success(response, "개인 회고 조회를 성공했습니다.");
     }
+
+    @PutMapping("/{retrospectiveId}")
+    public ResponseEntity<ApiResponse<PersonalRetrospectiveResponse>> editPersonalRetrospective(
+            @PathVariable Long meetingId,
+            @PathVariable Long retrospectiveId,
+            @Valid @RequestBody PersonalRetrospectiveRequest request
+    ) {
+        PersonalRetrospectiveResponse response =
+                personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request);
+
+        return ApiResponse.success(response, "개인 회고 수정을 성공했습니다.");
+    }
 }

@@ -2,6 +2,8 @@ package com.dokdok.retrospective.service;
 
 import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.meeting.service.MeetingValidator;
+import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
+import com.dokdok.retrospective.entity.PersonalMeetingRetrospective;
 import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
 import com.dokdok.retrospective.exception.RetrospectiveException;
 import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
@@ -36,6 +38,13 @@ public class RetrospectiveValidator {
         if(!exists) {
             throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
         }
+    }
+
+    public PersonalMeetingRetrospective getRetrospective(Long retrospectiveId){
+
+        return personalRetrospectiveRepository.findById(retrospectiveId)
+                .orElseThrow(() -> new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
+
     }
 
 }
