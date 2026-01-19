@@ -4,6 +4,7 @@ import com.dokdok.book.dto.request.BookReviewRequest;
 import com.dokdok.book.dto.response.BookReviewResponse;
 import com.dokdok.book.entity.Book;
 import com.dokdok.book.entity.BookReview;
+import com.dokdok.book.entity.BookReviewKeyword;
 import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookReviewRepository;
@@ -22,6 +23,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,15 +54,19 @@ class BookReviewServiceTest {
     void createReview_success() {
         Book book = Book.builder().id(1L).build();
         Keyword keyword = Keyword.builder().id(2L).build();
+        Keyword keywordSecond = Keyword.builder().id(4L).build();
         User user = User.builder().id(3L).build();
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), 2L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), List.of(2L, 4L));
 
         BookReview saved = BookReview.builder()
                 .id(10L)
                 .book(book)
                 .user(user)
                 .rating(new BigDecimal("4.5"))
-                .keyword(keyword)
+                .keywords(List.of(
+                        BookReviewKeyword.builder().keyword(keyword).build(),
+                        BookReviewKeyword.builder().keyword(keywordSecond).build()
+                ))
                 .build();
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
@@ -70,6 +76,7 @@ class BookReviewServiceTest {
             doNothing().when(bookValidator).validateReviewNotExists(1L, 3L);
             when(bookValidator.validateAndGetBook(1L)).thenReturn(book);
             when(keywordValidator.validateAndGetSelectableKeyword(2L)).thenReturn(keyword);
+            when(keywordValidator.validateAndGetSelectableKeyword(4L)).thenReturn(keywordSecond);
             when(bookReviewRepository.save(any(BookReview.class))).thenReturn(saved);
 
             BookReviewResponse response = bookReviewService.createReview(1L, request);
@@ -78,11 +85,12 @@ class BookReviewServiceTest {
             assertThat(response.bookId()).isEqualTo(1L);
             assertThat(response.userId()).isEqualTo(3L);
             assertThat(response.rating()).isEqualTo(new BigDecimal("4.5"));
-            assertThat(response.keywordId()).isEqualTo(2L);
+            assertThat(response.keywordIds()).containsExactly(2L, 4L);
 
             verify(bookValidator).validateReviewNotExists(1L, 3L);
             verify(bookValidator).validateAndGetBook(1L);
             verify(keywordValidator).validateAndGetSelectableKeyword(2L);
+            verify(keywordValidator).validateAndGetSelectableKeyword(4L);
             verify(bookReviewRepository).save(any(BookReview.class));
         }
     }
@@ -90,7 +98,7 @@ class BookReviewServiceTest {
     @Test
     @DisplayName("책이 없으면 예외가 발생한다")
     void createReview_throwsWhenBookMissing() {
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), 2L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), List.of(2L));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
@@ -110,7 +118,7 @@ class BookReviewServiceTest {
     @Test
     @DisplayName("선택 불가 키워드를 요청하면 예외가 발생한다")
     void createReview_throwsWhenKeywordNotSelectable() {
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), 2L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), List.of(2L));
         Book book = Book.builder().id(1L).build();
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
@@ -131,7 +139,7 @@ class BookReviewServiceTest {
     @Test
     @DisplayName("인증 정보가 없으면 예외가 발생한다")
     void createReview_throwsWhenUnauthenticated() {
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), 2L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), List.of(2L));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId)
@@ -148,7 +156,7 @@ class BookReviewServiceTest {
     @Test
     @DisplayName("별점이 유효하지 않으면 생성 시 예외가 발생한다")
     void createReview_throwsWhenInvalidRating() {
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.7"), 2L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.7"), List.of(2L));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
@@ -172,7 +180,7 @@ class BookReviewServiceTest {
         Book book = Book.builder().id(1L).build();
         Keyword keyword = Keyword.builder().id(2L).build();
         User user = User.builder().id(3L).build();
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), 2L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), List.of(2L));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
@@ -196,13 +204,17 @@ class BookReviewServiceTest {
     void getMyReview_success() {
         Book book = Book.builder().id(1L).build();
         Keyword keyword = Keyword.builder().id(2L).build();
+        Keyword keywordSecond = Keyword.builder().id(4L).build();
         User user = User.builder().id(3L).build();
         BookReview review = BookReview.builder()
                 .id(10L)
                 .book(book)
                 .user(user)
                 .rating(new BigDecimal("4.5"))
-                .keyword(keyword)
+                .keywords(List.of(
+                        BookReviewKeyword.builder().keyword(keyword).build(),
+                        BookReviewKeyword.builder().keyword(keywordSecond).build()
+                ))
                 .build();
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
@@ -217,7 +229,7 @@ class BookReviewServiceTest {
             assertThat(response.bookId()).isEqualTo(1L);
             assertThat(response.userId()).isEqualTo(3L);
             assertThat(response.rating()).isEqualTo(new BigDecimal("4.5"));
-            assertThat(response.keywordId()).isEqualTo(2L);
+            assertThat(response.keywordIds()).containsExactly(2L, 4L);
         }
     }
 
@@ -242,26 +254,31 @@ class BookReviewServiceTest {
         Book book = Book.builder().id(1L).build();
         Keyword keyword = Keyword.builder().id(2L).build();
         Keyword newKeyword = Keyword.builder().id(5L).build();
+        Keyword newKeywordSecond = Keyword.builder().id(8L).build();
         User user = User.builder().id(3L).build();
         BookReview review = BookReview.builder()
                 .id(10L)
                 .book(book)
                 .user(user)
                 .rating(new BigDecimal("4.5"))
-                .keyword(keyword)
+                .keywords(List.of(
+                        BookReviewKeyword.builder().keyword(keyword).build()
+                ))
                 .build();
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), 5L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), List.of(5L, 8L));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
 
             when(bookValidator.validateAndGetReviewForUpdate(1L, 3L)).thenReturn(review);
             when(keywordValidator.validateAndGetSelectableKeyword(5L)).thenReturn(newKeyword);
+            when(keywordValidator.validateAndGetSelectableKeyword(8L)).thenReturn(newKeywordSecond);
 
             BookReviewResponse response = bookReviewService.updateMyReview(1L, request);
 
             assertThat(review.getRating()).isEqualTo(new BigDecimal("3.5"));
-            assertThat(review.getKeyword().getId()).isEqualTo(5L);
+            assertThat(review.getKeywords()).hasSize(2);
+            assertThat(response.keywordIds()).containsExactly(5L, 8L);
             assertThat(response.reviewId()).isEqualTo(10L);
         }
     }
@@ -269,7 +286,7 @@ class BookReviewServiceTest {
     @Test
     @DisplayName("내 책 리뷰가 없으면 수정 시 예외가 발생한다")
     void updateMyReview_throwsWhenReviewMissing() {
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), 5L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), List.of(5L));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
@@ -294,9 +311,11 @@ class BookReviewServiceTest {
                 .book(book)
                 .user(user)
                 .rating(new BigDecimal("4.5"))
-                .keyword(keyword)
+                .keywords(List.of(
+                        BookReviewKeyword.builder().keyword(keyword).build()
+                ))
                 .build();
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), 5L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), List.of(5L));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
@@ -314,7 +333,7 @@ class BookReviewServiceTest {
     @Test
     @DisplayName("삭제된 리뷰면 수정 시 예외가 발생한다")
     void updateMyReview_throwsWhenReviewDeleted() {
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), 5L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), List.of(5L));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
@@ -331,7 +350,7 @@ class BookReviewServiceTest {
     @Test
     @DisplayName("별점이 유효하지 않으면 수정 시 예외가 발생한다")
     void updateMyReview_throwsWhenInvalidRating() {
-        BookReviewRequest request = new BookReviewRequest(new BigDecimal("0.3"), 2L);
+        BookReviewRequest request = new BookReviewRequest(new BigDecimal("0.3"), List.of(2L));
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
@@ -359,7 +378,9 @@ class BookReviewServiceTest {
                 .book(book)
                 .user(user)
                 .rating(new BigDecimal("4.5"))
-                .keyword(keyword)
+                .keywords(List.of(
+                        BookReviewKeyword.builder().keyword(keyword).build()
+                ))
                 .build();
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
