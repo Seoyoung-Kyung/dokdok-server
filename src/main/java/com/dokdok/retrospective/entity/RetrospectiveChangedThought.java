@@ -41,7 +41,7 @@ public class RetrospectiveChangedThought extends BaseTimeEntity {
     @Column(name = "post_opinion", columnDefinition = "TEXT")
     private String postOpinion;
 
-    public static RetrospectiveChangedThought of(
+    public static RetrospectiveChangedThought create(
             Topic topic,
             PersonalMeetingRetrospective personalMeetingRetrospective,
             String keyIssue,

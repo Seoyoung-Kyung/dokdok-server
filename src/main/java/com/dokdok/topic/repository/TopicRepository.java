@@ -134,4 +134,7 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     List<Topic> findTopicsInfoByMeetingId(
             @Param("meetingId") Long meetingId
     );
+
+    List<Topic> findByIdIn(List<Long> topicIds);
+
 }

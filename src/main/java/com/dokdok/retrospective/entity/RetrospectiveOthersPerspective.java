@@ -46,7 +46,7 @@ public class RetrospectiveOthersPerspective extends BaseTimeEntity {
     @Column(name = "impressive_reason", columnDefinition = "TEXT")
     private String impressiveReason;
 
-    public static RetrospectiveOthersPerspective of(
+    public static RetrospectiveOthersPerspective create(
             PersonalMeetingRetrospective personalMeetingRetrospective,
             @Nullable Topic topic,
             MeetingMember meetingMember,

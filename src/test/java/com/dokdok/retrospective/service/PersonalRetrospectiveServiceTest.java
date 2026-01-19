@@ -144,7 +144,7 @@ class PersonalRetrospectiveServiceTest {
             when(userValidator.findUserOrThrow(userId)).thenReturn(user);
             doNothing().when(retrospectiveValidator).validateRetrospective(meetingId, userId);
             when(topicValidator.getTopic(topicId)).thenReturn(topic);
-            when(topicValidator.getPreOpinion(topicId, userId)).thenReturn(topicAnswer);
+            when(topicAnswerRepository.findPreOpinion(topicId, userId)).thenReturn(topicAnswer);
             when(topicRepository.findById(topicId)).thenReturn(Optional.of(topic));
             when(meetingValidator.getMeetingMember(meetingId, meetingMemberId)).thenReturn(meetingMember);
             when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
@@ -161,7 +161,7 @@ class PersonalRetrospectiveServiceTest {
             verify(userValidator).findUserOrThrow(userId);
             verify(retrospectiveValidator).validateRetrospective(meetingId, userId);
             verify(topicValidator).getTopic(topicId);
-            verify(topicValidator).getPreOpinion(topicId, userId);
+            verify(topicAnswerRepository).findPreOpinion(topicId, userId);
             verify(topicRepository).findById(topicId);
             verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId);
             verify(personalRetrospectiveRepository).save(any(PersonalMeetingRetrospective.class));
@@ -205,7 +205,7 @@ class PersonalRetrospectiveServiceTest {
             assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(1L);
 
             verify(topicValidator, never()).getTopic(any());
-            verify(topicValidator, never()).getPreOpinion(any(), any());
+            verify(topicAnswerRepository, never()).findPreOpinion(any(), any());
         }
     }
 
@@ -245,7 +245,7 @@ class PersonalRetrospectiveServiceTest {
             when(userValidator.findUserOrThrow(userId)).thenReturn(user);
             doNothing().when(retrospectiveValidator).validateRetrospective(meetingId, userId);
             when(topicValidator.getTopic(topicId)).thenReturn(topic);
-            when(topicValidator.getPreOpinion(topicId, userId)).thenReturn(null);
+            when(topicAnswerRepository.findPreOpinion(topicId, userId)).thenReturn(null);
             when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
 
             // when
@@ -440,7 +440,7 @@ class PersonalRetrospectiveServiceTest {
             doNothing().when(retrospectiveValidator).validateRetrospective(meetingId, userId);
             when(topicValidator.getTopic(10L)).thenReturn(topic1);
             when(topicValidator.getTopic(20L)).thenReturn(topic2);
-            when(topicValidator.getPreOpinion(anyLong(), eq(userId))).thenReturn(null);
+            when(topicAnswerRepository.findPreOpinion(anyLong(), eq(userId))).thenReturn(null);
             when(topicRepository.findById(10L)).thenReturn(Optional.of(topic1));
             when(topicRepository.findById(20L)).thenReturn(Optional.of(topic2));
             when(meetingValidator.getMeetingMember(meetingId, meetingMemberId1)).thenReturn(meetingMember1);
@@ -454,7 +454,7 @@ class PersonalRetrospectiveServiceTest {
             assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(1L);
 
             verify(topicValidator, times(2)).getTopic(anyLong());
-            verify(topicValidator, times(2)).getPreOpinion(anyLong(), eq(userId));
+            verify(topicAnswerRepository, times(2)).findPreOpinion(anyLong(), eq(userId));
             verify(topicRepository, times(2)).findById(anyLong());
             verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId1);
             verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId2);
@@ -884,6 +884,370 @@ class PersonalRetrospectiveServiceTest {
                     .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
 
             verify(meetingValidator, never()).validateMeeting(any());
+        }
+    }
+
+    // ==================== editPersonalRetrospective 테스트 ====================
+
+    @Test
+    @DisplayName("개인 회고를 정상적으로 수정한다")
+    void editPersonalRetrospective_success() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+        Long topicId = 10L;
+        Long meetingMemberId = 5L;
+
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+        Topic topic = Topic.builder().id(topicId).title("토픽 제목").build();
+        MeetingMember meetingMember = MeetingMember.builder().id(meetingMemberId).build();
+        TopicAnswer topicAnswer = TopicAnswer.builder()
+                .id(200L)
+                .topic(topic)
+                .user(user)
+                .content("모임 전 의견")
+                .build();
+
+        PersonalMeetingRetrospective existingRetrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
+        PersonalRetrospectiveRequest.ChangedThoughtRequest changedThoughtRequest =
+                new PersonalRetrospectiveRequest.ChangedThoughtRequest(
+                        topicId, "수정된 핵심 쟁점", "수정된 모임 후 의견"
+                );
+
+        PersonalRetrospectiveRequest.OthersPerspectiveRequest othersPerspectiveRequest =
+                new PersonalRetrospectiveRequest.OthersPerspectiveRequest(
+                        topicId, meetingMemberId, "수정된 타인의 의견", "수정된 인상 깊었던 이유"
+                );
+
+        PersonalRetrospectiveRequest.FreeTextRequest freeTextRequest =
+                new PersonalRetrospectiveRequest.FreeTextRequest(
+                        "수정된 자유 서술 제목", "수정된 자유 서술 내용"
+                );
+
+        PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(
+                List.of(changedThoughtRequest),
+                List.of(othersPerspectiveRequest),
+                List.of(freeTextRequest)
+        );
+
+        PersonalMeetingRetrospective saved = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(topicValidator.getTopic(topicId)).thenReturn(topic);
+            when(topicAnswerRepository.findPreOpinion(topicId, userId)).thenReturn(topicAnswer);
+            when(topicRepository.findById(topicId)).thenReturn(Optional.of(topic));
+            when(meetingValidator.getMeetingMember(meetingId, meetingMemberId)).thenReturn(meetingMember);
+            when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
+
+            // when
+            PersonalRetrospectiveResponse response =
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request);
+
+            // then
+            assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(retrospectiveId);
+            assertThat(response.meetingId()).isEqualTo(meetingId);
+            assertThat(response.userId()).isEqualTo(userId);
+
+            verify(meetingValidator).validateMeeting(meetingId);
+            verify(meetingValidator).validateMeetingMember(meetingId, userId);
+            verify(retrospectiveValidator).getRetrospective(retrospectiveId);
+            verify(topicValidator).getTopic(topicId);
+            verify(topicAnswerRepository).findPreOpinion(topicId, userId);
+            verify(topicRepository).findById(topicId);
+            verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId);
+            verify(personalRetrospectiveRepository).save(any(PersonalMeetingRetrospective.class));
+        }
+    }
+
+    @Test
+    @DisplayName("빈 데이터로 개인 회고를 수정한다")
+    void editPersonalRetrospective_withEmptyData_success() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+
+        PersonalMeetingRetrospective existingRetrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
+        PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(
+                null,
+                null,
+                null
+        );
+
+        PersonalMeetingRetrospective saved = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
+
+            // when
+            PersonalRetrospectiveResponse response =
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request);
+
+            // then
+            assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(retrospectiveId);
+
+            verify(topicValidator, never()).getTopic(any());
+            verify(topicAnswerRepository, never()).findPreOpinion(any(), any());
+        }
+    }
+
+    @Test
+    @DisplayName("여러 개의 changedThoughts, othersPerspectives, freeTexts를 포함하여 수정한다")
+    void editPersonalRetrospective_withMultipleItems_success() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+        Long meetingMemberId1 = 5L;
+        Long meetingMemberId2 = 6L;
+
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+        Topic topic1 = Topic.builder().id(10L).title("토픽1").build();
+        Topic topic2 = Topic.builder().id(20L).title("토픽2").build();
+        MeetingMember meetingMember1 = MeetingMember.builder().id(meetingMemberId1).build();
+        MeetingMember meetingMember2 = MeetingMember.builder().id(meetingMemberId2).build();
+
+        PersonalMeetingRetrospective existingRetrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
+        List<PersonalRetrospectiveRequest.ChangedThoughtRequest> changedThoughts = List.of(
+                new PersonalRetrospectiveRequest.ChangedThoughtRequest(10L, "쟁점1", "의견1"),
+                new PersonalRetrospectiveRequest.ChangedThoughtRequest(20L, "쟁점2", "의견2")
+        );
+
+        List<PersonalRetrospectiveRequest.OthersPerspectiveRequest> othersPerspectives = List.of(
+                new PersonalRetrospectiveRequest.OthersPerspectiveRequest(10L, meetingMemberId1, "의견1", "이유1"),
+                new PersonalRetrospectiveRequest.OthersPerspectiveRequest(20L, meetingMemberId2, "의견2", "이유2")
+        );
+
+        List<PersonalRetrospectiveRequest.FreeTextRequest> freeTexts = List.of(
+                new PersonalRetrospectiveRequest.FreeTextRequest("제목1", "내용1"),
+                new PersonalRetrospectiveRequest.FreeTextRequest("제목2", "내용2")
+        );
+
+        PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(
+                changedThoughts, othersPerspectives, freeTexts
+        );
+
+        PersonalMeetingRetrospective saved = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(topicValidator.getTopic(10L)).thenReturn(topic1);
+            when(topicValidator.getTopic(20L)).thenReturn(topic2);
+            when(topicAnswerRepository.findPreOpinion(anyLong(), eq(userId))).thenReturn(null);
+            when(topicRepository.findById(10L)).thenReturn(Optional.of(topic1));
+            when(topicRepository.findById(20L)).thenReturn(Optional.of(topic2));
+            when(meetingValidator.getMeetingMember(meetingId, meetingMemberId1)).thenReturn(meetingMember1);
+            when(meetingValidator.getMeetingMember(meetingId, meetingMemberId2)).thenReturn(meetingMember2);
+            when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
+
+            // when
+            PersonalRetrospectiveResponse response =
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request);
+
+            // then
+            assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(retrospectiveId);
+
+            verify(topicValidator, times(2)).getTopic(anyLong());
+            verify(topicAnswerRepository, times(2)).findPreOpinion(anyLong(), eq(userId));
+            verify(topicRepository, times(2)).findById(anyLong());
+            verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId1);
+            verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId2);
+            verify(personalRetrospectiveRepository).save(any(PersonalMeetingRetrospective.class));
+        }
+    }
+
+    @Test
+    @DisplayName("약속이 존재하지 않으면 예외가 발생한다 - 수정")
+    void editPersonalRetrospective_throwsWhenMeetingNotFound() {
+        // given
+        Long meetingId = 999L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+        PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(null, null, null);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doThrow(new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND))
+                    .when(meetingValidator).validateMeeting(meetingId);
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    .isInstanceOf(MeetingException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.MEETING_NOT_FOUND);
+
+            verify(personalRetrospectiveRepository, never()).save(any());
+        }
+    }
+
+    @Test
+    @DisplayName("약속 멤버가 아니면 예외가 발생한다 - 수정")
+    void editPersonalRetrospective_throwsWhenNotMeetingMember() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 999L;
+        PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(null, null, null);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doThrow(new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER))
+                    .when(meetingValidator).validateMeetingMember(meetingId, userId);
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    .isInstanceOf(MeetingException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.NOT_MEETING_MEMBER);
+
+            verify(personalRetrospectiveRepository, never()).save(any());
+        }
+    }
+
+    @Test
+    @DisplayName("개인 회고가 존재하지 않으면 예외가 발생한다 - 수정")
+    void editPersonalRetrospective_throwsWhenRetrospectiveNotFound() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 999L;
+        Long userId = 3L;
+        PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(null, null, null);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId))
+                    .thenThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    .isInstanceOf(RetrospectiveException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
+
+            verify(personalRetrospectiveRepository, never()).save(any());
+        }
+    }
+
+    @Test
+    @DisplayName("인증 정보가 없으면 예외가 발생한다 - 수정")
+    void editPersonalRetrospective_throwsWhenUnauthenticated() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(null, null, null);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    .isInstanceOf(GlobalException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
+
+            verify(meetingValidator, never()).validateMeeting(any());
+        }
+    }
+
+    @Test
+    @DisplayName("주제가 없으면 예외가 발생한다 - 수정")
+    void editPersonalRetrospective_throwsWhenTopicNotFound() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+        Long topicId = 999L;
+
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+
+        PersonalMeetingRetrospective existingRetrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
+        PersonalRetrospectiveRequest.ChangedThoughtRequest changedThoughtRequest =
+                new PersonalRetrospectiveRequest.ChangedThoughtRequest(
+                        topicId, "핵심 쟁점", "모임 후 의견"
+                );
+
+        PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(
+                List.of(changedThoughtRequest),
+                null,
+                null
+        );
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(topicValidator.getTopic(topicId))
+                    .thenThrow(new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    .isInstanceOf(TopicException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_NOT_FOUND);
+
+            verify(personalRetrospectiveRepository, never()).save(any());
         }
     }
 }
