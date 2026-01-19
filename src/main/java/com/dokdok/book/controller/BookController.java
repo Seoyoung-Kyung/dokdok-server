@@ -72,4 +72,11 @@ public class BookController implements BookApi {
         PersonalReadingRecordCreateResponse response = personalReadingRecordService.update(personalBookId, recordId, request);
         return ApiResponse.success(response, "기록 수정 성공");
     }
+
+    @Override
+    @DeleteMapping("/{personalBookId}/records/{recordId}")
+    public ResponseEntity<ApiResponse<Void>> deleteMyReadingRecord(@PathVariable Long personalBookId, @PathVariable Long recordId) {
+        personalReadingRecordService.delete(personalBookId, recordId);
+        return ApiResponse.deleted("기록 삭제 성공");
+    }
 }

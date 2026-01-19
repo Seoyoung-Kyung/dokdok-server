@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum RecordErrorCode implements BaseErrorCode {
     INVALID_RECORD_REQUEST("R001", "기록 타입에 필요한 입력값이 누락되었습니다.", HttpStatus.BAD_REQUEST),
     INVALID_RECORD_TYPE("R002", "존재하지 않는 타입입니다.", HttpStatus.BAD_REQUEST),
-    RECORD_NOT_FOUND("R003", "기록을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+    RECORD_NOT_FOUND("R003", "기록을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    RECORD_ALREADY_DELETED("R004", "이미 삭제된 기록입니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;
