@@ -4,7 +4,6 @@ import com.dokdok.global.response.ApiResponse;
 import com.dokdok.retrospective.api.MeetingRetrospectiveApi;
 import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
 import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
-import com.dokdok.retrospective.entity.MeetingRetrospective;
 import com.dokdok.retrospective.service.MeetingRetrospectiveService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +25,7 @@ public class MeetingRetrospectiveController implements MeetingRetrospectiveApi {
         return ApiResponse.success(response,"공동 회고 조회 성공");
     }
 
+    @Override
     @PostMapping
     public ResponseEntity<ApiResponse<MeetingRetrospectiveResponse.CommentResponse>> createMeetingRetrospective(
             @PathVariable Long meetingId,
@@ -34,5 +34,16 @@ public class MeetingRetrospectiveController implements MeetingRetrospectiveApi {
         MeetingRetrospectiveResponse.CommentResponse response = meetingRetrospectiveService.createMeetingRetrospective(meetingId, request);
 
         return ApiResponse.created(response, "공동 회고 작성 완료");
+    }
+
+    @Override
+    @DeleteMapping("/{meetingRetrospectiveId}")
+    public ResponseEntity<ApiResponse<Void>> deleteMeetingRetrospective(
+            @PathVariable Long meetingId,
+            @PathVariable Long meetingRetrospectiveId
+    ) {
+        meetingRetrospectiveService.deleteMeetingRetrospective(meetingId, meetingRetrospectiveId);
+
+        return ApiResponse.deleted("공동 회고 코멘트 삭제 완료");
     }
 }
