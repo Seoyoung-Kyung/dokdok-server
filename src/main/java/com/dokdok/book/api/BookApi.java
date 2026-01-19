@@ -428,4 +428,88 @@ public interface BookApi {
             @Parameter(description = "삭제할 기록 ID", required = true, example = "5")
             @PathVariable Long recordId
     );
+
+
+    @Operation(
+            summary = "독서 기록 목록 조회",
+            description = """
+                    내 책장에 있는 책의 독서 기록을 조회합니다.
+                    - 경로의 personalBookId로 책을 지정합니다.
+                    - 로그인한 사용자 기준으로 본인 책의 기록만 조회됩니다.
+                    - page/size/sort 파라미터로 페이징과 정렬을 제어할 수 있습니다. (기본 정렬: createdAt DESC)
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "독서 기록 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "SUCCESS",
+                                              "message": "기록 조회 성공",
+                                              "data": {
+                                                "content": [
+                                                  {
+                                                    "recordId": 5,
+                                                    "recordType": "QUOTE",
+                                                    "recordContent": "오늘 기억하고 싶은 문장을 기록합니다.",
+                                                    "meta": {
+                                                      "page": 23,
+                                                      "excerpt": "이 문장이 좋았다."
+                                                    },
+                                                    "personalBookId": 10
+                                                  }
+                                                ],
+                                                "pageable": {
+                                                  "pageNumber": 0,
+                                                  "pageSize": 10,
+                                                  "offset": 0,
+                                                  "paged": true,
+                                                  "unpaged": false,
+                                                  "sort": {
+                                                    "empty": false,
+                                                    "sorted": true,
+                                                    "unsorted": false
+                                                  }
+                                                },
+                                                "last": true,
+                                                "totalPages": 1,
+                                                "totalElements": 1,
+                                                "size": 10,
+                                                "number": 0,
+                                                "sort": {
+                                                  "empty": false,
+                                                  "sorted": true,
+                                                  "unsorted": false
+                                                },
+                                                "first": true,
+                                                "numberOfElements": 1,
+                                                "empty": false
+                                              }
+                                            }
+                                            """
+                            ))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @GetMapping("/{personalBookId}/records")
+    ResponseEntity<ApiResponse<Page<PersonalReadingRecordListResponse>>> getMyReadingRecords(
+            @Parameter(description = "책장 ID", required = true, example = "10")
+            @PathVariable Long personalBookId,
+            @ParameterObject
+            @Parameter(
+                    description = "페이징 정보 (page: 페이지 번호, size: 페이지 크기, sort: 정렬 기준)",
+                    example = "page=0&size=10&sort=createdAt,desc"
+            )
+            @PageableDefault(
+                    size = 10,
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable
+    );
 }
