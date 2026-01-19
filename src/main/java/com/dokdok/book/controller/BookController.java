@@ -13,6 +13,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -71,5 +73,12 @@ public class BookController implements BookApi {
     public ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> updateMyReadingRecord(@PathVariable Long personalBookId, @PathVariable Long recordId, @RequestBody PersonalReadingRecordUpdateRequest request) {
         PersonalReadingRecordCreateResponse response = personalReadingRecordService.update(personalBookId, recordId, request);
         return ApiResponse.success(response, "기록 수정 성공");
+    }
+
+    @Override
+    @DeleteMapping("/{personalBookId}/records/{recordId}")
+    public ResponseEntity<ApiResponse<Void>> deleteMyReadingRecord(@PathVariable Long personalBookId, @PathVariable Long recordId) {
+        personalReadingRecordService.delete(personalBookId, recordId);
+        return ApiResponse.deleted("기록 삭제 성공");
     }
 }

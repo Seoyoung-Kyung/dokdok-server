@@ -392,4 +392,40 @@ public interface BookApi {
             )
             @RequestBody PersonalReadingRecordUpdateRequest request
     );
+
+    @Operation(
+            summary = "독서 기록 삭제",
+            description = """
+                    내 책장에 있는 책의 독서 기록을 삭제합니다.
+                    - 경로의 personalBookId와 recordId로 대상을 지정합니다.
+                    - Soft Delete로 처리되어 이후 조회에서 노출되지 않습니다.
+                    - 로그인한 사용자 기준으로 본인 기록만 삭제할 수 있습니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "독서 기록 삭제 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "DELETED",
+                                              "message": "기록 삭제 성공"
+                                            }
+                                            """
+                            ))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 또는 기록을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @DeleteMapping("/{personalBookId}/records/{recordId}")
+    ResponseEntity<ApiResponse<Void>> deleteMyReadingRecord(
+            @Parameter(description = "삭제할 개인 책 ID", required = true, example = "10")
+            @PathVariable Long personalBookId,
+            @Parameter(description = "삭제할 기록 ID", required = true, example = "5")
+            @PathVariable Long recordId
+    );
 }
