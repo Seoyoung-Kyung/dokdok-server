@@ -156,7 +156,7 @@ public class PersonalRetrospectiveService {
         // ChangedThoughts 추가
         if (request.changedThoughts() != null) {
             for (var thought : request.changedThoughts()) {
-                Topic topic = topicValidator.getTopic(thought.topicId());
+                Topic topic = topicValidator.getTopicInMeeting(thought.topicId(), meetingId);
 
                 // preOpinion은 TopicAnswer에서 조회
                 TopicAnswer topicAnswer = topicAnswerRepository.findPreOpinion(topic.getId(), userId);
