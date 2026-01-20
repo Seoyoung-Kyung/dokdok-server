@@ -64,6 +64,10 @@ public class StorageService {
 
     public String getPresignedProfileImage(String profileImageUrl) {
 
+        if (profileImageUrl == null || profileImageUrl.isBlank()) {
+            return null;
+        }
+
         try {
             return externalMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
