@@ -369,6 +369,7 @@ class GatheringServiceTest {
 		given(gatheringValidator.validateAndGetGathering(gatheringId)).willReturn(gathering1);
 		given(gatheringValidator.validateAndGetMember(gatheringId, userId)).willReturn(normalMember);
 		given(gatheringMemberRepository.findAllMembersByGatheringId(gatheringId)).willReturn(allMembers);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE)).willReturn(3);
 
 		// when
 		GatheringDetailResponse response = gatheringService.getGatheringDetail(gatheringId);
@@ -382,6 +383,7 @@ class GatheringServiceTest {
 		assertThat(response.invitationLink()).isEqualTo("https://invite.link/abc123");
 		assertThat(response.currentUserRole()).isEqualTo(MEMBER);
 		assertThat(response.totalMembers()).isEqualTo(2);
+		assertThat(response.totalMeetings()).isEqualTo(3);
 		assertThat(response.members()).hasSize(2);
 
 		GatheringDetailResponse.MemberInfo leaderInfo = response.members().stream()

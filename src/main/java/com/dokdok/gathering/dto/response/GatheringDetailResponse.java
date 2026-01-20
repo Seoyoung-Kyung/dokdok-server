@@ -18,11 +18,13 @@ public record GatheringDetailResponse(
         Integer daysFromCreation,
         GatheringRole currentUserRole,
         List<MemberInfo> members,
-        Integer totalMembers
+        Integer totalMembers,
+        Integer totalMeetings
 ) {
     public static GatheringDetailResponse from(
             GatheringMember currentMember,
-            List<GatheringMember> allMember
+            List<GatheringMember> allMember,
+            int totalMeetings
     ){
         List<MemberInfo> memberInfoList = allMember.stream()
                 .map(MemberInfo::from)
@@ -40,6 +42,7 @@ public record GatheringDetailResponse(
                 .currentUserRole(currentMember.getRole())
                 .members(memberInfoList)
                 .totalMembers(allMember.size())
+                .totalMeetings(totalMeetings)
                 .build();
     }
 
