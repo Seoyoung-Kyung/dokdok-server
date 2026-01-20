@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class BookReviewService {
@@ -28,15 +31,15 @@ public class BookReviewService {
 
         Book book = bookValidator.validateAndGetBook(bookId);
 
-        Keyword keyword = keywordValidator.validateAndGetSelectableKeyword(
-                request.keywordId()
-        );
+        List<Keyword> keywords = request.keywordIds().stream()
+                .map(keywordValidator::validateAndGetSelectableKeyword)
+                .collect(Collectors.toList());
 
         bookValidator.validateReviewNotExists(bookId, userId);
 
         User user = SecurityUtil.getCurrentUserEntity();
 
-        BookReview review = BookReview.create(book, user, request.rating(), keyword);
+        BookReview review = BookReview.create(book, user, request.rating(), keywords);
 
         return BookReviewResponse.from(bookReviewRepository.save(review));
     }
@@ -57,11 +60,11 @@ public class BookReviewService {
 
         BookReview review = bookValidator.validateAndGetReviewForUpdate(bookId, userId);
 
-        Keyword keyword = keywordValidator.validateAndGetSelectableKeyword(
-                request.keywordId()
-        );
+        List<Keyword> keywords = request.keywordIds().stream()
+                .map(keywordValidator::validateAndGetSelectableKeyword)
+                .collect(Collectors.toList());
 
-        review.updateReview(request.rating(), keyword);
+        review.updateReview(request.rating(), keywords);
 
         return BookReviewResponse.from(review);
     }
