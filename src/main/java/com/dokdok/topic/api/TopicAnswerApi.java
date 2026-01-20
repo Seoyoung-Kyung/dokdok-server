@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -129,6 +130,30 @@ public interface TopicAnswerApi {
     })
     @PatchMapping(value = "/submit", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<TopicAnswerSubmitResponse>> submitMyAnswer(
+            @PathVariable("gathering_id") Long gatheringId,
+            @PathVariable("meeting_id") Long meetingId,
+            @PathVariable("topic_id") Long topicId
+    );
+
+    @Operation(
+            summary = "내 토픽 답변 삭제",
+            description = "현재 로그인 사용자의 토픽 답변을 삭제합니다.",
+            parameters = {
+                    @Parameter(name = "gathering_id", description = "모임 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "meeting_id", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "topic_id", description = "토픽 식별자", in = ParameterIn.PATH, required = true)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "내 토픽 답변 삭제 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "답변을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @DeleteMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<Void>> deleteMyAnswer(
             @PathVariable("gathering_id") Long gatheringId,
             @PathVariable("meeting_id") Long meetingId,
             @PathVariable("topic_id") Long topicId

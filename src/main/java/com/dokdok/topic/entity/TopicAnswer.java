@@ -1,6 +1,8 @@
 package com.dokdok.topic.entity;
 
 import com.dokdok.global.BaseTimeEntity;
+import com.dokdok.topic.exception.TopicErrorCode;
+import com.dokdok.topic.exception.TopicException;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -57,5 +59,13 @@ public class TopicAnswer extends BaseTimeEntity {
 
     public void submit() {
         this.isSubmitted = true;
+    }
+
+    public void softDelete() {
+        if (isDeleted()) {
+            throw new TopicException(TopicErrorCode.TOPIC_ANSWER_ALREADY_DELETED);
+        }
+
+        markDeletedNow();
     }
 }

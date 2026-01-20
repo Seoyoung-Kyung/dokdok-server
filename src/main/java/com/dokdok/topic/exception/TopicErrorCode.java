@@ -15,7 +15,8 @@ public enum TopicErrorCode implements BaseErrorCode {
     TOPIC_ANSWER_ALREADY_SUBMITTED("E104", "이미 제출된 답변입니다.", HttpStatus.CONFLICT),
     TOPIC_USER_CANNOT_DELETE("E105", "사용자에게 주제 삭제 권한이 없습니다.", HttpStatus.NOT_FOUND),
     TOPIC_ALREADY_DELETED("E106", "이미 삭제된 주제입니다.", HttpStatus.CONFLICT),
-    TOPIC_ANSWER_ALREADY_EXISTS("E107", "이미 답변이 존재합니다.", HttpStatus.CONFLICT);
+    TOPIC_ANSWER_ALREADY_DELETED("E107", "이미 삭제된 답변입니다.", HttpStatus.CONFLICT),
+    TOPIC_ANSWER_ALREADY_EXISTS("E108", "이미 답변이 존재합니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;
