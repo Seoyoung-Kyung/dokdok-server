@@ -1,13 +1,14 @@
 package com.dokdok.book.dto.request;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record BookReviewRequest(
         BigDecimal rating,
 
-        @NotNull(message = "keywordId는 필수입니다")
-        Long keywordId
+        @NotEmpty(message = "keywordIds는 필수입니다")
+        List<Long> keywordIds
 ) {
 }

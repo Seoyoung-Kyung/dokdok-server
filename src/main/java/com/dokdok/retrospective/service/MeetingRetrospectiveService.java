@@ -2,14 +2,13 @@ package com.dokdok.retrospective.service;
 
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
-import com.dokdok.meeting.exception.MeetingErrorCode;
-import com.dokdok.meeting.exception.MeetingException;
-import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
 import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
 import com.dokdok.retrospective.entity.MeetingRetrospective;
 import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
+import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
+import com.dokdok.retrospective.exception.RetrospectiveException;
 import com.dokdok.retrospective.repository.RetrospectiveRepository;
 import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.topic.entity.Topic;
@@ -17,7 +16,6 @@ import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.entity.User;
-import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -113,5 +111,18 @@ public class MeetingRetrospectiveService {
         MeetingRetrospective saved = retrospectiveRepository.save(retrospective);
 
         return MeetingRetrospectiveResponse.CommentResponse.from(saved);
+    }
+
+    @Transactional
+    public void deleteMeetingRetrospective(Long meetingId, Long meetingRetrospectiveId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        MeetingRetrospective retrospective = retrospectiveRepository
+                .findByIdAndMeetingId(meetingRetrospectiveId, meetingId)
+                .orElseThrow(() -> new RetrospectiveException(RetrospectiveErrorCode.MEETING_RETROSPECTIVE_NOT_FOUND));
+
+        retrospectiveValidator.validateMeetingRetrospectiveDeletePermission(retrospective, userId);
+
+        retrospectiveRepository.delete(retrospective);
     }
 }

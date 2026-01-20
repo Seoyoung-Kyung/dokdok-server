@@ -49,7 +49,7 @@ public class PersonalMeetingRetrospective extends BaseTimeEntity {
     @Builder.Default
     private List<RetrospectiveChangedThought> changedThoughts = new ArrayList<>();
 
-    public static PersonalMeetingRetrospective of(Meeting meeting, User user) {
+    public static PersonalMeetingRetrospective create(Meeting meeting, User user) {
         return PersonalMeetingRetrospective.builder()
                 .meeting(meeting)
                 .user(user)
@@ -70,5 +70,17 @@ public class PersonalMeetingRetrospective extends BaseTimeEntity {
     public void addChangedThought(RetrospectiveChangedThought changedThought) {
         this.changedThoughts.add(changedThought);
         changedThought.setPersonalMeetingRetrospective(this);
+    }
+
+    public void clearChangedThoughts() {
+        this.changedThoughts.clear();
+    }
+
+    public void clearOthersPerspectives() {
+        this.othersPerspectives.clear();
+    }
+
+    public void clearFreeTexts() {
+        this.freeTexts.clear();
     }
 }

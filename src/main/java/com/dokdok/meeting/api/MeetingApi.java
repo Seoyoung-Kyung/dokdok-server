@@ -7,7 +7,6 @@ import com.dokdok.meeting.dto.MeetingStatusResponse;
 import com.dokdok.meeting.dto.MeetingTabCountsResponse;
 import com.dokdok.meeting.dto.MeetingUpdateRequest;
 import com.dokdok.meeting.dto.MeetingUpdateResponse;
-import com.dokdok.meeting.entity.MeetingStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -73,10 +72,10 @@ public interface MeetingApi {
     );
 
     @Operation(
-            summary = "약속 생성 확정",
+            summary = "약속 확정",
             description = """
-            신청된 약속 중 하나를 확정합니다.
-            - 상태: PENDING(신청), CONFIRMED(모임장 확정), DONE(종료)
+            신청된 약속을 확정합니다.
+            - 상태: PENDING(신청), CONFIRMED(모임장 확정), REJECTED(거절), DONE(종료)
             - 확정 시 신청자가 약속장으로 변경된다.
             - 약속장은 자동으로 약속에 포함된다 (MeetingMember).
             - 확정된 약속은 되돌릴 수 없다.
@@ -85,15 +84,13 @@ public interface MeetingApi {
             - 신청된 약속이 없으면 모임장이 약속을 바로 생성/확정 가능
             """,
             parameters = {
-                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "meetingStatus", description = "변경할 약속 상태 (PENDING, CONFIRMED, DONE)",
-                            in = ParameterIn.QUERY, required = true)
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "약속 상태 변경 성공",
+                    description = "약속 확정 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingStatusResponse.class))
             ),
@@ -101,9 +98,34 @@ public interface MeetingApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    ResponseEntity<ApiResponse<MeetingStatusResponse>> changeMeetingStatus(
-            Long meetingId,
-            MeetingStatus meetingStatus
+    ResponseEntity<ApiResponse<MeetingStatusResponse>> confirmMeeting(
+            Long meetingId
+    );
+
+    @Operation(
+            summary = "약속 거절",
+            description = """
+            신청된 약속을 거절합니다.
+            - 상태: PENDING(신청), CONFIRMED(모임장 확정), REJECTED(거절), DONE(종료)
+            - 거절된 약속은 되돌릴 수 없다.
+            """,
+            parameters = {
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "약속 거절 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = MeetingStatusResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    ResponseEntity<ApiResponse<MeetingStatusResponse>> rejectMeeting(
+            Long meetingId
     );
 
     @Operation(

@@ -85,15 +85,16 @@ public class Meeting extends BaseTimeEntity {
 
     public void changeStatus(MeetingStatus targetStatus) {
 
-        // DONE 이후는 어떤 변경도 불가
-        if (this.meetingStatus == MeetingStatus.DONE) {
+        // DONE/REJECTED 이후는 어떤 변경도 불가
+        if (this.meetingStatus == MeetingStatus.DONE
+                || this.meetingStatus == MeetingStatus.REJECTED) {
             throw new MeetingException(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
                     "종료된 약속의 상태는 변경할 수 없습니다.");
         }
 
         // CONFIRMED 이후에는 이전 상태로 되돌릴 수 없음
         if (this.meetingStatus == MeetingStatus.CONFIRMED
-                && targetStatus == MeetingStatus.PENDING) {
+                && (targetStatus == MeetingStatus.PENDING || targetStatus == MeetingStatus.REJECTED)) {
             throw new MeetingException(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
                     "확정된 약속은 다시 신청 상태로 되돌릴 수 없습니다.");
         }
@@ -103,6 +104,13 @@ public class Meeting extends BaseTimeEntity {
                 && this.meetingStatus != MeetingStatus.PENDING) {
             throw new MeetingException(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
                     "신청된 약속만 확정할 수 있습니다.");
+        }
+
+        // REJECTED는 PENDING에서만 가능
+        if (targetStatus == MeetingStatus.REJECTED
+                && this.meetingStatus != MeetingStatus.PENDING) {
+            throw new MeetingException(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
+                    "신청된 약속만 거절할 수 있습니다.");
         }
 
         this.meetingStatus = targetStatus;

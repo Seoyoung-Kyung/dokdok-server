@@ -66,10 +66,6 @@ public class TopicValidator {
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
     }
 
-    public TopicAnswer getPreOpinion(Long topicId, Long userId) {
-        return topicAnswerRepository.findPreOpinion(topicId, userId);
-    }
-
     /**
      * 주제에 대한 삭제 권한 검증한다
      * 권한 소유 : 모임장, 약속장, 주제 제안자
