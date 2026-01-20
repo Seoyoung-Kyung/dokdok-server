@@ -136,15 +136,19 @@ public class GatheringService {
 		Long userId = SecurityUtil.getCurrentUserId();
 
 		// 모임 존재 여부 및 멤버십 검증
-		gatheringValidator.validateAndGetGathering(gatheringId);
+		Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
 		GatheringMember currentMember = gatheringValidator.validateAndGetMember(gatheringId, userId);
 
 		// 모임의 모든 멤버 조회
 		List<GatheringMember> allMember = gatheringMemberRepository.findAllMembersByGatheringId(gatheringId);
 
+		// 총 약속 수
+		int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gathering.getId(),MeetingStatus.DONE);
+
 		return GatheringDetailResponse.from(
 				currentMember,
-				allMember
+				allMember,
+				totalMeetings
 		);
 	}
 
