@@ -63,7 +63,7 @@ public class TopicAnswer extends BaseTimeEntity {
 
     public void softDelete() {
         if (isDeleted()) {
-            throw new TopicException(TopicErrorCode.TOPIC_ALREADY_DELETED);
+            throw new TopicException(TopicErrorCode.TOPIC_ANSWER_ALREADY_DELETED);
         }
 
         markDeletedNow();
