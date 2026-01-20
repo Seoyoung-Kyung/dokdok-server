@@ -90,7 +90,7 @@ kakao:
 # MinIO Configuration
 minio:
   internal-endpoint: ${MINIO_INTERNAL_ENDPOINT:http://minio:9000}
-  external-endpoint: ${MINIO_EXTERNAL_ENDPOINT:https://dokdok.site}
+  external-endpoint: ${MINIO_EXTERNAL_ENDPOINT:https://storage.dokdok.site}
   access-key: ${MINIO_ACCESS_KEY}
   secret-key: ${MINIO_SECRET_KEY}
   bucket: ${MINIO_BUCKET:dokdok-storage}
