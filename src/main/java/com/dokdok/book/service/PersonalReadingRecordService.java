@@ -1,18 +1,21 @@
 package com.dokdok.book.service;
 
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
-import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.PersonalReadingRecordCreateResponse;
+import com.dokdok.book.dto.response.PersonalReadingRecordListResponse;
 import com.dokdok.book.entity.PersonalBook;
 import com.dokdok.book.entity.PersonalReadingRecord;
 import com.dokdok.book.entity.RecordType;
 import com.dokdok.book.exception.RecordErrorCode;
 import com.dokdok.book.exception.RecordException;
+import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.repository.PersonalReadingRecordRepository;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,6 +84,20 @@ public class PersonalReadingRecordService {
         }
 
         personalReadingRecord.delete();
+    }
+
+    public Page<PersonalReadingRecordListResponse> getRecords(Long personalBookId, Pageable pageable) {
+
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+
+        Page<PersonalReadingRecord> entities = personalReadingRecordRepository.findAllByPersonalBookIdAndUserId(
+                personalBookEntity.getId(),
+                userEntity.getId(),
+                pageable
+        );
+
+        return entities.map(PersonalReadingRecordListResponse::from);
     }
 
     private Map<String, Object> normalizeMeta(RecordType recordType, Map<String, Object> meta) {
