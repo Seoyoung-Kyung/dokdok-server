@@ -248,4 +248,11 @@ public class GatheringService {
     private int getMeetingCount(Long gatheringId) {
         return meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE);
     }
+
+	@Transactional
+	public void updateFavorite(Long gatheringId){
+		Long userId = SecurityUtil.getCurrentUserId();
+		GatheringMember member = gatheringValidator.validateAndGetMember(gatheringId, userId);
+		member.updateFavorite();
+	}
 }
