@@ -365,7 +365,7 @@ class TopicAnswerServiceTest {
 
         assertThatThrownBy(() -> topicAnswerService.deleteMyAnswer(1L, 1L, 12L))
                 .isInstanceOf(TopicException.class)
-                .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_ALREADY_DELETED);
+                .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_ANSWER_ALREADY_DELETED);
     }
 
     @Test
