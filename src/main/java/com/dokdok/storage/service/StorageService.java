@@ -26,15 +26,10 @@ public class StorageService {
 	private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 	private final MinioClient internalMinioClient;
+	private final MinioClient externalMinioClient;
 
 	@Value("${minio.bucket}")
 	private String bucket;
-
-	@Value("${minio.internal-endpoint}")
-	private String internalEndpoint;
-
-	@Value("${minio.external-endpoint}")
-	private String externalEndpoint;
 
 	/**
 	 * 프로필 이미지를 미니오 스토리지에 저장 후 저장 경로를 반환합니다.
@@ -70,7 +65,7 @@ public class StorageService {
     public String getPresignedProfileImage(String profileImageUrl) {
 
         try {
-            String internalUrl = internalMinioClient.getPresignedObjectUrl(
+            return externalMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucket)
@@ -78,7 +73,6 @@ public class StorageService {
                             .expiry(5, TimeUnit.HOURS)
                             .build()
             );
-            return internalUrl.replace(internalEndpoint, externalEndpoint);
         } catch (Exception e) {
             log.debug("PresignedUrl 생성 실패 {} ", e.getMessage());
             throw new StorageException(StorageErrorCode.PRESIGNED_URL_GENERATION_FAILED, e);
