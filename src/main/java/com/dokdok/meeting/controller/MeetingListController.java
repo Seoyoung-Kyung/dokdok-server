@@ -4,6 +4,7 @@ import com.dokdok.global.response.ApiResponse;
 import com.dokdok.meeting.api.MeetingListApi;
 import com.dokdok.meeting.dto.MeetingListFilter;
 import com.dokdok.meeting.dto.MeetingListResponse;
+import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.service.MeetingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -32,5 +33,16 @@ public class MeetingListController implements MeetingListApi {
     ) {
         MeetingListResponse response = meetingService.meetingList(gatheringId, filter, pageable);
         return ApiResponse.success(response, "약속 리스트 조회에 성공했습니다.");
+    }
+
+    @Override
+    @GetMapping(value = "/approvals", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<MeetingListResponse>> getApprovalMeetingList(
+            @PathVariable Long gatheringId,
+            @RequestParam MeetingStatus status,
+            @PageableDefault(size = 15) Pageable pageable
+    ) {
+        MeetingListResponse response = meetingService.getApprovalMeetingList(gatheringId, status, pageable);
+        return ApiResponse.success(response, "약속 승인 리스트 조회에 성공했습니다.");
     }
 }
