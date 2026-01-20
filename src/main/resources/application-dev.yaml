@@ -45,7 +45,7 @@ spring:
 # Logging Configuration
 logging:
   level:
-    com.dokdok: INFO
+    com.dokdok: DEBUG
     org.hibernate.SQL: INFO
     # OAuth 디버깅 (문제 해결 시 DEBUG로 변경)
     org.springframework.security: INFO
