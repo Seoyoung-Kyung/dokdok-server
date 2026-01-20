@@ -9,10 +9,14 @@ import com.dokdok.topic.dto.response.TopicAnswerSubmitResponse;
 import com.dokdok.topic.service.TopicAnswerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/gatherings/{gathering_id}/meetings/{meeting_id}/topics/{topic_id}/answers")
 public class TopicAnswerController implements TopicAnswerApi {
 
     private final TopicAnswerService topicAnswerService;
@@ -69,5 +73,17 @@ public class TopicAnswerController implements TopicAnswerApi {
         );
 
         return ApiResponse.success(response, "답변이 제출되었습니다.");
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> deleteMyAnswer(
+            @PathVariable("gathering_id") Long gatheringId,
+            @PathVariable("meeting_id") Long meetingId,
+            @PathVariable("topic_id") Long topicId
+    ) {
+
+        topicAnswerService.deleteMyAnswer(gatheringId, meetingId, topicId);
+
+        return ApiResponse.deleted("내 답변이 삭제되었습니다.");
     }
 }

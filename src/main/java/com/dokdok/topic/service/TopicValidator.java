@@ -78,17 +78,4 @@ public class TopicValidator {
         return topicRepository.findTopicWithDeletePermission(topicId, userId)
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_USER_CANNOT_DELETE));
     }
-
-    public void validateDeletableTopic(
-            Long topicId,
-            Long userId
-    ) {
-        boolean isDeletable = topicRepository.existsByTopicIdAndUserId(topicId, userId);
-
-        if (isDeletable) {
-            throw new TopicException(TopicErrorCode.TOPIC_USER_CANNOT_DELETE);
-        }
-    }
-
-
 }

@@ -246,4 +246,134 @@ class TopicAnswerServiceTest {
                 1L, 1L, 12L
         )).isInstanceOf(TopicException.class);
     }
+
+    @Test
+    @DisplayName("내 토픽 답변 삭제 시 softDelete가 호출된다")
+    void deleteMyAnswer_callsSoftDelete() {
+        Topic topic = Topic.builder().id(12L).build();
+        User user = User.builder().id(1L).build();
+        TopicAnswer answer = TopicAnswer.builder()
+                .id(100L)
+                .topic(topic)
+                .user(user)
+                .content("삭제할 내용")
+                .isSubmitted(false)
+                .build();
+
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doNothing().when(meetingValidator).validateMeetingInGathering(1L, 1L);
+        doNothing().when(meetingValidator).validateMeetingMember(1L, 1L);
+        doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
+
+        topicAnswerService.deleteMyAnswer(1L, 1L, 12L);
+
+        assertThat(answer.isDeleted()).isTrue();
+    }
+
+    @Test
+    @DisplayName("모임 검증 실패 시 답변 삭제가 실패한다")
+    void deleteMyAnswer_throwsWhenGatheringValidationFails() {
+        doThrow(new com.dokdok.gathering.exception.GatheringException(
+                com.dokdok.gathering.exception.GatheringErrorCode.GATHERING_NOT_FOUND))
+                .when(gatheringValidator).validateGathering(1L);
+
+        assertThatThrownBy(() -> topicAnswerService.deleteMyAnswer(1L, 1L, 12L))
+                .isInstanceOf(com.dokdok.gathering.exception.GatheringException.class);
+
+        verifyNoInteractions(topicAnswerRepository);
+    }
+
+    @Test
+    @DisplayName("미팅 검증 실패 시 답변 삭제가 실패한다")
+    void deleteMyAnswer_throwsWhenMeetingValidationFails() {
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doThrow(new com.dokdok.meeting.exception.MeetingException(
+                com.dokdok.meeting.exception.MeetingErrorCode.MEETING_NOT_FOUND))
+                .when(meetingValidator).validateMeetingInGathering(1L, 1L);
+
+        assertThatThrownBy(() -> topicAnswerService.deleteMyAnswer(1L, 1L, 12L))
+                .isInstanceOf(com.dokdok.meeting.exception.MeetingException.class);
+
+        verifyNoInteractions(topicAnswerRepository);
+    }
+
+    @Test
+    @DisplayName("미팅 멤버 검증 실패 시 답변 삭제가 실패한다")
+    void deleteMyAnswer_throwsWhenMeetingMemberValidationFails() {
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doNothing().when(meetingValidator).validateMeetingInGathering(1L, 1L);
+        doThrow(new com.dokdok.meeting.exception.MeetingException(
+                com.dokdok.meeting.exception.MeetingErrorCode.MEETING_MEMBER_NOT_FOUND))
+                .when(meetingValidator).validateMeetingMember(1L, 1L);
+
+        assertThatThrownBy(() -> topicAnswerService.deleteMyAnswer(1L, 1L, 12L))
+                .isInstanceOf(com.dokdok.meeting.exception.MeetingException.class);
+
+        verifyNoInteractions(topicAnswerRepository);
+    }
+
+    @Test
+    @DisplayName("토픽 검증 실패 시 답변 삭제가 실패한다")
+    void deleteMyAnswer_throwsWhenTopicValidationFails() {
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doNothing().when(meetingValidator).validateMeetingInGathering(1L, 1L);
+        doNothing().when(meetingValidator).validateMeetingMember(1L, 1L);
+        doThrow(new TopicException(TopicErrorCode.TOPIC_NOT_FOUND))
+                .when(topicValidator).validateTopicInMeeting(12L, 1L);
+
+        assertThatThrownBy(() -> topicAnswerService.deleteMyAnswer(1L, 1L, 12L))
+                .isInstanceOf(TopicException.class);
+
+        verifyNoInteractions(topicAnswerRepository);
+    }
+
+    @Test
+    @DisplayName("답변이 없으면 삭제 시 예외가 발생한다")
+    void deleteMyAnswer_throwsWhenAnswerNotFound() {
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doNothing().when(meetingValidator).validateMeetingInGathering(1L, 1L);
+        doNothing().when(meetingValidator).validateMeetingMember(1L, 1L);
+        doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
+        given(topicValidator.getTopicAnswer(12L, 1L))
+                .willThrow(new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+
+        assertThatThrownBy(() -> topicAnswerService.deleteMyAnswer(1L, 1L, 12L))
+                .isInstanceOf(TopicException.class);
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 답변은 다시 삭제할 수 없다")
+    void deleteMyAnswer_throwsWhenAlreadyDeleted() {
+        Topic topic = Topic.builder().id(12L).build();
+        User user = User.builder().id(1L).build();
+        TopicAnswer answer = TopicAnswer.builder()
+                .id(100L)
+                .topic(topic)
+                .user(user)
+                .content("삭제된 내용")
+                .isSubmitted(false)
+                .build();
+        // 이미 삭제된 상태로 설정
+        answer.softDelete();
+
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doNothing().when(meetingValidator).validateMeetingInGathering(1L, 1L);
+        doNothing().when(meetingValidator).validateMeetingMember(1L, 1L);
+        doNothing().when(topicValidator).validateTopicInMeeting(12L, 1L);
+        given(topicValidator.getTopicAnswer(12L, 1L)).willReturn(answer);
+
+        assertThatThrownBy(() -> topicAnswerService.deleteMyAnswer(1L, 1L, 12L))
+                .isInstanceOf(TopicException.class)
+                .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_ALREADY_DELETED);
+    }
+
+    @Test
+    @DisplayName("인증 정보가 없으면 삭제 시 예외가 발생한다")
+    void deleteMyAnswer_throwsWhenUnauthenticated() {
+        SecurityContextHolder.clearContext();
+
+        assertThatThrownBy(() -> topicAnswerService.deleteMyAnswer(1L, 1L, 12L))
+                .isInstanceOf(GlobalException.class);
+    }
 }
