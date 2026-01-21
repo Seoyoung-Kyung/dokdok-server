@@ -1,13 +1,17 @@
 package com.dokdok.retrospective.service;
 
 import com.dokdok.meeting.entity.MeetingMember;
+import com.dokdok.retrospective.dto.response.MemberInfo;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
+import com.dokdok.retrospective.dto.response.TopicInfo;
 import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
 import com.dokdok.retrospective.entity.RetrospectiveFreeText;
 import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,7 +20,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class PersonalRetrospectiveAssembler {
+
+    private final StorageService storageService;
 
     public PersonalRetrospectiveFormResponse assembleCreate(
             Long meetingId,
@@ -25,16 +32,13 @@ public class PersonalRetrospectiveAssembler {
             List<MeetingMember> meetingMembers
     ) {
 
-        List<PersonalRetrospectiveFormResponse.Topics> topicDtos =
-                topics.stream()
-                        .map(PersonalRetrospectiveFormResponse.Topics::from)
-                        .toList();
+        List<TopicInfo> topicDtos = toTopicDtos(topics);
 
         Map<Long, TopicAnswer> topicAnswerMap =
                 topicAnswers.stream()
                         .collect(Collectors.toMap(
-                                ta -> ta.getTopic().getId(), // Key: 주제 ID (1L, 2L)
-                                Function.identity() // TopicAnswer
+                                ta -> ta.getTopic().getId(),
+                                Function.identity()
                         ));
 
         List<PersonalRetrospectiveFormResponse.PreOpinions> preOpinions =
@@ -48,15 +52,7 @@ public class PersonalRetrospectiveAssembler {
                         )
                         .toList();
 
-        List<PersonalRetrospectiveFormResponse.MeetingMembers> memberDtos =
-                meetingMembers.stream()
-                        .map(member ->
-                                PersonalRetrospectiveFormResponse.MeetingMembers.of(
-                                        member.getId(),
-                                        member.getUser().getNickname()
-                                )
-                        )
-                        .toList();
+        List<MemberInfo> memberDtos = toMemberDtos(meetingMembers);
 
         return PersonalRetrospectiveFormResponse.of(
                 meetingId,
@@ -70,7 +66,9 @@ public class PersonalRetrospectiveAssembler {
             Long retrospectiveId,
             List<RetrospectiveChangedThought> changedThoughts,
             List<RetrospectiveOthersPerspective> othersPerspectives,
-            List<RetrospectiveFreeText> freeTexts
+            List<RetrospectiveFreeText> freeTexts,
+            List<Topic> topics,
+            List<MeetingMember> meetingMembers
     ) {
         List<PersonalRetrospectiveDetailResponse.ChangedThought> changedThoughtList =
                 changedThoughts.stream()
@@ -87,11 +85,40 @@ public class PersonalRetrospectiveAssembler {
                         .map(PersonalRetrospectiveDetailResponse.FreeText::from)
                         .toList();
 
+        List<TopicInfo> topicDtos = toTopicDtos(topics);
+        List<MemberInfo> memberDtos = toMemberDtos(meetingMembers);
+
         return PersonalRetrospectiveDetailResponse.from(
                 retrospectiveId,
                 changedThoughtList,
                 othersPerspectiveList,
-                freeTextList
+                freeTextList,
+                topicDtos,
+                memberDtos
         );
     }
+
+    private List<TopicInfo> toTopicDtos(List<Topic> topics) {
+        return topics.stream()
+                .map(TopicInfo::from)
+                .toList();
+    }
+
+    private List<MemberInfo> toMemberDtos(List<MeetingMember> meetingMembers){
+        return meetingMembers.stream()
+                .map(member -> {
+                    String presignedUrl =
+                            storageService.getPresignedProfileImage(
+                                    member.getUser().getProfileImageUrl()
+                            );
+
+                    return MemberInfo.of(
+                            member.getId(),
+                            member.getUser().getNickname(),
+                            presignedUrl
+                    );
+                })
+                .toList();
+    }
+
 }

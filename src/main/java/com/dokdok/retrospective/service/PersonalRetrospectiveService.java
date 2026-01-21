@@ -82,8 +82,9 @@ public class PersonalRetrospectiveService {
         retrospectiveValidator.validateRetrospective(meetingId, userId);
 
         List<Topic> topics = topicValidator.getConfirmedTopics(meetingId);
-        List<TopicAnswer> topicAnswers =  topicAnswerRepository.findByMeetingIdUserId(meetingId, userId);
-        List<MeetingMember> meetingMembers = meetingMemberRepository.findByMeetingId(meetingId);
+        List<TopicAnswer> topicAnswers = topicAnswerRepository.findByMeetingIdUserId(meetingId, userId);
+        List<MeetingMember> meetingMembers
+                = meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId);
 
         return assembler.assembleCreate(
                 meetingId,
@@ -114,11 +115,18 @@ public class PersonalRetrospectiveService {
         List<RetrospectiveFreeText> freeTexts =
                 freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId);
 
+        List<Topic> topics = topicValidator.getConfirmedTopics(meetingId);
+
+        List<MeetingMember> meetingMembers
+                = meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId);
+
         return assembler.assembleDetail(
                 retrospectiveId,
                 changedThoughts,
                 othersPerspectives,
-                freeTexts
+                freeTexts,
+                topics,
+                meetingMembers
         );
     }
 

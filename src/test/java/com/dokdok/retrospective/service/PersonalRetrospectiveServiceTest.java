@@ -10,9 +10,7 @@ import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.retrospective.dto.request.PersonalRetrospectiveRequest;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
+import com.dokdok.retrospective.dto.response.*;
 import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
 import com.dokdok.retrospective.entity.RetrospectiveFreeText;
 import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
@@ -494,12 +492,12 @@ class PersonalRetrospectiveServiceTest {
                 meetingId,
                 List.of(new PersonalRetrospectiveFormResponse.PreOpinions(10L, "주제1", "사전 의견1")),
                 List.of(
-                        new PersonalRetrospectiveFormResponse.Topics(10L, "주제1"),
-                        new PersonalRetrospectiveFormResponse.Topics(20L, "주제2")
+                        new TopicInfo(10L, "주제1"),
+                        new TopicInfo(20L, "주제2")
                 ),
                 List.of(
-                        new PersonalRetrospectiveFormResponse.MeetingMembers(1L, "사용자1"),
-                        new PersonalRetrospectiveFormResponse.MeetingMembers(2L, "사용자2")
+                        new MemberInfo(1L, "사용자1", "url"),
+                        new MemberInfo(2L, "사용자2","url")
                 )
         );
 
@@ -511,7 +509,7 @@ class PersonalRetrospectiveServiceTest {
             doNothing().when(retrospectiveValidator).validateRetrospective(meetingId, userId);
             when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(topics);
             when(topicAnswerRepository.findByMeetingIdUserId(meetingId, userId)).thenReturn(topicAnswers);
-            when(meetingMemberRepository.findByMeetingId(meetingId)).thenReturn(meetingMembers);
+            when(meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId)).thenReturn(meetingMembers);
             when(assembler.assembleCreate(meetingId, topics, topicAnswers, meetingMembers))
                     .thenReturn(expectedResponse);
 
@@ -529,7 +527,7 @@ class PersonalRetrospectiveServiceTest {
             verify(retrospectiveValidator).validateRetrospective(meetingId, userId);
             verify(topicValidator).getConfirmedTopics(meetingId);
             verify(topicAnswerRepository).findByMeetingIdUserId(meetingId, userId);
-            verify(meetingMemberRepository).findByMeetingId(meetingId);
+            verify(meetingMemberRepository).findOtherMembersByMeetingId(meetingId, userId);
             verify(assembler).assembleCreate(meetingId, topics, topicAnswers, meetingMembers);
         }
     }
@@ -552,8 +550,8 @@ class PersonalRetrospectiveServiceTest {
         PersonalRetrospectiveFormResponse expectedResponse = PersonalRetrospectiveFormResponse.of(
                 meetingId,
                 List.of(), // 빈 사전 의견
-                List.of(new PersonalRetrospectiveFormResponse.Topics(10L, "주제1")),
-                List.of(new PersonalRetrospectiveFormResponse.MeetingMembers(1L, "사용자1"))
+                List.of(new TopicInfo(10L, "주제1")),
+                List.of(new MemberInfo(1L, "사용자1", "url"))
         );
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -564,7 +562,7 @@ class PersonalRetrospectiveServiceTest {
             doNothing().when(retrospectiveValidator).validateRetrospective(meetingId, userId);
             when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(topics);
             when(topicAnswerRepository.findByMeetingIdUserId(meetingId, userId)).thenReturn(topicAnswers);
-            when(meetingMemberRepository.findByMeetingId(meetingId)).thenReturn(meetingMembers);
+            when(meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId)).thenReturn(meetingMembers);
             when(assembler.assembleCreate(meetingId, topics, topicAnswers, meetingMembers))
                     .thenReturn(expectedResponse);
 
@@ -706,9 +704,11 @@ class PersonalRetrospectiveServiceTest {
 
         PersonalRetrospectiveDetailResponse expectedResponse = PersonalRetrospectiveDetailResponse.from(
                 retrospectiveId,
-                List.of(new PersonalRetrospectiveDetailResponse.ChangedThought(10L, "핵심 쟁점", "사후 의견")),
+                List.of(new PersonalRetrospectiveDetailResponse.ChangedThought(10L, "핵심 쟁점", "사전의견","사후 의견")),
                 List.of(new PersonalRetrospectiveDetailResponse.OthersPerspective(10L, 5L, "타인 의견", "인상 깊었던 이유")),
-                List.of(new PersonalRetrospectiveDetailResponse.FreeText("자유 서술 제목", "자유 서술 내용"))
+                List.of(new PersonalRetrospectiveDetailResponse.FreeText("자유 서술 제목", "자유 서술 내용")),
+                List.of(),
+                List.of()
         );
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -723,7 +723,11 @@ class PersonalRetrospectiveServiceTest {
                     .thenReturn(othersPerspectives);
             when(freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId))
                     .thenReturn(freeTexts);
-            when(assembler.assembleDetail(retrospectiveId, changedThoughts, othersPerspectives, freeTexts))
+            List<Topic> topics = List.of();
+            List<MeetingMember> meetingMembers = List.of();
+            when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(topics);
+            when(meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId)).thenReturn(meetingMembers);
+            when(assembler.assembleDetail(retrospectiveId, changedThoughts, othersPerspectives, freeTexts, topics, meetingMembers))
                     .thenReturn(expectedResponse);
 
             // when
@@ -732,9 +736,9 @@ class PersonalRetrospectiveServiceTest {
 
             // then
             assertThat(response.retrospectiveId()).isEqualTo(retrospectiveId);
-            assertThat(response.changedThoughts()).hasSize(1);
-            assertThat(response.othersPerspectives()).hasSize(1);
-            assertThat(response.freeTexts()).hasSize(1);
+            assertThat(response.retrospective().changedThoughts()).hasSize(1);
+            assertThat(response.retrospective().othersPerspectives()).hasSize(1);
+            assertThat(response.retrospective().freeTexts()).hasSize(1);
 
             verify(meetingValidator).validateMeeting(meetingId);
             verify(meetingValidator).validateMeetingMember(meetingId, userId);
@@ -742,7 +746,9 @@ class PersonalRetrospectiveServiceTest {
             verify(changedThoughtRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(othersPerspectiveRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(freeTextRepository).findByPersonalMeetingRetrospective_Id(retrospectiveId);
-            verify(assembler).assembleDetail(retrospectiveId, changedThoughts, othersPerspectives, freeTexts);
+            verify(topicValidator).getConfirmedTopics(meetingId);
+            verify(meetingMemberRepository).findOtherMembersByMeetingId(meetingId, userId);
+            verify(assembler).assembleDetail(retrospectiveId, changedThoughts, othersPerspectives, freeTexts, topics, meetingMembers);
         }
     }
 
@@ -757,9 +763,13 @@ class PersonalRetrospectiveServiceTest {
         List<RetrospectiveChangedThought> changedThoughts = List.of();
         List<RetrospectiveOthersPerspective> othersPerspectives = List.of();
         List<RetrospectiveFreeText> freeTexts = List.of();
+        List<Topic> topics = List.of();
+        List<MeetingMember> meetingMembers = List.of();
 
         PersonalRetrospectiveDetailResponse expectedResponse = PersonalRetrospectiveDetailResponse.from(
                 retrospectiveId,
+                List.of(),
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of()
@@ -777,7 +787,9 @@ class PersonalRetrospectiveServiceTest {
                     .thenReturn(othersPerspectives);
             when(freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId))
                     .thenReturn(freeTexts);
-            when(assembler.assembleDetail(retrospectiveId, changedThoughts, othersPerspectives, freeTexts))
+            when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(topics);
+            when(meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId)).thenReturn(meetingMembers);
+            when(assembler.assembleDetail(retrospectiveId, changedThoughts, othersPerspectives, freeTexts, topics, meetingMembers))
                     .thenReturn(expectedResponse);
 
             // when
@@ -785,9 +797,9 @@ class PersonalRetrospectiveServiceTest {
                     personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId);
 
             // then
-            assertThat(response.changedThoughts()).isEmpty();
-            assertThat(response.othersPerspectives()).isEmpty();
-            assertThat(response.freeTexts()).isEmpty();
+            assertThat(response.retrospective().changedThoughts()).isEmpty();
+            assertThat(response.retrospective().othersPerspectives()).isEmpty();
+            assertThat(response.retrospective().freeTexts()).isEmpty();
         }
     }
 

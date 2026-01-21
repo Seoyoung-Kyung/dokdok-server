@@ -112,6 +112,10 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
                 FROM MeetingMember mm
                 JOIN FETCH mm.user u
                 WHERE mm.meeting.id = :meetingId
+                AND mm.user.id <> :userId
             """)
-    List<MeetingMember> findByMeetingId(Long meetingId);
+    List<MeetingMember> findOtherMembersByMeetingId(
+            @Param("meetingId") Long meetingId,
+            @Param("userId") Long userId
+    );
 }
