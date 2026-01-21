@@ -68,4 +68,18 @@ public record PersonalRetrospectiveDetailResponse(
                 freeTexts
         );
     }
+
+    public static PersonalRetrospectiveDetailResponse fromEntities(
+            Long retrospectiveId,
+            List<RetrospectiveChangedThought> changedThoughts,
+            List<RetrospectiveOthersPerspective> othersPerspectives,
+            List<RetrospectiveFreeText> freeTexts
+    ) {
+        return new PersonalRetrospectiveDetailResponse(
+                retrospectiveId,
+                changedThoughts.stream().map(ChangedThought::from).toList(),
+                othersPerspectives.stream().map(OthersPerspective::from).toList(),
+                freeTexts.stream().map(FreeText::from).toList()
+        );
+    }
 }

@@ -1,11 +1,14 @@
 package com.dokdok.retrospective.service;
 
+import com.dokdok.book.entity.RecordType;
+import com.dokdok.book.service.BookValidator;
+import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
+import com.dokdok.retrospective.dto.projection.FreeTextProjection;
+import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
+import com.dokdok.retrospective.dto.response.*;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.service.MeetingValidator;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
 import com.dokdok.retrospective.repository.ChangedThoughtRepository;
 import com.dokdok.retrospective.repository.FreeTextRepository;
 import com.dokdok.retrospective.repository.OthersPerspectiveRepository;
@@ -15,7 +18,6 @@ import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,11 +35,11 @@ import com.dokdok.user.entity.User;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional(readOnly = true)
 public class PersonalRetrospectiveService {
 
@@ -52,6 +54,7 @@ public class PersonalRetrospectiveService {
     private final UserValidator userValidator;
     private final RetrospectiveValidator retrospectiveValidator;
     private final TopicValidator topicValidator;
+    private final BookValidator bookValidator;
     private final PersonalRetrospectiveAssembler assembler;
 
     @Transactional
@@ -82,7 +85,7 @@ public class PersonalRetrospectiveService {
         retrospectiveValidator.validateRetrospective(meetingId, userId);
 
         List<Topic> topics = topicValidator.getConfirmedTopics(meetingId);
-        List<TopicAnswer> topicAnswers =  topicAnswerRepository.findByMeetingIdUserId(meetingId, userId);
+        List<TopicAnswer> topicAnswers = topicAnswerRepository.findByMeetingIdUserId(meetingId, userId);
         List<MeetingMember> meetingMembers = meetingMemberRepository.findByMeetingId(meetingId);
 
         return assembler.assembleCreate(
@@ -134,7 +137,7 @@ public class PersonalRetrospectiveService {
         meetingValidator.validateMeetingMember(meetingId, userId);
 
         PersonalMeetingRetrospective retrospective
-                = retrospectiveValidator.getRetrospective(retrospectiveId);
+                = retrospectiveValidator.getRetrospective(retrospectiveId, userId);
 
         retrospective.clearChangedThoughts();
         retrospective.clearOthersPerspectives();
@@ -145,6 +148,54 @@ public class PersonalRetrospectiveService {
         PersonalMeetingRetrospective saved = personalRetrospectiveRepository.save(retrospective);
 
         return PersonalRetrospectiveResponse.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RetrospectiveRecordResponse> getRetrospectiveRecords(Long bookId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        bookValidator.validateBook(bookId);
+
+        List<PersonalMeetingRetrospective> retrospectives
+                = retrospectiveValidator.getRetrospectives(bookId, userId);
+
+        List<Long> retrospectiveIds = retrospectives.stream()
+                .map(PersonalMeetingRetrospective::getId)
+                .toList();
+
+        if(retrospectiveIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, List<ChangedThoughtProjection>> changedThoughtsMap =
+                changedThoughtRepository.findByRetrospectiveIds(retrospectiveIds)
+                        .stream()
+                        .collect(groupingBy(ChangedThoughtProjection::retrospectiveId));
+
+        Map<Long, List<OtherPerspectiveProjection>> othersPerspectivesMap =
+                othersPerspectiveRepository.findByRetrospectiveIds(retrospectiveIds)
+                        .stream()
+                        .collect(groupingBy(OtherPerspectiveProjection::retrospectiveId));
+
+        Map<Long, List<FreeTextProjection>> freeTextsMap =
+                freeTextRepository.findByRetrospectiveIds(retrospectiveIds)
+                        .stream()
+                        .collect(groupingBy(FreeTextProjection::retrospectiveId));
+
+        return retrospectives.stream()
+                .map(retrospective -> RetrospectiveRecordResponse.of(
+                        retrospective.getId(),
+                        retrospective.getMeeting().getGathering().getGatheringName(),
+                        RecordType.RETROSPECTIVE,
+                        retrospective.getCreatedAt(),
+                        changedThoughtsMap.getOrDefault(retrospective.getId(), List.of())
+                                .stream().map(RetrospectiveRecordResponse.ChangedThought::from).toList(),
+                        othersPerspectivesMap.getOrDefault(retrospective.getId(), List.of())
+                                .stream().map(RetrospectiveRecordResponse.OthersPerspective::from).toList(),
+                        freeTextsMap.getOrDefault(retrospective.getId(), List.of())
+                                .stream().map(RetrospectiveRecordResponse.FreeText::from).toList()
+                ))
+                .toList();
     }
 
     private void setRetrospectiveData(

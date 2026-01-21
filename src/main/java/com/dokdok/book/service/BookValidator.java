@@ -21,11 +21,18 @@ public class BookValidator {
     private final BookReviewRepository bookReviewRepository;
     private final PersonalBookRepository personalBookRepository;
 
-
     // 책 존재 여부를 검증하고 엔티티를 반환합니다.
     public Book validateAndGetBook(Long bookId) {
         return bookRepository.findById(bookId)
                 .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_FOUND));
+    }
+
+    public void validateBook(Long bookId) {
+        boolean exists = bookRepository.existsById(bookId);
+
+        if (!exists) {
+            throw new BookException(BookErrorCode.BOOK_NOT_FOUND);
+        }
     }
 
     // 동일 사용자/책 리뷰 중복 생성을 막습니다.

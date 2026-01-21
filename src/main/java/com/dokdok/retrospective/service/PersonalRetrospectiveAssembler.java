@@ -72,26 +72,11 @@ public class PersonalRetrospectiveAssembler {
             List<RetrospectiveOthersPerspective> othersPerspectives,
             List<RetrospectiveFreeText> freeTexts
     ) {
-        List<PersonalRetrospectiveDetailResponse.ChangedThought> changedThoughtList =
-                changedThoughts.stream()
-                        .map(PersonalRetrospectiveDetailResponse.ChangedThought::from)
-                        .toList();
-
-        List<PersonalRetrospectiveDetailResponse.OthersPerspective> othersPerspectiveList =
-                othersPerspectives.stream()
-                        .map(PersonalRetrospectiveDetailResponse.OthersPerspective::from)
-                        .toList();
-
-        List<PersonalRetrospectiveDetailResponse.FreeText> freeTextList =
-                freeTexts.stream()
-                        .map(PersonalRetrospectiveDetailResponse.FreeText::from)
-                        .toList();
-
-        return PersonalRetrospectiveDetailResponse.from(
+        return PersonalRetrospectiveDetailResponse.fromEntities(
                 retrospectiveId,
-                changedThoughtList,
-                othersPerspectiveList,
-                freeTextList
+                changedThoughts,
+                othersPerspectives,
+                freeTexts
         );
     }
 }
