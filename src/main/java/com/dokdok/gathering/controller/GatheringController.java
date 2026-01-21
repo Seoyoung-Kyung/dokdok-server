@@ -66,7 +66,7 @@ public class GatheringController implements GatheringApi {
     public ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(Pageable pageable) {
         MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
 
-        return ApiResponse.success(response, "모임 가입 요청이 완료되었습니다. 모임장의 승인을 기다려주세요.");
+        return ApiResponse.success(response, "나의 모임 리스트 조회 성공");
     }
 
     @Override
@@ -101,5 +101,12 @@ public class GatheringController implements GatheringApi {
     ){
         gatheringService.removeMember(gatheringId,userId);
         return ApiResponse.deleted("모임원 강퇴 성공");
+    }
+
+    @Override
+    @PatchMapping("/{gatheringId}/favorite")
+    public ResponseEntity<ApiResponse<Void>> updateFavorite(@PathVariable Long gatheringId){
+        gatheringService.updateFavorite(gatheringId);
+        return ApiResponse.success("모임의 즐겨찾기 상태변경 성공");
     }
 }

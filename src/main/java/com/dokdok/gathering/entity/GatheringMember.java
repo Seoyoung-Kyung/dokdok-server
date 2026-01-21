@@ -93,4 +93,8 @@ import java.time.temporal.ChronoUnit;
         }
         this.memberStatus = status;
     }
+
+    public void updateFavorite() {
+        this.isFavorite = !isFavorite;
+    }
 }

@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.service;
 
+import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
 import com.dokdok.global.util.SecurityUtil;
@@ -30,6 +31,13 @@ import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
+import com.dokdok.book.service.BookValidator;
+import com.dokdok.book.exception.BookException;
+import com.dokdok.book.exception.BookErrorCode;
+import com.dokdok.retrospective.dto.response.RetrospectiveRecordResponse;
+import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
+import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
+import com.dokdok.retrospective.dto.projection.FreeTextProjection;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,6 +80,9 @@ class PersonalRetrospectiveServiceTest {
 
     @Mock
     private MeetingMemberRepository meetingMemberRepository;
+
+    @Mock
+    private BookValidator bookValidator;
 
     @Mock
     private ChangedThoughtRepository changedThoughtRepository;
@@ -960,7 +971,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(topicId, meetingId)).thenReturn(topic);
             when(topicAnswerRepository.findPreOpinion(topicId, userId)).thenReturn(topicAnswer);
             when(topicRepository.findById(topicId)).thenReturn(Optional.of(topic));
@@ -978,7 +989,7 @@ class PersonalRetrospectiveServiceTest {
 
             verify(meetingValidator).validateMeeting(meetingId);
             verify(meetingValidator).validateMeetingMember(meetingId, userId);
-            verify(retrospectiveValidator).getRetrospective(retrospectiveId);
+            verify(retrospectiveValidator).getRetrospective(retrospectiveId, userId);
             verify(topicValidator).getTopicInMeeting(topicId, meetingId);
             verify(topicAnswerRepository).findPreOpinion(topicId, userId);
             verify(topicRepository).findById(topicId);
@@ -1021,7 +1032,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
             when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
 
             // when
@@ -1089,7 +1100,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(10L, meetingId)).thenReturn(topic1);
             when(topicValidator.getTopicInMeeting(20L, meetingId)).thenReturn(topic2);
             when(topicAnswerRepository.findPreOpinion(anyLong(), eq(userId))).thenReturn(null);
@@ -1180,7 +1191,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId))
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId))
                     .thenThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
 
             // when & then
@@ -1249,7 +1260,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(topicId, meetingId))
                     .thenThrow(new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
 
@@ -1260,6 +1271,134 @@ class PersonalRetrospectiveServiceTest {
                     .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_NOT_FOUND);
 
             verify(personalRetrospectiveRepository, never()).save(any());
+        }
+    }
+
+    // ==================== getRetrospectiveRecords 테스트 ====================
+
+    @Test
+    @DisplayName("책별 개인 회고 목록을 정상적으로 조회한다")
+    void getRetrospectiveRecords_success() {
+        // given
+        Long bookId = 1L;
+        Long userId = 3L;
+        Long retrospectiveId = 100L;
+
+        Gathering gathering = Gathering.builder()
+                .id(1L)
+                .gatheringName("테스트 모임")
+                .build();
+
+        Meeting meeting = Meeting.builder()
+                .id(1L)
+                .gathering(gathering)
+                .build();
+
+        User user = User.builder()
+                .id(userId).
+                build();
+
+        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
+        List<PersonalMeetingRetrospective> retrospectives = List.of(retrospective);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(bookValidator).validateBook(bookId);
+            when(retrospectiveValidator.getRetrospectives(bookId, userId)).thenReturn(retrospectives);
+            when(changedThoughtRepository.findByRetrospectiveIds(List.of(retrospectiveId)))
+                    .thenReturn(List.of());
+            when(othersPerspectiveRepository.findByRetrospectiveIds(List.of(retrospectiveId)))
+                    .thenReturn(List.of());
+            when(freeTextRepository.findByRetrospectiveIds(List.of(retrospectiveId)))
+                    .thenReturn(List.of());
+
+            // when
+            List<RetrospectiveRecordResponse> response =
+                    personalRetrospectiveService.getRetrospectiveRecords(bookId);
+
+            // then
+            assertThat(response).hasSize(1);
+
+            verify(bookValidator).validateBook(bookId);
+            verify(retrospectiveValidator).getRetrospectives(bookId, userId);
+            verify(changedThoughtRepository).findByRetrospectiveIds(List.of(retrospectiveId));
+            verify(othersPerspectiveRepository).findByRetrospectiveIds(List.of(retrospectiveId));
+            verify(freeTextRepository).findByRetrospectiveIds(List.of(retrospectiveId));
+        }
+    }
+
+    @Test
+    @DisplayName("회고가 없으면 빈 리스트를 반환한다")
+    void getRetrospectiveRecords_returnsEmptyList_whenNoRetrospectives() {
+        // given
+        Long bookId = 1L;
+        Long userId = 3L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(bookValidator).validateBook(bookId);
+            when(retrospectiveValidator.getRetrospectives(bookId, userId)).thenReturn(List.of());
+
+            // when
+            List<RetrospectiveRecordResponse> response =
+                    personalRetrospectiveService.getRetrospectiveRecords(bookId);
+
+            // then
+            assertThat(response).isEmpty();
+
+            verify(bookValidator).validateBook(bookId);
+            verify(retrospectiveValidator).getRetrospectives(bookId, userId);
+            verify(changedThoughtRepository, never()).findByRetrospectiveIds(any());
+            verify(othersPerspectiveRepository, never()).findByRetrospectiveIds(any());
+            verify(freeTextRepository, never()).findByRetrospectiveIds(any());
+        }
+    }
+
+    @Test
+    @DisplayName("책이 존재하지 않으면 예외가 발생한다")
+    void getRetrospectiveRecords_throwsWhenBookNotFound() {
+        // given
+        Long bookId = 999L;
+        Long userId = 3L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doThrow(new BookException(BookErrorCode.BOOK_NOT_FOUND))
+                    .when(bookValidator).validateBook(bookId);
+
+            // when & then
+            assertThatThrownBy(() -> personalRetrospectiveService.getRetrospectiveRecords(bookId))
+                    .isInstanceOf(BookException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_FOUND);
+
+            verify(retrospectiveValidator, never()).getRetrospectives(any(), any());
+        }
+    }
+
+    @Test
+    @DisplayName("인증 정보가 없으면 예외가 발생한다 - 회고 기록 조회")
+    void getRetrospectiveRecords_throwsWhenUnauthenticated() {
+        // given
+        Long bookId = 1L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
+
+            // when & then
+            assertThatThrownBy(() -> personalRetrospectiveService.getRetrospectiveRecords(bookId))
+                    .isInstanceOf(GlobalException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
+
+            verify(bookValidator, never()).validateBook(any());
         }
     }
 }

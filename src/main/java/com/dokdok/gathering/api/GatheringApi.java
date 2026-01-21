@@ -379,6 +379,41 @@ public interface GatheringApi {
     );
 
     @Operation(
+            summary = "모임 즐겨찾기 토글",
+            description = """
+              모임의 즐겨찾기 상태를 토글합니다.
+              - 모임 멤버만 설정할 수 있습니다.
+              """
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "즐겨찾기 상태 변경 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 모임 멤버만 설정할 수 있습니다."
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임을 찾을 수 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류"
+            )
+    })
+    @PatchMapping("/{gatheringId}/favorite")
+    ResponseEntity<ApiResponse<Void>> updateFavorite(
+            @Parameter(description = "모임 ID", required = true, example = "123")
+            @PathVariable Long gatheringId
+    );
+
+    @Operation(
             summary = "가입 요청 승인/거절",
             description = """
                 모임장이 가입 요청한 멤버를 승인하거나 거절합니다.

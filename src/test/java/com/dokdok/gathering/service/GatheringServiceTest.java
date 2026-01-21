@@ -486,6 +486,25 @@ class GatheringServiceTest {
 	}
 
 	@Test
+	@DisplayName("모임 즐겨찾기 상태 변경 성공")
+	void updateFavorite_Success() {
+		// given
+		Long gatheringId = 1L;
+		Long userId = 2L;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+		given(gatheringValidator.validateAndGetMember(gatheringId, userId)).willReturn(normalMember);
+
+		// when
+		gatheringService.updateFavorite(gatheringId);
+
+		// then
+		assertThat(normalMember.getIsFavorite()).isTrue();
+		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+		verify(gatheringValidator, times(1)).validateAndGetMember(gatheringId, userId);
+	}
+
+	@Test
 	@DisplayName("모임 정보 수정 성공 - 리더가 모임명만 수정")
 	void updateGathering_Success_UpdateNameOnly() {
 		// given

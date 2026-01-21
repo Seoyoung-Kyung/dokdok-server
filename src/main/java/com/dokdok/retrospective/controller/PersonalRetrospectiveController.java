@@ -66,4 +66,5 @@ public class PersonalRetrospectiveController implements PersonalRetrospectiveApi
 
         return ApiResponse.success(response, "개인 회고 수정을 성공했습니다.");
     }
+
 }

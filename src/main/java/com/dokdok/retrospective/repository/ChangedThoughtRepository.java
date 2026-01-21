@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.repository;
 
+import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
 import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,4 +18,18 @@ public interface ChangedThoughtRepository extends JpaRepository<RetrospectiveCha
             WHERE ct.personalMeetingRetrospective.id = :retrospectiveId
             """)
     List<RetrospectiveChangedThought> findByPersonalMeetingRetrospective(Long retrospectiveId);
+
+    @Query("""
+            SELECT new com.dokdok.retrospective.dto.projection.ChangedThoughtProjection(
+                        pmr.id,
+                        t.id,
+                        ct.keyIssue,
+                        ct.postOpinion
+            )
+            FROM RetrospectiveChangedThought ct
+            JOIN ct.topic t
+            JOIN ct.personalMeetingRetrospective pmr
+            WHERE ct.personalMeetingRetrospective.id IN :retrospectiveIds
+            """)
+    List<ChangedThoughtProjection> findByRetrospectiveIds(List<Long> retrospectiveIds);
 }
