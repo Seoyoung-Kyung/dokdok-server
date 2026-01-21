@@ -8,8 +8,8 @@ import java.util.List;
 public record PersonalRetrospectiveFormResponse(
         Long meetingId,
         List<PreOpinions> preOpinions,
-        List<Topics> topics,
-        List<MeetingMembers> meetingMembers
+        List<TopicInfo> topics,
+        List<MemberInfo> meetingMembers
 ) {
     public record PreOpinions(
         Long topicId,
@@ -26,36 +26,11 @@ public record PersonalRetrospectiveFormResponse(
         }
     }
 
-    public record Topics(
-            Long topicId,
-            String topicName
-    ) {
-        public static Topics from(Topic topic) {
-            return new Topics(
-                    topic.getId(),
-                    topic.getTitle()
-            );
-        }
-    }
-
-    public record MeetingMembers(
-        Long meetingMemberId,
-        String nickName
-    ) {
-        public static MeetingMembers of(Long meetingMemberId, String nickName) {
-            return new MeetingMembers(
-                    meetingMemberId,
-                    nickName
-            );
-        }
-
-    }
-
     public static PersonalRetrospectiveFormResponse of(
             Long meetingId,
             List<PreOpinions> preOpinions,
-            List<Topics> topics,
-            List<MeetingMembers> meetingMembers
+            List<TopicInfo> topics,
+            List<MemberInfo> meetingMembers
     ) {
         return new PersonalRetrospectiveFormResponse(
                 meetingId,

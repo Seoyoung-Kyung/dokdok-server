@@ -74,7 +74,7 @@ public interface PersonalRetrospectiveApi {
     );
 
     @Operation(
-            summary = "개인 회고 조회",
+            summary = "개인 회고 수정 폼 조회",
             description = "기존에 작성한 개인 회고를 수정하기 위한 데이터를 조회합니다.",
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
@@ -84,7 +84,7 @@ public interface PersonalRetrospectiveApi {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "개인 회고 조회 성공",
+                    description = "개인 회고 수정 폼 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PersonalRetrospectiveResponse.class))
             ),
