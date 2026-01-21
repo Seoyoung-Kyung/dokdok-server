@@ -1,9 +1,9 @@
 package com.dokdok.retrospective.dto.response;
 
 import com.dokdok.book.entity.RecordType;
-import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
-import com.dokdok.retrospective.entity.RetrospectiveFreeText;
-import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
+import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
+import com.dokdok.retrospective.dto.projection.FreeTextProjection;
+import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
 
 import java.time.LocalDateTime;
 import java.util.List;
