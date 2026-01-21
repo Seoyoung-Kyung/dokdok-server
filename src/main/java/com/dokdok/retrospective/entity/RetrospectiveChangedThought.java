@@ -62,12 +62,9 @@ public class RetrospectiveChangedThought extends BaseTimeEntity {
         this.personalMeetingRetrospective = personalMeetingRetrospective;
     }
 
-
     public void softDelete() {
-        if (isDeleted()) {
-            throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_ALREADY_DELETED);
+        if (!isDeleted()) {
+            markDeletedNow();
         }
-
-        markDeletedNow();
     }
 }
