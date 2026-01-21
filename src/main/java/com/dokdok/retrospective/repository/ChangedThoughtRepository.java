@@ -20,7 +20,7 @@ public interface ChangedThoughtRepository extends JpaRepository<RetrospectiveCha
     List<RetrospectiveChangedThought> findByPersonalMeetingRetrospective(Long retrospectiveId);
 
     @Query("""
-            SELECT new com.dokdok.retrospective.dto.response.ChangedThoughtProjection(
+            SELECT new com.dokdok.retrospective.dto.projection.ChangedThoughtProjection(
                         pmr.id,
                         t.id,
                         ct.keyIssue,

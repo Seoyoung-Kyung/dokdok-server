@@ -14,7 +14,7 @@ public interface FreeTextRepository extends JpaRepository<RetrospectiveFreeText,
     List<RetrospectiveFreeText> findByPersonalMeetingRetrospective_Id(Long retrospectiveId);
 
     @Query("""
-            SELECT new com.dokdok.retrospective.dto.response.FreeTextProjection(
+            SELECT new com.dokdok.retrospective.dto.projection.FreeTextProjection(
                         ft.personalMeetingRetrospective.id,
                         ft.title,
                         ft.content

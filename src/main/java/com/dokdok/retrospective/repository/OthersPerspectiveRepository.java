@@ -21,7 +21,7 @@ public interface OthersPerspectiveRepository extends JpaRepository<Retrospective
     List<RetrospectiveOthersPerspective> findByPersonalMeetingRetrospective(Long retrospectiveId);
 
     @Query("""
-            SELECT new com.dokdok.retrospective.dto.response.OtherPerspectiveProjection(
+            SELECT new com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection(
                         op.personalMeetingRetrospective.id,
                         t.id,
                         mm.id,
