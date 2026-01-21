@@ -8,20 +8,28 @@ import java.util.List;
 
 public record PersonalRetrospectiveDetailResponse(
         Long retrospectiveId,
-        List<ChangedThought> changedThoughts,
-        List<OthersPerspective> othersPerspectives,
-        List<FreeText> freeTexts
+        RetrospectiveData retrospective,  // 작성 데이터 묶음
+        List<TopicInfo> topics,
+        List<MemberInfo> meetingMembers
 ) {
+
+    public record RetrospectiveData(
+            List<ChangedThought> changedThoughts,
+            List<OthersPerspective> othersPerspectives,
+            List<FreeText> freeTexts
+    ) {}
+
     public record ChangedThought(
             Long topicId,
             String keyIssue,
+            String preOpinion,
             String postOpinion
     ) {
-
         public static ChangedThought from(RetrospectiveChangedThought changedThought) {
             return new ChangedThought(
                     changedThought.getTopic().getId(),
                     changedThought.getKeyIssue(),
+                    changedThought.getPreOpinion(),
                     changedThought.getPostOpinion()
             );
         }
@@ -59,27 +67,15 @@ public record PersonalRetrospectiveDetailResponse(
             Long retrospectiveId,
             List<ChangedThought> changedThoughts,
             List<OthersPerspective> othersPerspectives,
-            List<FreeText> freeTexts
+            List<FreeText> freeTexts,
+            List<TopicInfo> topics,
+            List<MemberInfo> meetingMembers
     ) {
         return new PersonalRetrospectiveDetailResponse(
                 retrospectiveId,
-                changedThoughts,
-                othersPerspectives,
-                freeTexts
-        );
-    }
-
-    public static PersonalRetrospectiveDetailResponse fromEntities(
-            Long retrospectiveId,
-            List<RetrospectiveChangedThought> changedThoughts,
-            List<RetrospectiveOthersPerspective> othersPerspectives,
-            List<RetrospectiveFreeText> freeTexts
-    ) {
-        return new PersonalRetrospectiveDetailResponse(
-                retrospectiveId,
-                changedThoughts.stream().map(ChangedThought::from).toList(),
-                othersPerspectives.stream().map(OthersPerspective::from).toList(),
-                freeTexts.stream().map(FreeText::from).toList()
+                new RetrospectiveData(changedThoughts, othersPerspectives, freeTexts), // 묶어서 전달
+                topics,
+                meetingMembers
         );
     }
 }
