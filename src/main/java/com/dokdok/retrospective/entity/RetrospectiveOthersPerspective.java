@@ -65,10 +65,9 @@ public class RetrospectiveOthersPerspective extends BaseTimeEntity {
         this.personalMeetingRetrospective = personalMeetingRetrospective;
     }
 
-    // 비즈니스 메서드
-    public void updateContent(String opinionContent, String impressiveReason) {
-        this.opinionContent = opinionContent;
-        this.impressiveReason = impressiveReason;
+    public void softDelete() {
+        if (!isDeleted()) {
+            markDeletedNow();
+        }
     }
-
 }

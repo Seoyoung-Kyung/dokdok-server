@@ -34,9 +34,6 @@ public class RetrospectiveFreeText extends BaseTimeEntity {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-
     @Builder
     public static RetrospectiveFreeText of(
             PersonalMeetingRetrospective personalMeetingRetrospective,
@@ -55,9 +52,10 @@ public class RetrospectiveFreeText extends BaseTimeEntity {
         this.personalMeetingRetrospective = personalMeetingRetrospective;
     }
 
-    // 비즈니스 메서드
-    public void updateContent(String title, String content) {
-        this.title = title;
-        this.content = content;
+    public void softDelete() {
+        if (!isDeleted()) {
+            markDeletedNow();
+        }
     }
+
 }

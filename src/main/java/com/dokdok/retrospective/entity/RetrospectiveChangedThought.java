@@ -1,6 +1,8 @@
 package com.dokdok.retrospective.entity;
 
 import com.dokdok.global.BaseTimeEntity;
+import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
+import com.dokdok.retrospective.exception.RetrospectiveException;
 import com.dokdok.topic.entity.Topic;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -60,13 +62,9 @@ public class RetrospectiveChangedThought extends BaseTimeEntity {
         this.personalMeetingRetrospective = personalMeetingRetrospective;
     }
 
-    // 비즈니스 메서드
-    public void updateContent(String keyIssue, String postOpinion) {
-        this.keyIssue = keyIssue;
-        this.postOpinion = postOpinion;
-    }
-
-    public void updateTopic(Topic topic) {
-        this.topic = topic;
+    public void softDelete() {
+        if (!isDeleted()) {
+            markDeletedNow();
+        }
     }
 }

@@ -55,6 +55,7 @@ public class PersonalRetrospectiveController implements PersonalRetrospectiveApi
         return ApiResponse.success(response, "개인 회고 조회를 성공했습니다.");
     }
 
+    @Override
     @PutMapping("/{retrospectiveId}")
     public ResponseEntity<ApiResponse<PersonalRetrospectiveResponse>> editPersonalRetrospective(
             @PathVariable Long meetingId,
@@ -67,4 +68,15 @@ public class PersonalRetrospectiveController implements PersonalRetrospectiveApi
         return ApiResponse.success(response, "개인 회고 수정을 성공했습니다.");
     }
 
+    @Override
+    @DeleteMapping("/{retrospectiveId}")
+    public ResponseEntity<ApiResponse<Void>> deletePersonalRetrospective(
+            @PathVariable Long meetingId,
+            @PathVariable Long retrospectiveId
+    ) {
+
+        personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId);
+
+        return ApiResponse.deleted("개인 회고 삭제를 성공했습니다.");
+    }
 }
