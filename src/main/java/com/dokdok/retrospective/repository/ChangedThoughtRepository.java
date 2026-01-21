@@ -1,6 +1,6 @@
 package com.dokdok.retrospective.repository;
 
-import com.dokdok.retrospective.dto.response.ChangedThoughtProjection;
+import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
 import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

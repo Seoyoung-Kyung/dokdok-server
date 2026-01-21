@@ -1,4 +1,4 @@
-package com.dokdok.retrospective.dto.response;
+package com.dokdok.retrospective.dto.projection;
 
 public record OtherPerspectiveProjection(
         Long retrospectiveId,

@@ -1,6 +1,6 @@
 package com.dokdok.retrospective.repository;
 
-import com.dokdok.retrospective.dto.response.FreeTextProjection;
+import com.dokdok.retrospective.dto.projection.FreeTextProjection;
 import com.dokdok.retrospective.entity.RetrospectiveFreeText;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

@@ -2,6 +2,9 @@ package com.dokdok.retrospective.service;
 
 import com.dokdok.book.entity.RecordType;
 import com.dokdok.book.service.BookValidator;
+import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
+import com.dokdok.retrospective.dto.projection.FreeTextProjection;
+import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
 import com.dokdok.retrospective.dto.response.*;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
