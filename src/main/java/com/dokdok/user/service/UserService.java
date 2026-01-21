@@ -93,6 +93,38 @@ public class UserService {
         user.delete();
     }
 
+    @Transactional
+    public UserDetailResponse updateProfileImage(MultipartFile file) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        User user = getUserById(currentUserId);
+
+        String oldImageUrl = user.getProfileImageUrl();
+        if (oldImageUrl != null && !oldImageUrl.isBlank()) {
+            storageService.deleteProfileImage(oldImageUrl);
+        }
+
+        String newImageUrl = storageService.uploadProfileImage(file);
+        user.updateProfileImage(newImageUrl);
+
+        SecurityUtil.updateCurrentUserInContext(user);
+
+        String presignedUrl = storageService.getPresignedProfileImage(newImageUrl);
+        return UserDetailResponse.from(user, presignedUrl);
+    }
+
+    @Transactional
+    public void deleteProfileImage() {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        User user = getUserById(currentUserId);
+
+        String imageUrl = user.getProfileImageUrl();
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            storageService.deleteProfileImage(imageUrl);
+            user.updateProfileImage(null);
+            SecurityUtil.updateCurrentUserInContext(user);
+        }
+    }
+
     /**
      * 닉네임 유효성을 검사합니다.
      * @param nickname trim된 닉네임

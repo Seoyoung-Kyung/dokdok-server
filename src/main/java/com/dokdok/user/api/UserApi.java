@@ -385,4 +385,143 @@ public interface UserApi {
     ResponseEntity<ApiResponse<Void>> deleteCurrentUser(
             @Parameter(hidden = true) HttpServletRequest request
     );
+
+    @Operation(
+            summary = "프로필 이미지 변경",
+            description = """
+                    현재 사용자의 프로필 이미지를 변경합니다.
+                    - 기존 이미지가 있으면 삭제 후 새 이미지로 교체
+                    - jpg, jpeg, png 형식만 허용
+                    - 최대 5MB
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "프로필 이미지 변경 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UserDetailResponse.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "SUCCESS",
+                                              "message": "프로필 이미지가 변경되었습니다.",
+                                              "data": {
+                                                "userId": 1,
+                                                "nickname": "테스트닉네임",
+                                                "email": "test@example.com",
+                                                "profileImageUrl": "https://example.com/new-profile.jpg",
+                                                "createdAt": "2024-01-13T10:30:00"
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "파일 형식 오류",
+                                            description = "지원하지 않는 이미지 형식인 경우",
+                                            value = "{\"code\":\"S003\",\"message\":\"지원하지 않는 파일 형식입니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "파일 크기 초과",
+                                            description = "파일 크기가 5MB를 초과한 경우",
+                                            value = "{\"code\":\"S004\",\"message\":\"파일 크기가 제한을 초과했습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"S001\",\"message\":\"파일 업로드에 실패했습니다.\"}"
+                            )
+                    )
+            )
+    })
+    @PatchMapping(value = "/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<UserDetailResponse>> updateProfileImage(
+            @Parameter(description = "프로필 이미지 (jpg, jpeg, png / 최대 5MB)", required = true, schema = @Schema(type = "string", format = "binary"))
+            @RequestPart("profileImage") MultipartFile profileImage
+    );
+
+    @Operation(
+            summary = "프로필 이미지 삭제",
+            description = "현재 사용자의 프로필 이미지를 삭제합니다. 삭제 후 기본 이미지(null)로 설정됩니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "프로필 이미지 삭제 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"SUCCESS\",\"message\":\"프로필 이미지가 삭제되었습니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"S002\",\"message\":\"파일 삭제에 실패했습니다.\"}"
+                            )
+                    )
+            )
+    })
+    @DeleteMapping(value = "/me/profile-image", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<Void>> deleteProfileImage();
 }
