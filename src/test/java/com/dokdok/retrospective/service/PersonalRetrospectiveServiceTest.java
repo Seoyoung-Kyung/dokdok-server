@@ -35,9 +35,6 @@ import com.dokdok.book.service.BookValidator;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.retrospective.dto.response.RetrospectiveRecordResponse;
-import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
-import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
-import com.dokdok.retrospective.dto.projection.FreeTextProjection;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1399,6 +1396,136 @@ class PersonalRetrospectiveServiceTest {
                     .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
 
             verify(bookValidator, never()).validateBook(any());
+        }
+    }
+
+    // ==================== deletePersonalRetrospective 테스트 ====================
+
+    @Test
+    @DisplayName("개인 회고를 정상적으로 삭제한다")
+    void deletePersonalRetrospective_success() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+
+        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(retrospective);
+
+            // when
+            personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId);
+
+            // then
+            verify(meetingValidator).validateMeeting(meetingId);
+            verify(meetingValidator).validateMeetingMember(meetingId, userId);
+            verify(retrospectiveValidator).getRetrospective(retrospectiveId, userId);
+        }
+    }
+
+    @Test
+    @DisplayName("약속이 존재하지 않으면 예외가 발생한다 - 삭제")
+    void deletePersonalRetrospective_throwsWhenMeetingNotFound() {
+        // given
+        Long meetingId = 999L;
+        Long retrospectiveId = 100L;
+        Long userId = 3L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doThrow(new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND))
+                    .when(meetingValidator).validateMeeting(meetingId);
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId))
+                    .isInstanceOf(MeetingException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.MEETING_NOT_FOUND);
+
+            verify(retrospectiveValidator, never()).getRetrospective(any(), any());
+        }
+    }
+
+    @Test
+    @DisplayName("약속 멤버가 아니면 예외가 발생한다 - 삭제")
+    void deletePersonalRetrospective_throwsWhenNotMeetingMember() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+        Long userId = 999L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doThrow(new MeetingException(MeetingErrorCode.NOT_MEETING_MEMBER))
+                    .when(meetingValidator).validateMeetingMember(meetingId, userId);
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId))
+                    .isInstanceOf(MeetingException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.NOT_MEETING_MEMBER);
+
+            verify(retrospectiveValidator, never()).getRetrospective(any(), any());
+        }
+    }
+
+    @Test
+    @DisplayName("개인 회고가 존재하지 않으면 예외가 발생한다 - 삭제")
+    void deletePersonalRetrospective_throwsWhenRetrospectiveNotFound() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 999L;
+        Long userId = 3L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            doNothing().when(meetingValidator).validateMeeting(meetingId);
+            doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId))
+                    .thenThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId))
+                    .isInstanceOf(RetrospectiveException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
+        }
+    }
+
+    @Test
+    @DisplayName("인증 정보가 없으면 예외가 발생한다 - 삭제")
+    void deletePersonalRetrospective_throwsWhenUnauthenticated() {
+        // given
+        Long meetingId = 1L;
+        Long retrospectiveId = 100L;
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId)
+                    .thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId))
+                    .isInstanceOf(GlobalException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
+
+            verify(meetingValidator, never()).validateMeeting(any());
         }
     }
 }
