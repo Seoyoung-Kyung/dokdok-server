@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -123,5 +124,28 @@ public interface PersonalRetrospectiveApi {
             @PathVariable Long meetingId,
             @PathVariable Long retrospectiveId,
             @Valid @RequestBody PersonalRetrospectiveRequest request
+    );
+
+    @Operation(
+            summary = "개인 회고 삭제",
+            description = "기존에 작성한 개인 회고를 삭제합니다. 본인이 작성한 회고만 삭제할 수 있습니다.",
+            parameters = {
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "개인 회고 삭제 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인이 작성한 회고가 아님"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속 또는 개인 회고를 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @DeleteMapping(value = "/{retrospectiveId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<Void>> deletePersonalRetrospective(
+            @PathVariable Long meetingId,
+            @PathVariable Long retrospectiveId
     );
 }

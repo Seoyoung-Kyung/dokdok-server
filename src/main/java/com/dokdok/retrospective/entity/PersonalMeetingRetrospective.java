@@ -2,6 +2,10 @@ package com.dokdok.retrospective.entity;
 
 import com.dokdok.global.BaseTimeEntity;
 import com.dokdok.meeting.entity.Meeting;
+import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
+import com.dokdok.retrospective.exception.RetrospectiveException;
+import com.dokdok.topic.exception.TopicErrorCode;
+import com.dokdok.topic.exception.TopicException;
 import com.dokdok.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -82,5 +86,17 @@ public class PersonalMeetingRetrospective extends BaseTimeEntity {
 
     public void clearFreeTexts() {
         this.freeTexts.clear();
+    }
+
+    public void softDelete() {
+        if (isDeleted()) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_ALREADY_DELETED);
+        }
+
+        markDeletedNow();
+
+        changedThoughts.forEach(RetrospectiveChangedThought::softDelete);
+        freeTexts.forEach(RetrospectiveFreeText::softDelete);
+        othersPerspectives.forEach(RetrospectiveOthersPerspective::softDelete);
     }
 }

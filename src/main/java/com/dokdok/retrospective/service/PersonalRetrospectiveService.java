@@ -198,6 +198,19 @@ public class PersonalRetrospectiveService {
                 .toList();
     }
 
+    @Transactional
+    public void deletePersonalRetrospective(Long meetingId, Long retrospectiveId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        meetingValidator.validateMeeting(meetingId);
+        meetingValidator.validateMeetingMember(meetingId, userId);
+
+        PersonalMeetingRetrospective retrospective
+                = retrospectiveValidator.getRetrospective(retrospectiveId, userId);
+
+        retrospective.softDelete();
+    }
+
     private void setRetrospectiveData(
             PersonalMeetingRetrospective retrospective,
             PersonalRetrospectiveRequest request,
