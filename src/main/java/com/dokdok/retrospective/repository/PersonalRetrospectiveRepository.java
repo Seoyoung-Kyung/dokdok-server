@@ -25,6 +25,7 @@ public interface PersonalRetrospectiveRepository extends JpaRepository<PersonalM
             JOIN FETCH m.book b
             WHERE b.id = :bookId
             AND pmr.user.id = :userId
+            ORDER BY pmr.createdAt DESC
             """)
     List<PersonalMeetingRetrospective> findByBookAndUser(
             @Param("bookId") Long bookId,
