@@ -17,4 +17,13 @@ public interface ChangedThoughtRepository extends JpaRepository<RetrospectiveCha
             WHERE ct.personalMeetingRetrospective.id = :retrospectiveId
             """)
     List<RetrospectiveChangedThought> findByPersonalMeetingRetrospective(Long retrospectiveId);
+
+    @Query("""
+            SELECT ct
+            FROM RetrospectiveChangedThought ct
+            JOIN FETCH ct.topic t
+            JOIN FETCH ct.personalMeetingRetrospective pmr
+            WHERE ct.personalMeetingRetrospective.id IN :retrospectiveIds
+            """)
+    List<RetrospectiveChangedThought> findByRetrospectiveIds(List<Long> retrospectiveIds);
 }

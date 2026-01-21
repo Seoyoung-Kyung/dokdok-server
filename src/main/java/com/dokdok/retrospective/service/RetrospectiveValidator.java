@@ -7,8 +7,11 @@ import com.dokdok.retrospective.entity.PersonalMeetingRetrospective;
 import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
 import com.dokdok.retrospective.exception.RetrospectiveException;
 import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
+import com.dokdok.retrospective.repository.RetrospectiveRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,11 +20,12 @@ public class RetrospectiveValidator {
     private final PersonalRetrospectiveRepository personalRetrospectiveRepository;
     private final GatheringValidator gatheringValidator;
     private final MeetingValidator meetingValidator;
+    private final RetrospectiveRepository retrospectiveRepository;
 
-    public void validateRetrospective(Long meetingId, Long userId){
+    public void validateRetrospective(Long meetingId, Long userId) {
         boolean exists = personalRetrospectiveRepository.existsByMeetingIdAndUserId(meetingId, userId);
 
-        if(exists) {
+        if (exists) {
             throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_ALREADY_EXISTS);
         }
     }
@@ -32,17 +36,17 @@ public class RetrospectiveValidator {
         meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
     }
 
-    public void validateRetrospective(Long retrospectiveId){
+    public void validateRetrospective(Long retrospectiveId) {
         boolean exists = personalRetrospectiveRepository.existsById(retrospectiveId);
 
-        if(!exists) {
+        if (!exists) {
             throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
         }
     }
 
-    public PersonalMeetingRetrospective getRetrospective(Long retrospectiveId){
+    public PersonalMeetingRetrospective getRetrospective(Long retrospectiveId, Long userId) {
 
-        return personalRetrospectiveRepository.findById(retrospectiveId)
+        return personalRetrospectiveRepository.findByIdAndUser_Id(retrospectiveId, userId)
                 .orElseThrow(() -> new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
 
     }
@@ -56,5 +60,16 @@ public class RetrospectiveValidator {
         Long gatheringId = retrospective.getMeeting().getGathering().getId();
         // 삭제하는 사람이 모임장인지 확인
         gatheringValidator.validateLeader(gatheringId, userId);
+    }
+
+    public List<PersonalMeetingRetrospective> getRetrospectives(Long bookId, Long userId) {
+        List<PersonalMeetingRetrospective> retrospectives
+                = personalRetrospectiveRepository.findByBookAndUser(bookId, userId);
+
+        if (retrospectives.isEmpty()) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
+        }
+
+        return retrospectives;
     }
 }

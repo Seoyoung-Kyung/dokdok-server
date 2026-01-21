@@ -948,7 +948,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(topicId, meetingId)).thenReturn(topic);
             when(topicAnswerRepository.findPreOpinion(topicId, userId)).thenReturn(topicAnswer);
             when(topicRepository.findById(topicId)).thenReturn(Optional.of(topic));
@@ -966,7 +966,7 @@ class PersonalRetrospectiveServiceTest {
 
             verify(meetingValidator).validateMeeting(meetingId);
             verify(meetingValidator).validateMeetingMember(meetingId, userId);
-            verify(retrospectiveValidator).getRetrospective(retrospectiveId);
+            verify(retrospectiveValidator).getRetrospective(retrospectiveId, userId);
             verify(topicValidator).getTopicInMeeting(topicId, meetingId);
             verify(topicAnswerRepository).findPreOpinion(topicId, userId);
             verify(topicRepository).findById(topicId);
@@ -1009,7 +1009,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
             when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
 
             // when
@@ -1077,7 +1077,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(10L, meetingId)).thenReturn(topic1);
             when(topicValidator.getTopicInMeeting(20L, meetingId)).thenReturn(topic2);
             when(topicAnswerRepository.findPreOpinion(anyLong(), eq(userId))).thenReturn(null);
@@ -1168,7 +1168,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId))
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId))
                     .thenThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
 
             // when & then
@@ -1237,7 +1237,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(topicId, meetingId))
                     .thenThrow(new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
 

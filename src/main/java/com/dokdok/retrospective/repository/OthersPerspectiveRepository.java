@@ -18,4 +18,13 @@ public interface OthersPerspectiveRepository extends JpaRepository<Retrospective
             WHERE op.personalMeetingRetrospective.id = :retrospectiveId
             """)
     List<RetrospectiveOthersPerspective> findByPersonalMeetingRetrospective(Long retrospectiveId);
+
+    @Query("""
+            SELECT op
+            FROM RetrospectiveOthersPerspective op
+            LEFT JOIN FETCH op.topic t
+            JOIN FETCH op.meetingMember mm
+            WHERE op.personalMeetingRetrospective.id IN :retrospectiveIds
+            """)
+    List<RetrospectiveOthersPerspective> findByRetrospectiveIds(List<Long> retrospectiveIds);
 }

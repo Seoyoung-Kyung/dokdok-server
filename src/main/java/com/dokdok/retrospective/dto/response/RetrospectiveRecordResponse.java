@@ -1,13 +1,18 @@
 package com.dokdok.retrospective.dto.response;
 
+import com.dokdok.book.entity.RecordType;
 import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
 import com.dokdok.retrospective.entity.RetrospectiveFreeText;
 import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-public record PersonalRetrospectiveDetailResponse(
+public record RetrospectiveRecordResponse(
         Long retrospectiveId,
+        String gatheringName,
+        RecordType recordType,
+        LocalDateTime createdAt,
         List<ChangedThought> changedThoughts,
         List<OthersPerspective> othersPerspectives,
         List<FreeText> freeTexts
@@ -55,28 +60,40 @@ public record PersonalRetrospectiveDetailResponse(
         }
     }
 
-    public static PersonalRetrospectiveDetailResponse from(
+    public static RetrospectiveRecordResponse of(
             Long retrospectiveId,
-            List<ChangedThought> changedThoughts,
-            List<OthersPerspective> othersPerspectives,
-            List<FreeText> freeTexts
+            String gatheringName,
+            RecordType recordType,
+            LocalDateTime createdAt,
+            List<RetrospectiveRecordResponse.ChangedThought> changedThoughts,
+            List<RetrospectiveRecordResponse.OthersPerspective> othersPerspectives,
+            List<RetrospectiveRecordResponse.FreeText> freeTexts
     ) {
-        return new PersonalRetrospectiveDetailResponse(
+        return new RetrospectiveRecordResponse(
                 retrospectiveId,
+                gatheringName,
+                recordType,
+                createdAt,
                 changedThoughts,
                 othersPerspectives,
                 freeTexts
         );
     }
 
-    public static PersonalRetrospectiveDetailResponse fromEntities(
+    public static RetrospectiveRecordResponse ofEntities(
             Long retrospectiveId,
+            String gatheringName,
+            RecordType recordType,
+            LocalDateTime createdAt,
             List<RetrospectiveChangedThought> changedThoughts,
             List<RetrospectiveOthersPerspective> othersPerspectives,
             List<RetrospectiveFreeText> freeTexts
     ) {
-        return new PersonalRetrospectiveDetailResponse(
+        return new RetrospectiveRecordResponse(
                 retrospectiveId,
+                gatheringName,
+                recordType,
+                createdAt,
                 changedThoughts.stream().map(ChangedThought::from).toList(),
                 othersPerspectives.stream().map(OthersPerspective::from).toList(),
                 freeTexts.stream().map(FreeText::from).toList()
