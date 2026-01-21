@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.repository;
 
+import com.dokdok.retrospective.dto.response.FreeTextProjection;
 import com.dokdok.retrospective.entity.RetrospectiveFreeText;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,9 +14,14 @@ public interface FreeTextRepository extends JpaRepository<RetrospectiveFreeText,
     List<RetrospectiveFreeText> findByPersonalMeetingRetrospective_Id(Long retrospectiveId);
 
     @Query("""
-            SELECT ft
+            SELECT new com.dokdok.retrospective.dto.response.FreeTextProjection(
+                        ft.personalMeetingRetrospective.id,
+                        ft.title,
+                        ft.content
+            )
             FROM RetrospectiveFreeText ft
+            JOIN ft.personalMeetingRetrospective pmr
             WHERE ft.personalMeetingRetrospective.id IN :retrospectiveIds
             """)
-    List<RetrospectiveFreeText> findByRetrospectiveIds(List<Long> retrospectiveIds);
+    List<FreeTextProjection> findByRetrospectiveIds(List<Long> retrospectiveIds);
 }

@@ -1,10 +1,8 @@
 package com.dokdok.retrospective.service;
 
-import com.dokdok.book.entity.RecordType;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
-import com.dokdok.retrospective.dto.response.RetrospectiveRecordResponse;
 import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
 import com.dokdok.retrospective.entity.RetrospectiveFreeText;
 import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
@@ -12,7 +10,6 @@ import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -77,26 +74,6 @@ public class PersonalRetrospectiveAssembler {
     ) {
         return PersonalRetrospectiveDetailResponse.fromEntities(
                 retrospectiveId,
-                changedThoughts,
-                othersPerspectives,
-                freeTexts
-        );
-    }
-
-    public RetrospectiveRecordResponse assembleRecord(
-            Long retrospectiveId,
-            String gatheringName,
-            RecordType recordType,
-            LocalDateTime createdAt,
-            List<RetrospectiveChangedThought> changedThoughts,
-            List<RetrospectiveOthersPerspective> othersPerspectives,
-            List<RetrospectiveFreeText> freeTexts
-    ) {
-        return RetrospectiveRecordResponse.ofEntities(
-                retrospectiveId,
-                gatheringName,
-                recordType,
-                createdAt,
                 changedThoughts,
                 othersPerspectives,
                 freeTexts

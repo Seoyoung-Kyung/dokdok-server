@@ -2,15 +2,10 @@ package com.dokdok.retrospective.service;
 
 import com.dokdok.book.entity.RecordType;
 import com.dokdok.book.service.BookValidator;
-import com.dokdok.retrospective.dto.response.RetrospectiveRecordResponse;
+import com.dokdok.retrospective.dto.response.*;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.service.MeetingValidator;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
-import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
-import com.dokdok.retrospective.exception.RetrospectiveException;
 import com.dokdok.retrospective.repository.ChangedThoughtRepository;
 import com.dokdok.retrospective.repository.FreeTextRepository;
 import com.dokdok.retrospective.repository.OthersPerspectiveRepository;
@@ -20,7 +15,6 @@ import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -170,31 +164,33 @@ public class PersonalRetrospectiveService {
             return List.of();
         }
 
-        Map<Long, List<RetrospectiveChangedThought>> changedThoughtsMap =
+        Map<Long, List<ChangedThoughtProjection>> changedThoughtsMap =
                 changedThoughtRepository.findByRetrospectiveIds(retrospectiveIds)
                         .stream()
-                        .collect(groupingBy(ct -> ct.getPersonalMeetingRetrospective().getId()));
+                        .collect(groupingBy(ChangedThoughtProjection::retrospectiveId));
 
-        Map<Long, List<RetrospectiveOthersPerspective>> othersPerspectivesMap =
+        Map<Long, List<OtherPerspectiveProjection>> othersPerspectivesMap =
                 othersPerspectiveRepository.findByRetrospectiveIds(retrospectiveIds)
                         .stream()
-                        .collect(groupingBy(op -> op.getPersonalMeetingRetrospective().getId()));
+                        .collect(groupingBy(OtherPerspectiveProjection::retrospectiveId));
 
-        Map<Long, List<RetrospectiveFreeText>> freeTextsMap =
+        Map<Long, List<FreeTextProjection>> freeTextsMap =
                 freeTextRepository.findByRetrospectiveIds(retrospectiveIds)
                         .stream()
-                        .collect(groupingBy(ft -> ft.getPersonalMeetingRetrospective().getId()));
+                        .collect(groupingBy(FreeTextProjection::retrospectiveId));
 
-        return retrospectives
-                .stream()
-                .map(retrospective -> RetrospectiveRecordResponse.ofEntities(
+        return retrospectives.stream()
+                .map(retrospective -> RetrospectiveRecordResponse.of(
                         retrospective.getId(),
                         retrospective.getMeeting().getGathering().getGatheringName(),
                         RecordType.RETROSPECTIVE,
                         retrospective.getCreatedAt(),
-                        changedThoughtsMap.getOrDefault(retrospective.getId(), List.of()),
-                        othersPerspectivesMap.getOrDefault(retrospective.getId(), List.of()),
+                        changedThoughtsMap.getOrDefault(retrospective.getId(), List.of())
+                                .stream().map(RetrospectiveRecordResponse.ChangedThought::from).toList(),
+                        othersPerspectivesMap.getOrDefault(retrospective.getId(), List.of())
+                                .stream().map(RetrospectiveRecordResponse.OthersPerspective::from).toList(),
                         freeTextsMap.getOrDefault(retrospective.getId(), List.of())
+                                .stream().map(RetrospectiveRecordResponse.FreeText::from).toList()
                 ))
                 .toList();
     }

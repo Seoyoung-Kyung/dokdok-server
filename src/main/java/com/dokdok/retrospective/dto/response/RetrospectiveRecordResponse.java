@@ -23,11 +23,11 @@ public record RetrospectiveRecordResponse(
             String postOpinion
     ) {
 
-        public static ChangedThought from(RetrospectiveChangedThought changedThought) {
+        public static ChangedThought from(ChangedThoughtProjection changedThought) {
             return new ChangedThought(
-                    changedThought.getTopic().getId(),
-                    changedThought.getKeyIssue(),
-                    changedThought.getPostOpinion()
+                    changedThought.topicId(),
+                    changedThought.keyIssue(),
+                    changedThought.postOpinion()
             );
         }
     }
@@ -35,15 +35,17 @@ public record RetrospectiveRecordResponse(
     public record OthersPerspective(
             Long topicId,
             Long meetingMemberId,
+            String memberNickname,
             String opinionContent,
             String impressiveReason
     ) {
-        public static OthersPerspective from(RetrospectiveOthersPerspective othersPerspective) {
+        public static OthersPerspective from(OtherPerspectiveProjection othersPerspective) {
             return new OthersPerspective(
-                    othersPerspective.getTopic().getId(),
-                    othersPerspective.getMeetingMember().getId(),
-                    othersPerspective.getOpinionContent(),
-                    othersPerspective.getImpressiveReason()
+                    othersPerspective.topicId(),
+                    othersPerspective.meetingMemberId(),
+                    othersPerspective.memberNickname(),
+                    othersPerspective.opinionContent(),
+                    othersPerspective.impressiveReason()
             );
         }
     }
@@ -52,10 +54,10 @@ public record RetrospectiveRecordResponse(
             String title,
             String content
     ) {
-        public static FreeText from(RetrospectiveFreeText freeText) {
+        public static FreeText from(FreeTextProjection freeText) {
             return new FreeText(
-                    freeText.getTitle(),
-                    freeText.getContent()
+                    freeText.title(),
+                    freeText.content()
             );
         }
     }
@@ -77,26 +79,6 @@ public record RetrospectiveRecordResponse(
                 changedThoughts,
                 othersPerspectives,
                 freeTexts
-        );
-    }
-
-    public static RetrospectiveRecordResponse ofEntities(
-            Long retrospectiveId,
-            String gatheringName,
-            RecordType recordType,
-            LocalDateTime createdAt,
-            List<RetrospectiveChangedThought> changedThoughts,
-            List<RetrospectiveOthersPerspective> othersPerspectives,
-            List<RetrospectiveFreeText> freeTexts
-    ) {
-        return new RetrospectiveRecordResponse(
-                retrospectiveId,
-                gatheringName,
-                recordType,
-                createdAt,
-                changedThoughts.stream().map(ChangedThought::from).toList(),
-                othersPerspectives.stream().map(OthersPerspective::from).toList(),
-                freeTexts.stream().map(FreeText::from).toList()
         );
     }
 }
