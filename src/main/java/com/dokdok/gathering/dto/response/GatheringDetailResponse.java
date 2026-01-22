@@ -14,6 +14,7 @@ public record GatheringDetailResponse(
         String gatheringName,
         String description,
         GatheringStatus gatheringStatus,
+        Boolean isFavorite,
         String invitationLink,
         Integer daysFromCreation,
         GatheringRole currentUserRole,
@@ -37,6 +38,7 @@ public record GatheringDetailResponse(
                 .gatheringName(gathering.getGatheringName())
                 .description(gathering.getDescription())
                 .gatheringStatus(gathering.getGatheringStatus())
+                .isFavorite(currentMember.getIsFavorite())
                 .invitationLink(gathering.getInvitationLink())
                 .daysFromCreation(gathering.getDaysFromCreation())
                 .currentUserRole(currentMember.getRole())
