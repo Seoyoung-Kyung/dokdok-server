@@ -172,6 +172,7 @@ public interface BookApi {
     @GetMapping
     ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(
             @RequestParam(required = false) BookReadingStatus readingStatus,
+            @RequestParam(required = false) Long gatheringId,
             @ParameterObject
             @Parameter(
                     description = "페이징 정보 (page: 페이지 번호, size: 페이지 크기, sort: 정렬 기준)",
