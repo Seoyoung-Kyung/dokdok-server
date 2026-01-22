@@ -76,4 +76,18 @@ public class UserController implements UserApi {
             session.invalidate();
         }
     }
+
+    @Override
+    @PatchMapping("/me/profile-image")
+    public ResponseEntity<ApiResponse<UserDetailResponse>> updateProfileImage(MultipartFile profileImage) {
+        UserDetailResponse response = userService.updateProfileImage(profileImage);
+        return ApiResponse.success(response, "프로필 이미지가 변경되었습니다.");
+    }
+
+    @Override
+    @DeleteMapping("/me/profile-image")
+    public ResponseEntity<ApiResponse<Void>> deleteProfileImage() {
+        userService.deleteProfileImage();
+        return ApiResponse.success("프로필 이미지가 삭제되었습니다.");
+    }
 }
