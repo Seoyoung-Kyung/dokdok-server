@@ -35,8 +35,8 @@ public class BookValidator {
         }
     }
 
-    public PersonalBook validateInBookShelf(Long userId, Long personalBookId) {
-        return personalBookRepository.findByUserIdAndId(userId, personalBookId)
+    public PersonalBook validateInBookShelf(Long userId, Long bookId) {
+        return personalBookRepository.findByUserIdAndBookId(userId, bookId)
                 .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
     }
 

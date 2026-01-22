@@ -126,13 +126,13 @@ public interface BookApi {
                                               "data": {
                                                 "content": [
                                                   {
-                                                    "personalBookId": 10,
                                                     "bookId": 1,
                                                     "title": "예제 도서명",
                                                     "publisher": "예제 출판사",
                                                     "authors": "저자A, 저자B",
                                                     "bookReadingStatus": "READING",
-                                                    "thumbnail": "https://example.com/thumb.jpg"
+                                                    "thumbnail": "https://example.com/thumb.jpg",
+                                                    "gatheringName": "예제 모임"
                                                   }
                                                 ],
                                                 "pageable": {
@@ -204,7 +204,6 @@ public interface BookApi {
                                               "code": "SUCCESS",
                                               "message": "책 상세 정보 조회 성공",
                                               "data": {
-                                                "personalBookId": 10,
                                                 "bookId": 1,
                                                 "title": "예제 도서명",
                                                 "publisher": "예제 출판사",
@@ -220,10 +219,10 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @GetMapping("/{personalBookId}")
+    @GetMapping("/{bookId}")
     ResponseEntity<ApiResponse<PersonalBookDetailResponse>> getMyBook(
-            @Parameter(description = "조회할 개인 책 ID", required = true, example = "10")
-            @PathVariable Long personalBookId
+            @Parameter(description = "조회할 책 ID (book 테이블 PK)", required = true, example = "10")
+            @PathVariable Long bookId
     );
 
     @Operation(
@@ -253,10 +252,10 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @DeleteMapping("/{personalBookId}")
+    @DeleteMapping("/{bookId}")
     ResponseEntity<ApiResponse<Void>> deleteMyBook(
-            @Parameter(description = "삭제할 개인 책 ID", required = true, example = "10")
-            @PathVariable Long personalBookId
+            @Parameter(description = "삭제할 책 ID (book 테이블 PK)", required = true, example = "10")
+            @PathVariable Long bookId
     );
 
 
@@ -264,7 +263,7 @@ public interface BookApi {
             summary = "독서 기록 등록",
             description = """
                     내 책장에 있는 책의 독서 기록을 등록합니다.
-                    - 경로의 personalBookId로 책을 지정합니다.
+                    - 경로의 bookId로 책을 지정합니다.
                     - 요청 본문: recordType(MEMO/QUOTE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
                     - recordType이 MEMO이면 meta는 null로 저장됩니다.
                     - 로그인한 사용자 기준으로 본인 책에만 기록을 남길 수 있습니다.
@@ -289,7 +288,7 @@ public interface BookApi {
                                                   "page": 23,
                                                   "excerpt": "이 문장이 좋았다."
                                                 },
-                                                "personalBookId": 10
+                                                "bookId": 10
                                               }
                                             }
                                             """
@@ -300,10 +299,10 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @PostMapping("/{personalBookId}")
+    @PostMapping("/{bookId}")
     ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> createMyReadingRecord(
-            @Parameter(description = "독서 기록을 남길 개인 책 ID", required = true, example = "10")
-            @PathVariable Long personalBookId,
+            @Parameter(description = "독서 기록을 남길 책 ID (book 테이블 PK)", required = true, example = "10")
+            @PathVariable Long bookId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "등록할 독서 기록 내용 및 유형",
                     required = true,
@@ -331,7 +330,7 @@ public interface BookApi {
             summary = "독서 기록 수정",
             description = """
                     내 책장에 있는 책의 독서 기록을 수정합니다.
-                    - 경로의 personalBookId와 recordId로 대상을 지정합니다.
+                    - 경로의 bookId와 recordId로 대상을 지정합니다.
                     - 요청 본문: recordType(MEMO/QUOTE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
                     - recordType이 MEMO이면 meta는 null로 저장됩니다.
                     - 로그인한 사용자 기준으로 본인 책에만 기록을 수정할 수 있습니다.
@@ -356,7 +355,7 @@ public interface BookApi {
                                                   "page": 30,
                                                   "excerpt": "수정된 인용문"
                                                 },
-                                                "personalBookId": 10
+                                                "bookId": 10
                                               }
                                             }
                                             """
@@ -367,10 +366,10 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 또는 기록을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @PatchMapping("/{personalBookId}/records/{recordId}")
+    @PatchMapping("/{bookId}/records/{recordId}")
     ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> updateMyReadingRecord(
-            @Parameter(description = "수정할 개인 책 ID", required = true, example = "10")
-            @PathVariable Long personalBookId,
+            @Parameter(description = "수정할 책 ID (book 테이블 PK)", required = true, example = "10")
+            @PathVariable Long bookId,
             @Parameter(description = "수정할 기록 ID", required = true, example = "5")
             @PathVariable Long recordId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -400,7 +399,7 @@ public interface BookApi {
             summary = "독서 기록 삭제",
             description = """
                     내 책장에 있는 책의 독서 기록을 삭제합니다.
-                    - 경로의 personalBookId와 recordId로 대상을 지정합니다.
+                    - 경로의 bookId와 recordId로 대상을 지정합니다.
                     - Soft Delete로 처리되어 이후 조회에서 노출되지 않습니다.
                     - 로그인한 사용자 기준으로 본인 기록만 삭제할 수 있습니다.
                     """
@@ -424,10 +423,10 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 또는 기록을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @DeleteMapping("/{personalBookId}/records/{recordId}")
+    @DeleteMapping("/{bookId}/records/{recordId}")
     ResponseEntity<ApiResponse<Void>> deleteMyReadingRecord(
-            @Parameter(description = "삭제할 개인 책 ID", required = true, example = "10")
-            @PathVariable Long personalBookId,
+            @Parameter(description = "삭제할 책 ID (book 테이블 PK)", required = true, example = "10")
+            @PathVariable Long bookId,
             @Parameter(description = "삭제할 기록 ID", required = true, example = "5")
             @PathVariable Long recordId
     );
@@ -437,7 +436,7 @@ public interface BookApi {
             summary = "독서 기록 목록 조회",
             description = """
                     내 책장에 있는 책의 독서 기록을 조회합니다.
-                    - 경로의 personalBookId로 책을 지정합니다.
+                    - 경로의 bookId로 책을 지정합니다.
                     - 로그인한 사용자 기준으로 본인 책의 기록만 조회됩니다.
                     - page/size/sort 파라미터로 페이징과 정렬을 제어할 수 있습니다. (기본 정렬: createdAt DESC)
                     """
@@ -463,7 +462,7 @@ public interface BookApi {
                                                       "page": 23,
                                                       "excerpt": "이 문장이 좋았다."
                                                     },
-                                                    "personalBookId": 10
+                                                    "bookId": 10
                                                   }
                                                 ],
                                                 "pageable": {
@@ -500,10 +499,10 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @GetMapping("/{personalBookId}/records")
+    @GetMapping("/{bookId}/records")
     ResponseEntity<ApiResponse<Page<PersonalReadingRecordListResponse>>> getMyReadingRecords(
-            @Parameter(description = "책장 ID", required = true, example = "10")
-            @PathVariable Long personalBookId,
+            @Parameter(description = "책 ID (book 테이블 PK)", required = true, example = "10")
+            @PathVariable Long bookId,
             @ParameterObject
             @Parameter(
                     description = "페이징 정보 (page: 페이지 번호, size: 페이지 크기, sort: 정렬 기준)",

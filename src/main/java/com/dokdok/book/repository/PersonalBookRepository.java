@@ -13,7 +13,6 @@ import java.util.Optional;
 
 @Repository
 public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long> {
-    Optional<PersonalBook> findByUserIdAndId(Long userId, Long Id);
     Optional<PersonalBook> findByUserIdAndBookId(Long userId, Long bookId);
     Page<PersonalBook> findByUserId(Long userId, Pageable pageable);
     Page<PersonalBook> findAllByUserIdAndReadingStatus(Long userId, BookReadingStatus bookReadingStatus, Pageable pageable);
@@ -36,7 +35,6 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
     @Query(
             value = """
                     (SELECT
-                        pb.personal_book_id AS personalBookId,
                         b.book_id AS bookId,
                         b.book_name AS title,
                         b.publisher AS publisher,
@@ -62,7 +60,6 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
                       AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId))
                     UNION
                     (SELECT
-                        NULL AS personalBookId,
                         b.book_id AS bookId,
                         b.book_name AS title,
                         b.publisher AS publisher,
@@ -93,7 +90,7 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
             countQuery = """
                     SELECT COUNT(*) FROM (
                         (SELECT
-                             pb.personal_book_id AS personalBookId
+                             b.book_id AS bookId
                          FROM personal_book pb
                                   JOIN book b
                                        ON pb.book_id = b.book_id
@@ -111,7 +108,7 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
                            AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId))
                         UNION
                         (SELECT
-                             b.book_id AS personalBookId
+                             b.book_id AS bookId
                          FROM gathering_book gb
                                   JOIN gathering g
                                        ON g.gathering_id = gb.gathering_id

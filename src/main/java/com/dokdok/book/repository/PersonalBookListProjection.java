@@ -3,7 +3,6 @@ package com.dokdok.book.repository;
 import com.dokdok.book.entity.BookReadingStatus;
 
 public interface PersonalBookListProjection {
-    Long getPersonalBookId();
     Long getBookId();
     String getTitle();
     String getPublisher();

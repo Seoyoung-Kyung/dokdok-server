@@ -276,11 +276,6 @@ class PersonalBookServiceTest {
 
         PersonalBookListProjection projection = new PersonalBookListProjection() {
             @Override
-            public Long getPersonalBookId() {
-                return 100L;
-            }
-
-            @Override
             public Long getBookId() {
                 return book.getId();
             }
@@ -450,7 +445,7 @@ class PersonalBookServiceTest {
     void deleteBook_Success() {
         // given
         Long userId = 1L;
-        Long personalBookId = 100L;
+        Long bookId = 10L;
 
         User user = User.builder()
                 .id(userId)
@@ -459,7 +454,7 @@ class PersonalBookServiceTest {
                 .build();
 
         Book book = Book.builder()
-                .id(10L)
+                .id(bookId)
                 .bookName("테스트 책")
                 .publisher("테스트 출판사")
                 .author("테스트 저자")
@@ -467,7 +462,7 @@ class PersonalBookServiceTest {
                 .build();
 
         PersonalBook personalBook = PersonalBook.builder()
-                .id(personalBookId)
+                .id(100L)
                 .user(user)
                 .book(book)
                 .readingStatus(BookReadingStatus.READING)
@@ -475,15 +470,15 @@ class PersonalBookServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, personalBookId)).thenReturn(personalBook);
+        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
 
         // when
-        personalBookService.deleteBook(personalBookId);
+        personalBookService.deleteBook(bookId);
 
         // then
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
         verify(personalBookRepository, times(1)).delete(personalBook);
     }
 
@@ -492,7 +487,7 @@ class PersonalBookServiceTest {
     void deleteBook_NotFound() {
         // given
         Long userId = 1L;
-        Long personalBookId = 100L;
+        Long bookId = 10L;
 
         User user = User.builder()
                 .id(userId)
@@ -502,17 +497,17 @@ class PersonalBookServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, personalBookId))
+        when(bookValidator.validateInBookShelf(userId, bookId))
                 .thenThrow(new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
 
         // when & then
-        assertThatThrownBy(() -> personalBookService.deleteBook(personalBookId))
+        assertThatThrownBy(() -> personalBookService.deleteBook(bookId))
                 .isInstanceOf(BookException.class)
                 .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_IN_SHELF);
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
         verify(personalBookRepository, never()).delete(any());
     }
 }
