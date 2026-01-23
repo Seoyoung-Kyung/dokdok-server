@@ -35,7 +35,6 @@ public class TopicValidator {
         return topics;
     }
 
-
     /**
      * 해당 약속에 속한 주제인지 검증하고 Topic을 반환한다.
      */
@@ -63,6 +62,15 @@ public class TopicValidator {
 
     public TopicAnswer getTopicAnswer(Long topicId, Long userId) {
         return topicAnswerRepository.findByTopicIdAndUserId(topicId, userId)
+                .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+    }
+
+    public TopicAnswer validateTopicAnswerByUser(Long meetingId, Long userId) {
+        boolean exists = topicAnswerRepository.existsByMeetingIdAndUserId(meetingId, userId);
+
+        if (!exists) {
+
+        }
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
     }
 

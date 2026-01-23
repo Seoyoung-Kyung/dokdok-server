@@ -137,5 +137,4 @@ public class TopicAnswerService {
 
         answer.softDelete();
     }
-
 }

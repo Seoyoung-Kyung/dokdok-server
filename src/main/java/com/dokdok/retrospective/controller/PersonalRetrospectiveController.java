@@ -39,7 +39,7 @@ public class PersonalRetrospectiveController implements PersonalRetrospectiveApi
         PersonalRetrospectiveFormResponse response
                 = personalRetrospectiveService.getPersonalRetrospectiveForm(meetingId);
 
-        return ApiResponse.success(response, "개인 회고 입력 폼 조회 성공했습니다.");
+        return ApiResponse.success(response, "개인 회고 입력 폼 조회를 성공했습니다.");
     }
 
 
@@ -52,7 +52,7 @@ public class PersonalRetrospectiveController implements PersonalRetrospectiveApi
         PersonalRetrospectiveDetailResponse response
                 = personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId);
 
-        return ApiResponse.success(response, "개인 회고 조회를 성공했습니다.");
+        return ApiResponse.success(response, "개인 회고 수정 폼 조회를 성공했습니다.");
     }
 
     @Override

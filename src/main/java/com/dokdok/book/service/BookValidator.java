@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -80,6 +81,15 @@ public class BookValidator {
         BigDecimal scaled = rating.multiply(BigDecimal.TEN);
         if (scaled.remainder(new BigDecimal("5")).compareTo(BigDecimal.ZERO) != 0) {
             throw new BookException(BookErrorCode.BOOK_REVIEW_INVALID_RATING);
+        }
+    }
+
+    public void validateUserHasWrittenBookReview(Long meetingId, Long userId) {
+
+        boolean exists = bookReviewRepository.existsByMeetingIdAndUserId(meetingId, userId);
+
+        if(!exists) {
+            throw new BookException(BookErrorCode.BOOK_REVIEW_ACCESS_DENIED_NOT_WRITTEN);
         }
     }
 }

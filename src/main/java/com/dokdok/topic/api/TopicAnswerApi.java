@@ -24,16 +24,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Tag(name = "토픽 답변", description = "토픽 답변 관련 API")
-@RequestMapping("/api/gatherings/{gathering_id}/meetings/{meeting_id}/topics/{topic_id}/answers")
+@RequestMapping("/api/gatherings/{gatheringId}/meetings/{meetingId}/topics/{topicId}/answers")
 public interface TopicAnswerApi {
 
     @Operation(
             summary = "토픽 답변 저장",
             description = "토픽 답변을 저장합니다.",
             parameters = {
-                    @Parameter(name = "gathering_id", description = "모임 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "meeting_id", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "topic_id", description = "토픽 식별자", in = ParameterIn.PATH, required = true)
+                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "topicId", description = "토픽 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
@@ -49,9 +49,9 @@ public interface TopicAnswerApi {
     })
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<TopicAnswerResponse>> createAnswer(
-            @PathVariable("gathering_id") Long gatheringId,
-            @PathVariable("meeting_id") Long meetingId,
-            @PathVariable("topic_id") Long topicId,
+            @PathVariable("gatheringId") Long gatheringId,
+            @PathVariable("meetingId") Long meetingId,
+            @PathVariable("topicId") Long topicId,
             @Valid @RequestBody TopicAnswerRequest request
     );
 
@@ -102,9 +102,9 @@ public interface TopicAnswerApi {
     })
     @PatchMapping(value = "/me", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<TopicAnswerResponse>> updateMyAnswer(
-            @PathVariable("gathering_id") Long gatheringId,
-            @PathVariable("meeting_id") Long meetingId,
-            @PathVariable("topic_id") Long topicId,
+            @PathVariable("gatheringId") Long gatheringId,
+            @PathVariable("meetingId") Long meetingId,
+            @PathVariable("topicId") Long topicId,
             @Valid @RequestBody TopicAnswerRequest request
     );
 
@@ -112,9 +112,9 @@ public interface TopicAnswerApi {
             summary = "내 토픽 답변 제출",
             description = "현재 로그인 사용자의 토픽 답변을 제출합니다.",
             parameters = {
-                    @Parameter(name = "gathering_id", description = "모임 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "meeting_id", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "topic_id", description = "토픽 식별자", in = ParameterIn.PATH, required = true)
+                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "topicId", description = "토픽 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
@@ -130,18 +130,18 @@ public interface TopicAnswerApi {
     })
     @PatchMapping(value = "/submit", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<TopicAnswerSubmitResponse>> submitMyAnswer(
-            @PathVariable("gathering_id") Long gatheringId,
-            @PathVariable("meeting_id") Long meetingId,
-            @PathVariable("topic_id") Long topicId
+            @PathVariable("gatheringId") Long gatheringId,
+            @PathVariable("meetingId") Long meetingId,
+            @PathVariable("topicId") Long topicId
     );
 
     @Operation(
             summary = "내 토픽 답변 삭제",
             description = "현재 로그인 사용자의 토픽 답변을 삭제합니다.",
             parameters = {
-                    @Parameter(name = "gathering_id", description = "모임 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "meeting_id", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "topic_id", description = "토픽 식별자", in = ParameterIn.PATH, required = true)
+                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "topicId", description = "토픽 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
@@ -154,8 +154,8 @@ public interface TopicAnswerApi {
     })
     @DeleteMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<Void>> deleteMyAnswer(
-            @PathVariable("gathering_id") Long gatheringId,
-            @PathVariable("meeting_id") Long meetingId,
-            @PathVariable("topic_id") Long topicId
+            @PathVariable("gatheringId") Long gatheringId,
+            @PathVariable("meetingId") Long meetingId,
+            @PathVariable("topicId") Long topicId
     );
 }
