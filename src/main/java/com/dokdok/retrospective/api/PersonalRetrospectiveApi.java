@@ -3,12 +3,14 @@ package com.dokdok.retrospective.api;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.retrospective.dto.request.PersonalRetrospectiveRequest;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
+import com.dokdok.retrospective.dto.response.PersonalRetrospectiveEditResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
 import com.dokdok.retrospective.dto.response.PersonalRetrospectiveResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,10 +41,66 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PersonalRetrospectiveResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임 또는 사용자를 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 해당 약속에 대한 회고가 존재함"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "약속 멤버가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "약속을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "이미 해당 약속에 대한 회고가 존재함",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"R101\",\"message\":\"이미 해당 약속에 대한 회고가 존재합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                            )
+                    )
+            )
     })
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<PersonalRetrospectiveResponse>> writePersonalRetrospective(
@@ -64,12 +122,58 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PersonalRetrospectiveFormResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속 멤버가 아님"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 해당 약속에 대한 회고가 존재함"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "약속 멤버가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "약속을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "이미 해당 약속에 대한 회고가 존재함",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"R101\",\"message\":\"이미 해당 약속에 대한 회고가 존재합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                            )
+                    )
+            )
     })
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/form", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<PersonalRetrospectiveFormResponse>> getPersonalRetrospectiveForm(
             @PathVariable Long meetingId
     );
@@ -87,14 +191,131 @@ public interface PersonalRetrospectiveApi {
                     responseCode = "200",
                     description = "개인 회고 수정 폼 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalRetrospectiveResponse.class))
+                            schema = @Schema(implementation = PersonalRetrospectiveEditResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속 멤버가 아님"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속 또는 개인 회고를 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "약속 멤버가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "약속 또는 개인 회고를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "약속 없음",
+                                            description = "약속을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "회고 없음",
+                                            description = "개인 회고를 찾을 수 없는 경우",
+                                            value = "{\"code\":\"R102\",\"message\":\"회고를 찾을 수 없습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                            )
+                    )
+            )
+    })
+    @GetMapping(value = "/{retrospectiveId}/form", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<PersonalRetrospectiveEditResponse>> getPersonalRetrospectiveEditForm(
+            @PathVariable Long meetingId,
+            @PathVariable Long retrospectiveId
+    );
+
+    @Operation(
+            summary = "개인 회고 상세 조회",
+            description = "특정 개인 회고의 상세 정보를 조회합니다.",
+            parameters = {
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "개인 회고 상세 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PersonalRetrospectiveDetailResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "약속 멤버가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "약속 또는 개인 회고를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "약속 없음",
+                                            description = "약속을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "회고 없음",
+                                            description = "개인 회고를 찾을 수 없는 경우",
+                                            value = "{\"code\":\"R102\",\"message\":\"회고를 찾을 수 없습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                            )
+                    )
+            )
     })
     @GetMapping(value = "/{retrospectiveId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ApiResponse<PersonalRetrospectiveDetailResponse>> getPersonalRetrospectiveEditForm(
+    ResponseEntity<ApiResponse<PersonalRetrospectiveDetailResponse>> getPersonalRetrospective(
             @PathVariable Long meetingId,
             @PathVariable Long retrospectiveId
     );
@@ -114,10 +335,65 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PersonalRetrospectiveResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속 멤버가 아님"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속 또는 개인 회고를 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "약속 멤버가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "약속 또는 개인 회고를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "약속 없음",
+                                            description = "약속을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "회고 없음",
+                                            description = "개인 회고를 찾을 수 없는 경우",
+                                            value = "{\"code\":\"R102\",\"message\":\"회고를 찾을 수 없습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                            )
+                    )
+            )
     })
     @PutMapping(value = "/{retrospectiveId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<PersonalRetrospectiveResponse>> editPersonalRetrospective(
@@ -137,11 +413,68 @@ public interface PersonalRetrospectiveApi {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "개인 회고 삭제 성공"
+                    description = "개인 회고 삭제 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"SUCCESS\",\"message\":\"개인 회고가 삭제되었습니다.\"}"
+                            )
+                    )
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인이 작성한 회고가 아님"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속 또는 개인 회고를 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "본인이 작성한 회고가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G101\",\"message\":\"접근 권한이 없습니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "약속 또는 개인 회고를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "약속 없음",
+                                            description = "약속을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "회고 없음",
+                                            description = "개인 회고를 찾을 수 없는 경우",
+                                            value = "{\"code\":\"R102\",\"message\":\"회고를 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "이미 삭제됨",
+                                            description = "이미 삭제된 개인 회고인 경우",
+                                            value = "{\"code\":\"R104\",\"message\":\"이미 삭제된 개인 회고입니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                            )
+                    )
+            )
     })
     @DeleteMapping(value = "/{retrospectiveId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<Void>> deletePersonalRetrospective(

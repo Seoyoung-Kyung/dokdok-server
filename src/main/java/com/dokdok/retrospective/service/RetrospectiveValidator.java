@@ -20,7 +20,6 @@ public class RetrospectiveValidator {
     private final PersonalRetrospectiveRepository personalRetrospectiveRepository;
     private final GatheringValidator gatheringValidator;
     private final MeetingValidator meetingValidator;
-    private final RetrospectiveRepository retrospectiveRepository;
 
     public void validateRetrospective(Long meetingId, Long userId) {
         boolean exists = personalRetrospectiveRepository.existsByMeetingIdAndUserId(meetingId, userId);
