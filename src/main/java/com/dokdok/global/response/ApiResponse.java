@@ -1,10 +1,8 @@
 package com.dokdok.global.response;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(
         String code,
         String message,

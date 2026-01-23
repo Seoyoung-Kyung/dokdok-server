@@ -380,6 +380,7 @@ class GatheringServiceTest {
 		assertThat(response.gatheringName()).isEqualTo("독서 모임");
 		assertThat(response.description()).isEqualTo("열심히 읽는 모임");
 		assertThat(response.gatheringStatus()).isEqualTo(ACTIVE);
+		assertThat(response.isFavorite()).isFalse();
 		assertThat(response.invitationLink()).isEqualTo("https://invite.link/abc123");
 		assertThat(response.currentUserRole()).isEqualTo(MEMBER);
 		assertThat(response.totalMembers()).isEqualTo(2);
