@@ -5,6 +5,7 @@ import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.*;
+import com.dokdok.book.entity.BookReadingStatus;
 import com.dokdok.book.service.BookService;
 import com.dokdok.book.service.PersonalBookService;
 import com.dokdok.book.service.PersonalReadingRecordService;
@@ -42,54 +43,54 @@ public class BookController implements BookApi {
 
     @Override
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(Pageable pageable) {
-        Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(pageable);
+    public ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(BookReadingStatus readingStatus, Long gatheringId, Pageable pageable) {
+        Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(readingStatus, gatheringId, pageable);
         return ApiResponse.success(personalBookList, "책 리스트 조회 성공");
     }
 
     @Override
-    @GetMapping("/{personalBookId}")
-    public ResponseEntity<ApiResponse<PersonalBookDetailResponse>> getMyBook(@PathVariable Long personalBookId) {
-        PersonalBookDetailResponse personalBook = personalBookService.getPersonalBook(personalBookId);
+    @GetMapping("/{bookId}")
+    public ResponseEntity<ApiResponse<PersonalBookDetailResponse>> getMyBook(@PathVariable Long bookId) {
+        PersonalBookDetailResponse personalBook = personalBookService.getPersonalBook(bookId);
         return ApiResponse.success(personalBook, "책 상세 정보 조회 성공");
     }
 
     @Override
-    @DeleteMapping("/{personalBookId}")
-    public ResponseEntity<ApiResponse<Void>> deleteMyBook(@PathVariable Long personalBookId) {
-        personalBookService.deleteBook(personalBookId);
+    @DeleteMapping("/{bookId}")
+    public ResponseEntity<ApiResponse<Void>> deleteMyBook(@PathVariable Long bookId) {
+        personalBookService.deleteBook(bookId);
         return ApiResponse.deleted("책 삭제 성공");
     }
 
     @Override
-    @PostMapping("/{personalBookId}")
-    public ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> createMyReadingRecord(@PathVariable Long personalBookId, @RequestBody PersonalReadingRecordCreateRequest request) {
-        PersonalReadingRecordCreateResponse response = personalReadingRecordService.create(personalBookId, request);
+    @PostMapping("/{bookId}")
+    public ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> createMyReadingRecord(@PathVariable Long bookId, @RequestBody PersonalReadingRecordCreateRequest request) {
+        PersonalReadingRecordCreateResponse response = personalReadingRecordService.create(bookId, request);
         return ApiResponse.created(response, "기록 등록 성공");
     }
 
     @Override
-    @PatchMapping("/{personalBookId}/records/{recordId}")
-    public ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> updateMyReadingRecord(@PathVariable Long personalBookId, @PathVariable Long recordId, @RequestBody PersonalReadingRecordUpdateRequest request) {
-        PersonalReadingRecordCreateResponse response = personalReadingRecordService.update(personalBookId, recordId, request);
+    @PatchMapping("/{bookId}/records/{recordId}")
+    public ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> updateMyReadingRecord(@PathVariable Long bookId, @PathVariable Long recordId, @RequestBody PersonalReadingRecordUpdateRequest request) {
+        PersonalReadingRecordCreateResponse response = personalReadingRecordService.update(bookId, recordId, request);
         return ApiResponse.success(response, "기록 수정 성공");
     }
 
     @Override
-    @DeleteMapping("/{personalBookId}/records/{recordId}")
-    public ResponseEntity<ApiResponse<Void>> deleteMyReadingRecord(@PathVariable Long personalBookId, @PathVariable Long recordId) {
-        personalReadingRecordService.delete(personalBookId, recordId);
+    @DeleteMapping("/{bookId}/records/{recordId}")
+    public ResponseEntity<ApiResponse<Void>> deleteMyReadingRecord(@PathVariable Long bookId, @PathVariable Long recordId) {
+        personalReadingRecordService.delete(bookId, recordId);
         return ApiResponse.deleted("기록 삭제 성공");
     }
 
     @Override
-    @GetMapping("/{personalBookId}/records")
+    @GetMapping("/{bookId}/records")
     public ResponseEntity<ApiResponse<Page<PersonalReadingRecordListResponse>>> getMyReadingRecords(
-            @PathVariable Long personalBookId,
+            @PathVariable Long bookId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
 
-        Page<PersonalReadingRecordListResponse> records = personalReadingRecordService.getRecords(personalBookId, pageable);
+        Page<PersonalReadingRecordListResponse> records = personalReadingRecordService.getRecords(bookId, pageable);
         return ApiResponse.success(records, "기록 조회 성공");
 
     }

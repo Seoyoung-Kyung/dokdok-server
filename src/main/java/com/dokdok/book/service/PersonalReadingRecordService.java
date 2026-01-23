@@ -31,9 +31,9 @@ public class PersonalReadingRecordService {
     private final BookValidator bookValidator;
 
     @Transactional
-    public PersonalReadingRecordCreateResponse create(Long personalBookId, PersonalReadingRecordCreateRequest request) {
+    public PersonalReadingRecordCreateResponse create(Long bookId, PersonalReadingRecordCreateRequest request) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
-        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
 
         Map<String, Object> normalizedMeta = normalizeMeta(request.recordType(), request.meta());
 
@@ -51,12 +51,12 @@ public class PersonalReadingRecordService {
     }
 
     @Transactional
-    public PersonalReadingRecordCreateResponse update(Long personalBookId, Long recordId, PersonalReadingRecordUpdateRequest request) {
+    public PersonalReadingRecordCreateResponse update(Long bookId, Long recordId, PersonalReadingRecordUpdateRequest request) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
-        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
 
         PersonalReadingRecord personalReadingRecord = personalReadingRecordRepository
-                .findByIdAndPersonalBookIdAndUserId(recordId, personalBookEntity.getId(), userEntity.getId())
+                .findByIdAndPersonalBook_Book_IdAndUserId(recordId, personalBookEntity.getBook().getId(), userEntity.getId())
                 .orElseThrow(() -> new RecordException(RecordErrorCode.RECORD_NOT_FOUND));
 
         Map<String, Object> normalizedMeta = normalizeMeta(request.recordType(), request.meta());
@@ -71,12 +71,12 @@ public class PersonalReadingRecordService {
     }
 
     @Transactional
-    public void delete(Long personalBookId, Long recordId) {
+    public void delete(Long bookId, Long recordId) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
-        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
 
         PersonalReadingRecord personalReadingRecord = personalReadingRecordRepository
-                .findByIdAndPersonalBookIdAndUserId(recordId, personalBookEntity.getId(), userEntity.getId())
+                .findByIdAndPersonalBook_Book_IdAndUserId(recordId, personalBookEntity.getBook().getId(), userEntity.getId())
                 .orElseThrow(() -> new RecordException(RecordErrorCode.RECORD_NOT_FOUND));
 
         if (personalReadingRecord.isDeleted()) {
@@ -86,13 +86,13 @@ public class PersonalReadingRecordService {
         personalReadingRecord.delete();
     }
 
-    public Page<PersonalReadingRecordListResponse> getRecords(Long personalBookId, Pageable pageable) {
+    public Page<PersonalReadingRecordListResponse> getRecords(Long bookId, Pageable pageable) {
 
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
-        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+        PersonalBook personalBookEntity = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
 
-        Page<PersonalReadingRecord> entities = personalReadingRecordRepository.findAllByPersonalBookIdAndUserId(
-                personalBookEntity.getId(),
+        Page<PersonalReadingRecord> entities = personalReadingRecordRepository.findAllByPersonalBook_Book_IdAndUserId(
+                personalBookEntity.getBook().getId(),
                 userEntity.getId(),
                 pageable
         );

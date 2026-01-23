@@ -8,6 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface PersonalReadingRecordRepository extends JpaRepository<PersonalReadingRecord, Long> {
-    Optional<PersonalReadingRecord> findByIdAndPersonalBookIdAndUserId(Long id, Long personalBookId, Long userId);
-    Page<PersonalReadingRecord> findAllByPersonalBookIdAndUserId(Long personalBookId, Long userId, Pageable pageable);
+    Optional<PersonalReadingRecord> findByIdAndPersonalBook_Book_IdAndUserId(Long id, Long bookId, Long userId);
+    Page<PersonalReadingRecord> findAllByPersonalBook_Book_IdAndUserId(Long bookId, Long userId, Pageable pageable);
 }

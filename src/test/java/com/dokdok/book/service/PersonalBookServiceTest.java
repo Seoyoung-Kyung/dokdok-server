@@ -10,6 +10,7 @@ import com.dokdok.book.entity.PersonalBook;
 import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
+import com.dokdok.book.repository.PersonalBookListProjection;
 import com.dokdok.book.repository.PersonalBookRepository;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.entity.User;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -257,6 +259,7 @@ class PersonalBookServiceTest {
         // given
         Long userId = 1L;
         Pageable pageable = PageRequest.of(0, 10);
+        LocalDateTime addedAt = LocalDateTime.now();
 
         User user = User.builder()
                 .id(userId)
@@ -271,21 +274,56 @@ class PersonalBookServiceTest {
                 .author("테스트 저자")
                 .build();
 
-        PersonalBook personalBook = PersonalBook.builder()
-                .id(100L)
-                .user(user)
-                .book(book)
-                .readingStatus(BookReadingStatus.READING)
-                .build();
+        PersonalBookListProjection projection = new PersonalBookListProjection() {
+            @Override
+            public Long getBookId() {
+                return book.getId();
+            }
 
-        Page<PersonalBook> page = new PageImpl<>(List.of(personalBook), pageable, 1);
+            @Override
+            public String getTitle() {
+                return book.getBookName();
+            }
+
+            @Override
+            public String getPublisher() {
+                return book.getPublisher();
+            }
+
+            @Override
+            public String getAuthors() {
+                return book.getAuthor();
+            }
+
+            @Override
+            public BookReadingStatus getBookReadingStatus() {
+                return BookReadingStatus.READING;
+            }
+
+            @Override
+            public String getThumbnail() {
+                return null;
+            }
+
+            @Override
+            public String getGatheringName() {
+                return null;
+            }
+
+            @Override
+            public LocalDateTime getAddedAt() {
+                return addedAt;
+            }
+        };
+
+        Page<PersonalBookListProjection> page = new PageImpl<>(List.of(projection), pageable, 1);
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(personalBookRepository.findByUserId(userId, pageable)).thenReturn(page);
+        when(personalBookRepository.findMyBooksWithGathering(userId, null, null, pageable)).thenReturn(page);
 
         // when
-        Page<PersonalBookListResponse> responses = personalBookService.getPersonalBookList(pageable);
+        Page<PersonalBookListResponse> responses = personalBookService.getPersonalBookList(null, null, pageable);
 
         // then
         assertThat(responses.getContent()).hasSize(1);
@@ -297,7 +335,7 @@ class PersonalBookServiceTest {
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(personalBookRepository, times(1)).findByUserId(userId, pageable);
+        verify(personalBookRepository, times(1)).findMyBooksWithGathering(userId, null, null, pageable);
     }
 
     @Test
@@ -313,20 +351,20 @@ class PersonalBookServiceTest {
                 .nickname("tester")
                 .build();
 
-        Page<PersonalBook> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+        Page<PersonalBookListProjection> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(personalBookRepository.findByUserId(userId, pageable)).thenReturn(emptyPage);
+        when(personalBookRepository.findMyBooksWithGathering(userId, null, null, pageable)).thenReturn(emptyPage);
 
         // when & then
-        assertThatThrownBy(() -> personalBookService.getPersonalBookList(pageable))
+        assertThatThrownBy(() -> personalBookService.getPersonalBookList(null, null, pageable))
                 .isInstanceOf(BookException.class)
                 .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_IN_SHELF);
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(personalBookRepository, times(1)).findByUserId(userId, pageable);
+        verify(personalBookRepository, times(1)).findMyBooksWithGathering(userId, null, null, pageable);
     }
 
     @Test
@@ -407,7 +445,7 @@ class PersonalBookServiceTest {
     void deleteBook_Success() {
         // given
         Long userId = 1L;
-        Long personalBookId = 100L;
+        Long bookId = 10L;
 
         User user = User.builder()
                 .id(userId)
@@ -416,7 +454,7 @@ class PersonalBookServiceTest {
                 .build();
 
         Book book = Book.builder()
-                .id(10L)
+                .id(bookId)
                 .bookName("테스트 책")
                 .publisher("테스트 출판사")
                 .author("테스트 저자")
@@ -424,7 +462,7 @@ class PersonalBookServiceTest {
                 .build();
 
         PersonalBook personalBook = PersonalBook.builder()
-                .id(personalBookId)
+                .id(100L)
                 .user(user)
                 .book(book)
                 .readingStatus(BookReadingStatus.READING)
@@ -432,15 +470,15 @@ class PersonalBookServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, personalBookId)).thenReturn(personalBook);
+        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
 
         // when
-        personalBookService.deleteBook(personalBookId);
+        personalBookService.deleteBook(bookId);
 
         // then
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
         verify(personalBookRepository, times(1)).delete(personalBook);
     }
 
@@ -449,7 +487,7 @@ class PersonalBookServiceTest {
     void deleteBook_NotFound() {
         // given
         Long userId = 1L;
-        Long personalBookId = 100L;
+        Long bookId = 10L;
 
         User user = User.builder()
                 .id(userId)
@@ -459,17 +497,17 @@ class PersonalBookServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, personalBookId))
+        when(bookValidator.validateInBookShelf(userId, bookId))
                 .thenThrow(new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
 
         // when & then
-        assertThatThrownBy(() -> personalBookService.deleteBook(personalBookId))
+        assertThatThrownBy(() -> personalBookService.deleteBook(bookId))
                 .isInstanceOf(BookException.class)
                 .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_IN_SHELF);
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, personalBookId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
         verify(personalBookRepository, never()).delete(any());
     }
 }

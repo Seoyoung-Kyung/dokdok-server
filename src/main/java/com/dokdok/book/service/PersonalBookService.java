@@ -10,6 +10,7 @@ import com.dokdok.book.entity.PersonalBook;
 import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
+import com.dokdok.book.repository.PersonalBookListProjection;
 import com.dokdok.book.repository.PersonalBookRepository;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.entity.User;
@@ -48,9 +49,15 @@ public class PersonalBookService {
     }
 
     // List
-    public Page<PersonalBookListResponse> getPersonalBookList(Pageable pageable) {
+    public Page<PersonalBookListResponse> getPersonalBookList(BookReadingStatus bookReadingStatus, Long gatheringId, Pageable pageable) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
-        Page<PersonalBook> page = personalBookRepository.findByUserId(userEntity.getId(), pageable);
+
+        Page<PersonalBookListProjection> page = personalBookRepository.findMyBooksWithGathering(
+                userEntity.getId(),
+                gatheringId,       // null이면 모임 필터 스킵
+                bookReadingStatus, // null이면 상태 필터 스킵
+                pageable
+        );
 
         if (page.isEmpty()) {
             throw new BookException(BookErrorCode.BOOK_NOT_IN_SHELF);
@@ -59,19 +66,19 @@ public class PersonalBookService {
         return page.map(PersonalBookListResponse::from);
     }
 
-    public PersonalBookDetailResponse getPersonalBook(Long personalBookId) {
+    public PersonalBookDetailResponse getPersonalBook(Long bookId) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
         // 책 정보 GET Logic
-        PersonalBook entity = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+        PersonalBook entity = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
 
         return PersonalBookDetailResponse.from(entity);
     }
 
     @Transactional
-    public void deleteBook(Long personalBookId) {
+    public void deleteBook(Long bookId) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
 
-        PersonalBook personalBook = bookValidator.validateInBookShelf(userEntity.getId(), personalBookId);
+        PersonalBook personalBook = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
 
         personalBookRepository.delete(personalBook);
     }
