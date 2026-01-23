@@ -34,12 +34,12 @@ public interface AuthApi {
                                     @ExampleObject(
                                             name = "온보딩 완료된 사용자",
                                             description = "닉네임이 설정된 사용자",
-                                            value = "{\"code\":\"SUCCESS\",\"message\":\"로그인 사용자 정보 조회 성공\",\"data\":{\"userId\":1,\"nickname\":\"테스트닉네임\",\"profileImageUrl\":\"https://example.com/profile.jpg\"}}"
+                                            value = "{\"code\":\"SUCCESS\",\"message\":\"로그인 사용자 정보 조회 성공\",\"data\":{\"userId\":1,\"nickname\":\"테스트닉네임\",\"profileImageUrl\":\"https://example.com/profile.jpg\",\"needsOnboarding\":false}}"
                                     ),
                                     @ExampleObject(
                                             name = "온보딩 필요한 사용자",
                                             description = "닉네임이 설정되지 않은 신규 사용자",
-                                            value = "{\"code\":\"SUCCESS\",\"message\":\"로그인 사용자 정보 조회 성공\",\"data\":{\"userId\":2,\"profileImageUrl\":\"https://example.com/profile.jpg\",\"needsOnboarding\":true}}"
+                                            value = "{\"code\":\"SUCCESS\",\"message\":\"로그인 사용자 정보 조회 성공\",\"data\":{\"userId\":1,\"nickname\":\"null\",\"profileImageUrl\":\"null\",\"needsOnboarding\":true}}"
                                     )
                             }
                     )
@@ -50,13 +50,19 @@ public interface AuthApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\",\"data\":null}"
                             )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
-                    description = "서버 오류"
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
+                            )
+                    )
             )
     })
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -80,7 +86,13 @@ public interface AuthApi {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
-                    description = "서버 오류"
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
+                            )
+                    )
             )
     })
     @PostMapping(value = "/logout", produces = MediaType.APPLICATION_JSON_VALUE)
