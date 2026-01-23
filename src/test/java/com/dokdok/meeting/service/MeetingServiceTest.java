@@ -4,6 +4,8 @@ import com.dokdok.book.entity.Book;
 import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
+import com.dokdok.book.service.BookValidator;
+import com.dokdok.book.service.PersonalBookService;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
@@ -82,7 +84,13 @@ class MeetingServiceTest {
     private BookRepository bookRepository;
 
     @Mock
+    private BookValidator bookValidator;
+
+    @Mock
     private UserValidator userValidator;
+
+    @Mock
+    private PersonalBookService personalBookService;
 
     private Meeting meeting;
     private Long meetingId;
@@ -108,6 +116,17 @@ class MeetingServiceTest {
                 .meetingStatus(MeetingStatus.PENDING)
                 .meetingLeader(leader)
                 .gathering(gathering)
+                .build();
+    }
+
+    private Book sampleBook() {
+        return Book.builder()
+                .id(50L)
+                .bookName("Sample Book")
+                .author("Author")
+                .publisher("Publisher")
+                .isbn("ISBN-0000")
+                .thumbnail("thumbnail")
                 .build();
     }
 
@@ -507,6 +526,7 @@ class MeetingServiceTest {
                         .gatheringName("gathering")
                         .invitationLink("link")
                         .build())
+                .book(sampleBook())
                 .build();
         User user = User.builder()
                 .id(userId)
@@ -547,6 +567,7 @@ class MeetingServiceTest {
                         .gatheringName("gathering")
                         .invitationLink("link")
                         .build())
+                .book(sampleBook())
                 .build();
 
         given(meetingValidator.findMeetingOrThrow(meetingId))
@@ -587,6 +608,7 @@ class MeetingServiceTest {
                         .gatheringName("gathering")
                         .invitationLink("link")
                         .build())
+                .book(sampleBook())
                 .build();
         MeetingMember canceledMember = MeetingMember.builder()
                 .meeting(meeting)
@@ -627,6 +649,7 @@ class MeetingServiceTest {
                         .gatheringName("gathering")
                         .invitationLink("link")
                         .build())
+                .book(sampleBook())
                 .build();
 
         given(meetingValidator.findMeetingOrThrow(meetingId))
@@ -659,6 +682,7 @@ class MeetingServiceTest {
                         .gatheringName("gathering")
                         .invitationLink("link")
                         .build())
+                .book(sampleBook())
                 .build();
 
         given(meetingValidator.findMeetingOrThrow(meetingId))
@@ -687,6 +711,8 @@ class MeetingServiceTest {
         Meeting meeting = Meeting.builder()
                 .id(meetingId)
                 .meetingStartDate(LocalDateTime.now().plusDays(2))
+                .book(sampleBook())
+                .gathering(gathering)
                 .build();
         MeetingMember meetingMember = MeetingMember.builder()
                 .meeting(meeting)
@@ -719,6 +745,8 @@ class MeetingServiceTest {
         Meeting meeting = Meeting.builder()
                 .id(meetingId)
                 .meetingStartDate(LocalDateTime.now().plusDays(2))
+                .book(sampleBook())
+                .gathering(gathering)
                 .build();
 
         given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
@@ -745,6 +773,8 @@ class MeetingServiceTest {
         Meeting meeting = Meeting.builder()
                 .id(meetingId)
                 .meetingStartDate(LocalDateTime.now().plusHours(1))
+                .book(sampleBook())
+                .gathering(gathering)
                 .build();
 
         given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
@@ -769,6 +799,8 @@ class MeetingServiceTest {
         Meeting meeting = Meeting.builder()
                 .id(meetingId)
                 .meetingStartDate(LocalDateTime.now().plusDays(2))
+                .book(sampleBook())
+                .gathering(gathering)
                 .build();
         MeetingMember meetingMember = MeetingMember.builder()
                 .meeting(meeting)
