@@ -64,22 +64,10 @@ public class PreOpinionService {
                 .toList();
     }
 
-    private List<PreOpinionResponse.MemberInfo> buildMemberInfos(List<MeetingMember> meetingMembers) {
-        return meetingMembers.stream()
-                .map(mm -> {
-                    User user = mm.getUser();
-                    String presignedUrl = storageService.getPresignedProfileImage(user.getProfileImageUrl());
-                    return PreOpinionResponse.MemberInfo.of(user.getId(), user.getNickname(), presignedUrl);
-                })
-                .toList();
-    }
-
     private List<PreOpinionResponse.MemberPreOpinion> buildPreOpinionData(Long meetingId, List<MeetingMember> meetingMembers) {
         List<Long> userIds = meetingMembers.stream()
                 .map(mm -> mm.getUser().getId())
                 .toList();
-
-        List<PreOpinionResponse.MemberInfo> memberInfos = buildMemberInfos(meetingMembers);
 
         // 모든 멤버의 책 평가 일괄 조회
         Map<Long, BookReview> bookReviewByUserId = bookReviewRepository.findByUserIdIn(userIds).stream()
