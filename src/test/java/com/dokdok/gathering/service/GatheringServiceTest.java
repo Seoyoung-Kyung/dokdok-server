@@ -32,9 +32,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
@@ -346,11 +343,11 @@ class GatheringServiceTest {
 	}
 
 	@Test
-	@DisplayName("내 모임 목록 조회 성공")
-	void getMyGatherings_Success() {
+	@DisplayName("내 모임 목록 조회 성공 - 첫 페이지")
+	void getMyGatherings_Success_FirstPage() {
 		// given
 		Long userId = 1L;
-		Pageable pageable = PageRequest.of(0, 10);
+		int pageSize = 10;
 
 		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
@@ -372,36 +369,71 @@ class GatheringServiceTest {
 				.joinedAt(LocalDateTime.now().minusDays(5))
 				.build();
 
-		Page<GatheringMember> memberPage = new PageImpl<>(List.of(member1, member2), pageable, 2);
+		List<GatheringMember> members = List.of(member1, member2);
 
-		given(gatheringMemberRepository.findActiveGatheringsByUserIdWithPage(userId, pageable)).willReturn(memberPage);
+		given(gatheringMemberRepository.findMyGatheringsFirstPage(eq(userId), any(Pageable.class)))
+				.willReturn(members);
 		given(gatheringMemberRepository.countActiveMembersByStatus(1L)).willReturn(1);
 		given(gatheringMemberRepository.countActiveMembersByStatus(2L)).willReturn(1);
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE)).willReturn(3);
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE)).willReturn(5);
 
 		// when
-		MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
+		MyGatheringListResponse response = gatheringService.getMyGatherings(pageSize, null, null);
 
 		// then
 		assertThat(response).isNotNull();
 		assertThat(response.items()).hasSize(2);
-		assertThat(response.totalCount()).isEqualTo(2);
-		assertThat(response.currentPage()).isEqualTo(0);
-		assertThat(response.pageSize()).isEqualTo(10);
-		assertThat(response.totalPages()).isEqualTo(1);
+		assertThat(response.pageSize()).isEqualTo(pageSize);
+		assertThat(response.hasNext()).isFalse();
+		assertThat(response.nextCursor()).isNull();
 
-		GatheringListItemResponse firstGathering = response.items().get(0);
-		assertThat(firstGathering.gatheringId()).isEqualTo(1L);
-		assertThat(firstGathering.gatheringName()).isEqualTo("독서 모임");
-		assertThat(firstGathering.isFavorite()).isTrue();
+		verify(gatheringMemberRepository).findMyGatheringsFirstPage(eq(userId), any(Pageable.class));
+	}
 
-		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
-		verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserIdWithPage(userId, pageable);
-		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(1L);
-		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(2L);
-		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE);
-		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE);
+	@Test
+	@DisplayName("내 모임 목록 조회 성공 - 다음 페이지 있음")
+	void getMyGatherings_Success_HasNextPage() {
+		// given
+		Long userId = 1L;
+		int pageSize = 1;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+		GatheringMember member1 = GatheringMember.builder()
+				.id(1L)
+				.gathering(gathering1)
+				.user(leader)
+				.isFavorite(true)
+				.role(LEADER)
+				.joinedAt(LocalDateTime.now().minusDays(10))
+				.build();
+
+		GatheringMember member2 = GatheringMember.builder()
+				.id(2L)
+				.gathering(gathering2)
+				.user(leader)
+				.isFavorite(false)
+				.role(MEMBER)
+				.joinedAt(LocalDateTime.now().minusDays(5))
+				.build();
+
+		// pageSize + 1 개 반환 → hasNext = true
+		List<GatheringMember> members = List.of(member1, member2);
+
+		given(gatheringMemberRepository.findMyGatheringsFirstPage(eq(userId), any(Pageable.class)))
+				.willReturn(members);
+		given(gatheringMemberRepository.countActiveMembersByStatus(any())).willReturn(1);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(any(), eq(MeetingStatus.DONE))).willReturn(0);
+
+		// when
+		MyGatheringListResponse response = gatheringService.getMyGatherings(pageSize, null, null);
+
+		// then
+		assertThat(response.items()).hasSize(1);
+		assertThat(response.hasNext()).isTrue();
+		assertThat(response.nextCursor()).isNotNull();
+		assertThat(response.nextCursor().gatheringMemberId()).isEqualTo(1L);
 	}
 
 	@Test

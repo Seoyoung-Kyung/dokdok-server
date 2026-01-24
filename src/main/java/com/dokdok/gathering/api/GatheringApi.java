@@ -218,7 +218,7 @@ public interface GatheringApi {
     @Operation(
             summary = "내 모임 전체 목록 조회",
             description = """                                                                                                                                                            
-            현재 로그인한 사용자가 속한 모임 전체 목록을 조회합니다.                                                                                                               
+            현재 로그인한 사용자가 속한 모임 전체 목록을 조회합니다.
             - 커서 기반 무한 스크롤을 지원합니다.                                                                                                                                  
             - 가입일 최신순으로 정렬됩니다.                                                                                                                                        
             - 첫 페이지: cursorJoinedAt, cursorId 없이 호출                                                                                                                        
