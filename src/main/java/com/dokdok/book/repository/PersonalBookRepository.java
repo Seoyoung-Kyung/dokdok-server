@@ -17,124 +17,47 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
     Optional<PersonalBook> findByUserIdAndBookIdAndGatheringId(Long userId, Long bookId, Long gatheringId);
     Page<PersonalBook> findByUserId(Long userId, Pageable pageable);
     Page<PersonalBook> findAllByUserIdAndReadingStatus(Long userId, BookReadingStatus bookReadingStatus, Pageable pageable);
-    @Query("""
-      SELECT pb FROM PersonalBook pb
-      WHERE pb.user.id = :userId
-        AND (:readingStatus IS NULL OR pb.readingStatus = :readingStatus)
-        AND (:gatheringId IS NULL OR EXISTS (
-              SELECT 1 FROM GatheringBook gb
-              WHERE gb.book.id = pb.book.id
-                AND gb.gathering.id = :gatheringId
-        ))
-  """)
-    Page<PersonalBook> findAllByUserIdAndFilters(
-            Long userId,
-            @Param("gatheringId") Long gatheringId,
-            @Param("readingStatus") BookReadingStatus readingStatus,
-            Pageable pageable);
-
     @Query(
             value = """
-                    (SELECT
-                        b.book_id AS bookId,
-                        b.book_name AS title,
-                        b.publisher AS publisher,
-                        b.author AS authors,
-                        pb.reading_status AS bookReadingStatus,
-                        b.book_image_url AS thumbnail,
-                        g.gathering_name AS gatheringName,
-                        pb.added_at AS addedAt
-                    FROM personal_book pb
-                             JOIN book b
-                                  ON pb.book_id = b.book_id
-                             LEFT JOIN gathering_book gb
-                                       ON gb.book_id = b.book_id
-                                           AND gb.deleted_at IS NULL
-                             LEFT JOIN gathering g
-                                       ON g.gathering_id = gb.gathering_id
-                             LEFT JOIN gathering_member gm
-                                       ON gm.gathering_id = g.gathering_id
-                                           AND gm.user_id = pb.user_id
-                    WHERE pb.deleted_at IS NULL
-                      AND pb.user_id = :userId
-                      AND (CAST(:readingStatus AS VARCHAR) IS NULL OR pb.reading_status = CAST(:readingStatus AS VARCHAR))
-                      AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId))
-                    UNION
-                    (SELECT
-                        b.book_id AS bookId,
-                        b.book_name AS title,
-                        b.publisher AS publisher,
-                        b.author AS authors,
-                        NULL AS bookReadingStatus,
-                        b.book_image_url AS thumbnail,
-                        g.gathering_name AS gatheringName,
-                        gb.added_at AS addedAt
-                    FROM gathering_book gb
-                             JOIN gathering g
-                                  ON g.gathering_id = gb.gathering_id
-                             JOIN gathering_member gm
-                                  ON gm.gathering_id = g.gathering_id
-                                      AND gm.user_id = :userId
-                             JOIN book b
-                                  ON b.book_id = gb.book_id
-                             LEFT JOIN personal_book pb
-                                       ON pb.book_id = b.book_id
-                                           AND pb.user_id = :userId
-                                           AND pb.deleted_at IS NULL
-                    WHERE pb.personal_book_id IS NULL
-                      AND gb.deleted_at IS NULL
-                      AND gm.removed_at IS NULL
-                      AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId)
-                      AND CAST(:readingStatus AS VARCHAR) IS NULL)
-                    ORDER BY addedAt DESC
-                    """,
+                select
+                    b.book_id as bookId,
+                    b.book_name as title,
+                    b.publisher as publisher,
+                    b.author as authors,
+                    (array_agg(pb.reading_status order by pb.added_at desc))[1] as bookReadingStatus,
+                    b.book_image_url as thumbnail,
+                    string_agg(distinct g.gathering_name, ', ') as gatheringName,
+                    max(pb.added_at) as addedAt
+                from personal_book pb
+                join book b on pb.book_id = b.book_id
+                left join gathering g
+                    on pb.gathering_id = g.gathering_id
+                    and g.deleted_at is null
+                where pb.user_id = :userId
+                    and pb.deleted_at is null
+                    and (:gatheringId is null or g.gathering_id = :gatheringId)
+                    and (cast(:readingStatus as varchar) is null or pb.reading_status = cast(:readingStatus as varchar))
+                group by b.book_id, b.book_name, b.publisher, b.author, b.book_image_url
+                """,
             countQuery = """
-                    SELECT COUNT(*) FROM (
-                        (SELECT
-                             b.book_id AS bookId
-                         FROM personal_book pb
-                                  JOIN book b
-                                       ON pb.book_id = b.book_id
-                                  LEFT JOIN gathering_book gb
-                                            ON gb.book_id = b.book_id
-                                                AND gb.deleted_at IS NULL
-                                  LEFT JOIN gathering g
-                                            ON g.gathering_id = gb.gathering_id
-                                  LEFT JOIN gathering_member gm
-                                            ON gm.gathering_id = g.gathering_id
-                                                AND gm.user_id = pb.user_id
-                         WHERE pb.deleted_at IS NULL
-                           AND pb.user_id = :userId
-                           AND (CAST(:readingStatus AS VARCHAR) IS NULL OR pb.reading_status = CAST(:readingStatus AS VARCHAR))
-                           AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId))
-                        UNION
-                        (SELECT
-                             b.book_id AS bookId
-                         FROM gathering_book gb
-                                  JOIN gathering g
-                                       ON g.gathering_id = gb.gathering_id
-                                  JOIN gathering_member gm
-                                       ON gm.gathering_id = g.gathering_id
-                                           AND gm.user_id = :userId
-                                  JOIN book b
-                                       ON b.book_id = gb.book_id
-                                  LEFT JOIN personal_book pb
-                                            ON pb.book_id = b.book_id
-                                                AND pb.user_id = :userId
-                                                AND pb.deleted_at IS NULL
-                         WHERE pb.personal_book_id IS NULL
-                           AND gb.deleted_at IS NULL
-                           AND gm.removed_at IS NULL
-                           AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId)
-                           AND CAST(:readingStatus AS VARCHAR) IS NULL)
-                    ) AS total
-                    """,
+                select count(distinct pb.book_id)
+                from personal_book pb
+                left join gathering g
+                    on pb.gathering_id = g.gathering_id
+                    and g.deleted_at is null
+                where pb.user_id = :userId
+                    and pb.deleted_at is null
+                    and (:gatheringId is null or g.gathering_id = :gatheringId)
+                    and (cast(:readingStatus as varchar) is null or pb.reading_status = cast(:readingStatus as varchar))
+                """,
             nativeQuery = true
     )
-    Page<PersonalBookListProjection> findMyBooksWithGathering(
+    Page<PersonalBookListProjection> findPersonalBooksByUserIdReadingStatusAndGatheringId(
             @Param("userId") Long userId,
             @Param("gatheringId") Long gatheringId,
             @Param("readingStatus") BookReadingStatus readingStatus,
             Pageable pageable
     );
+
+
 }

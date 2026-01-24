@@ -63,10 +63,10 @@ public class PersonalBookService {
     public Page<PersonalBookListResponse> getPersonalBookList(BookReadingStatus bookReadingStatus, Long gatheringId, Pageable pageable) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
 
-        Page<PersonalBookListProjection> page = personalBookRepository.findMyBooksWithGathering(
+        Page<PersonalBookListProjection> page = personalBookRepository.findPersonalBooksByUserIdReadingStatusAndGatheringId(
                 userEntity.getId(),
-                gatheringId,       // null이면 모임 필터 스킵
-                bookReadingStatus, // null이면 상태 필터 스킵
+                gatheringId,
+                bookReadingStatus,
                 pageable
         );
 

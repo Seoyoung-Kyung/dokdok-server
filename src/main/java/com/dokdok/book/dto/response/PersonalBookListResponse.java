@@ -38,4 +38,5 @@ public record PersonalBookListResponse(
                 .gatheringName(projection.getGatheringName())
                 .build();
     }
+
 }
