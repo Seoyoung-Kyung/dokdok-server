@@ -262,42 +262,6 @@ public class PersonalRetrospectiveService {
         );
     }
 
-    @Transactional(readOnly = true)
-    public PersonalRetrospectiveDetailResponse getPersonalRetrospective(
-            Long meetingId,
-            Long retrospectiveId
-    ) {
-
-        Long userId = SecurityUtil.getCurrentUserId();
-
-        meetingValidator.validateMeeting(meetingId);
-        meetingValidator.validateMeetingMember(meetingId, userId);
-        retrospectiveValidator.validateRetrospective(retrospectiveId);
-
-        List<RetrospectiveChangedThought> changedThoughts
-                = changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId);
-
-        List<RetrospectiveOthersPerspective> othersPerspectives
-                = othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId);
-
-        List<RetrospectiveFreeText> freeTexts =
-                freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId);
-
-        List<Topic> topics = topicValidator.getConfirmedTopics(meetingId);
-
-        List<MeetingMember> meetingMembers
-                = meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId);
-
-        return assembler.assembleDetail(
-                retrospectiveId,
-                changedThoughts,
-                othersPerspectives,
-                freeTexts,
-                topics,
-                meetingMembers
-        );
-    }
-
     private void setRetrospectiveData(
             PersonalMeetingRetrospective retrospective,
             PersonalRetrospectiveRequest request,

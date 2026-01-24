@@ -5,7 +5,6 @@ import com.dokdok.topic.dto.response.PreOpinionResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -15,8 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-
-import java.util.List;
 
 @Tag(name = "사전 의견", description = "약속의 사전 의견 관련 API")
 @RequestMapping("/api/gatherings/{gatheringId}/meetings/{meetingId}/answers")
@@ -35,7 +32,7 @@ public interface PreOpinionApi {
                     responseCode = "200",
                     description = "사전 의견 목록 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            array = @ArraySchema(schema = @Schema(implementation = PreOpinionResponse.class)))
+                            schema = @Schema(implementation = PreOpinionResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인이 독서 리뷰를 작성하지 않은 경우"),
@@ -43,7 +40,7 @@ public interface PreOpinionApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ApiResponse<List<PreOpinionResponse>>> findAnswers(
+    ResponseEntity<ApiResponse<PreOpinionResponse>> findAnswers(
             @PathVariable("gatheringId") Long gatheringId,
             @PathVariable("meetingId") Long meetingId
     );

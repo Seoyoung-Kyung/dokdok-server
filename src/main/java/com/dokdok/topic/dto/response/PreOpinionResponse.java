@@ -1,83 +1,78 @@
 package com.dokdok.topic.dto.response;
 
+import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
-import com.dokdok.topic.entity.TopicType;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public record PreOpinionResponse(
-        UserInfo userInfo,
-        BookReviewInfo BookReviewInfo,
-        List<TopicAnswerInfo> topicAnswers
+        List<TopicInfo> topics,
+        List<MemberPreOpinion> members
 ) {
 
-    public record UserInfo(
-            Long userId,
+    public record TopicInfo(
+            Long topicId,
+            String topicName,
+            String topicDescription,
+            String topicType
+    ) {
+        public static TopicInfo from(Topic topic) {
+            return new TopicInfo(
+                    topic.getId(),
+                    topic.getTitle(),
+                    topic.getDescription(),
+                    topic.getTopicType().getDisplayName()
+            );
+        }
+    }
+
+    public record MemberPreOpinion(
+            MemberInfo memberInfo,
+            BookReviewInfo bookReview,
+            List<TopicOpinion> topicOpinions
+    ) { }
+
+    public record MemberInfo(
+            Long memberId,
             String nickname,
             String profileImage
     ) {
-        public static UserInfo of(Long userId, String nickname, String profileImage) {
-            return new UserInfo(
-                    userId,
-                    nickname,
-                    profileImage
-            );
+        public static MemberInfo of(Long memberId, String nickname, String profileImage) {
+            return new MemberInfo(memberId, nickname, profileImage);
         }
     }
 
     public record BookReviewInfo(
-            Long userId,
             BigDecimal rating,
-            List<String> bookKeyword,
-            List<String> impressionKeyword
+            List<String> bookKeywords,
+            List<String> impressionKeywords
     ) {
         public static BookReviewInfo of(
-                Long userId,
                 BigDecimal rating,
-                List<String> bookKeyword,
-                List<String> impressionKeyword
+                List<String> bookKeywords,
+                List<String> impressionKeywords
         ) {
-            return new BookReviewInfo(
-                    userId,
-                    rating,
-                    bookKeyword,
-                    impressionKeyword
-            );
+            return new BookReviewInfo(rating, bookKeywords, impressionKeywords);
         }
     }
 
-    public record TopicAnswerInfo(
-            Long userId,
+    public record TopicOpinion(
             Long topicId,
-            String title,
-            String topicDescription,
-            TopicType topicType,
             String content
     ) {
-        public static TopicAnswerInfo of(
-                TopicAnswer topicAnswer
-        ) {
-            return new TopicAnswerInfo(
-                    topicAnswer.getUser().getId(),
+        public static TopicOpinion of(TopicAnswer topicAnswer) {
+            return new TopicOpinion(
                     topicAnswer.getTopic().getId(),
-                    topicAnswer.getTopic().getTitle(),
-                    topicAnswer.getTopic().getDescription(),
-                    topicAnswer.getTopic().getTopicType(),
                     topicAnswer.getContent()
             );
         }
     }
 
-    public static PreOpinionResponse from(
-            UserInfo userInfo,
-            BookReviewInfo BookReviewInfo,
-            List<TopicAnswerInfo> topicAnswers
+    public static PreOpinionResponse of(
+            List<TopicInfo> topics,
+            List<MemberPreOpinion> members
     ) {
-        return new PreOpinionResponse(
-                userInfo,
-                BookReviewInfo,
-                topicAnswers
-        );
+        return new PreOpinionResponse(topics, members);
     }
 }

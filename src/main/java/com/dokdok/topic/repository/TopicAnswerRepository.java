@@ -28,7 +28,8 @@ public interface TopicAnswerRepository extends JpaRepository<TopicAnswer, Long> 
                 JOIN ta.topic t
                 JOIN t.meeting m
                 WHERE m.id = :meetingId
-                  AND ta.user.id = :userId
+                AND ta.user.id = :userId
+                AND ta.isSubmitted = true
             """)
     boolean existsByMeetingIdAndUserId(@Param("meetingId") Long meetingId,
                                        @Param("userId") Long userId);
@@ -71,6 +72,7 @@ public interface TopicAnswerRepository extends JpaRepository<TopicAnswer, Long> 
                     LEFT JOIN FETCH ta.user u
                     JOIN FETCH ta.topic t
                     WHERE t.meeting.id = :meetingId
+                    AND ta.isSubmitted = true
                     ORDER BY ta.createdAt DESC
             """
     )

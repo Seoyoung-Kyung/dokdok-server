@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/gatherings/{gatheringId}/meetings/{meetingId}/answers")
@@ -23,13 +21,11 @@ public class PreOpinionController implements PreOpinionApi {
 
     @Override
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<List<PreOpinionResponse>>> findAnswers(
+    public ResponseEntity<ApiResponse<PreOpinionResponse>> findAnswers(
             @PathVariable("gatheringId") Long gatheringId,
             @PathVariable("meetingId") Long meetingId
     ) {
-
-        List<PreOpinionResponse> responses = preOpinionService.findPreOpinions(gatheringId, meetingId);
-
-        return ApiResponse.success(responses, "약속의 사전 의견 목록 조회를 성공했습니다.");
+        PreOpinionResponse response = preOpinionService.findPreOpinions(gatheringId, meetingId);
+        return ApiResponse.success(response, "약속의 사전 의견 목록 조회를 성공했습니다.");
     }
 }

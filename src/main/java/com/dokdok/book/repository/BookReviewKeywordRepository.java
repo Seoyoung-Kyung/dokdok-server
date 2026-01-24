@@ -14,7 +14,7 @@ public interface BookReviewKeywordRepository extends JpaRepository<BookReviewKey
                 SELECT brk
                 FROM BookReviewKeyword brk
                 JOIN FETCH brk.keyword k
-                WHERE brk.bookReview IN :bookReviewIds
+                WHERE brk.bookReview.id IN :bookReviewIds
             """)
     List<BookReviewKeyword> findByBookReviewIds(List<Long> bookReviewIds);
 }

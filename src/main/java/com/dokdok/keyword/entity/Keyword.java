@@ -23,6 +23,7 @@ public class Keyword extends BaseTimeEntity {
     @Column(name = "keyword_id")
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "keyword_type", nullable = false, length = 30)
     private KeywordType keywordType;
 
