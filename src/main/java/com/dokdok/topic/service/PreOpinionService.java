@@ -32,10 +32,10 @@ public class PreOpinionService {
 
     private final GatheringValidator gatheringValidator;
     private final MeetingValidator meetingValidator;
+    private final TopicValidator topicValidator;
     private final TopicAnswerRepository topicAnswerRepository;
     private final BookReviewRepository bookReviewRepository;
     private final BookReviewKeywordRepository bookReviewKeywordRepository;
-    private final BookValidator bookValidator;
     private final StorageService storageService;
 
     @Transactional(readOnly = true)
@@ -45,10 +45,10 @@ public class PreOpinionService {
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
-        gatheringValidator.validateGathering(gatheringId);
-        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
-        meetingValidator.validateMeetingMember(meetingId, userId);
-        bookValidator.validateUserHasWrittenBookReview(meetingId, userId);
+        gatheringValidator.validateGathering(gatheringId); // 모임 검증
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId); // 모임에 포함된 약속인지
+        meetingValidator.validateMeetingMember(meetingId, userId); // 로그인한 사용자가 약속에 포함된 멤버인지
+        topicValidator.validateUserHasWrittenBookReview(meetingId, userId); // 주제 답변을 작성한 멤버인지
 
         List<BookReview> bookReviews = bookReviewRepository.findByMeetingId(meetingId);
 

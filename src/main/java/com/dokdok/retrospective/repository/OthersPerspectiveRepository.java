@@ -16,6 +16,7 @@ public interface OthersPerspectiveRepository extends JpaRepository<Retrospective
             FROM RetrospectiveOthersPerspective op
             JOIN FETCH op.topic t
             JOIN FETCH op.meetingMember mm
+            JOIN FETCH mm.user u
             WHERE op.personalMeetingRetrospective.id = :retrospectiveId
             """)
     List<RetrospectiveOthersPerspective> findByPersonalMeetingRetrospective(Long retrospectiveId);

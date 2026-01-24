@@ -13,6 +13,7 @@ import com.dokdok.retrospective.repository.ChangedThoughtRepository;
 import com.dokdok.retrospective.repository.FreeTextRepository;
 import com.dokdok.retrospective.repository.OthersPerspectiveRepository;
 import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
@@ -35,6 +36,7 @@ import com.dokdok.user.entity.User;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 
@@ -56,6 +58,7 @@ public class PersonalRetrospectiveService {
     private final TopicValidator topicValidator;
     private final BookValidator bookValidator;
     private final PersonalRetrospectiveAssembler assembler;
+    private final StorageService storageService;
 
     @Transactional
     public PersonalRetrospectiveResponse createPersonalRetrospective(Long meetingId, PersonalRetrospectiveRequest request) {
@@ -97,7 +100,7 @@ public class PersonalRetrospectiveService {
     }
 
     @Transactional(readOnly = true)
-    public PersonalRetrospectiveDetailResponse getPersonalRetrospectiveEditForm(
+    public PersonalRetrospectiveEditResponse getPersonalRetrospectiveEditForm(
             Long meetingId,
             Long retrospectiveId
     ) {
@@ -122,7 +125,7 @@ public class PersonalRetrospectiveService {
         List<MeetingMember> meetingMembers
                 = meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId);
 
-        return assembler.assembleDetail(
+        return assembler.assembleEdit(
                 retrospectiveId,
                 changedThoughts,
                 othersPerspectives,
@@ -216,6 +219,47 @@ public class PersonalRetrospectiveService {
                 = retrospectiveValidator.getRetrospective(retrospectiveId, userId);
 
         retrospective.softDelete();
+    }
+
+    @Transactional(readOnly = true)
+    public PersonalRetrospectiveDetailResponse getPersonalRetrospective(
+            Long meetingId,
+            Long retrospectiveId
+    ) {
+
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        meetingValidator.validateMeeting(meetingId);
+        meetingValidator.validateMeetingMember(meetingId, userId);
+        retrospectiveValidator.validateRetrospective(retrospectiveId, userId);
+
+        List<RetrospectiveChangedThought> changedThoughts
+                = changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId);
+
+        List<RetrospectiveOthersPerspective> othersPerspectives
+                = othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId);
+
+        List<RetrospectiveFreeText> freeTexts =
+                freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId);
+
+        Map<Long, String> memberProfileImageMap =
+                othersPerspectives.stream()
+                        .map(RetrospectiveOthersPerspective::getMeetingMember)
+                        .distinct()
+                        .collect(Collectors.toMap(
+                                MeetingMember::getId,
+                                mm -> storageService.getPresignedProfileImage(
+                                        mm.getUser().getProfileImageUrl()
+                                )
+                        ));
+
+        return assembler.assembleView(
+                retrospectiveId,
+                changedThoughts,
+                othersPerspectives,
+                freeTexts,
+                memberProfileImageMap
+        );
     }
 
     @Transactional(readOnly = true)

@@ -23,7 +23,7 @@ public record PersonalBookListResponse(
                 .authors(entity.getBook().getAuthor())
                 .bookReadingStatus(entity.getReadingStatus())
                 .thumbnail(entity.getBook().getThumbnail())
-                .gatheringName(null)
+                .gatheringName(entity.getGathering() != null ? entity.getGathering().getGatheringName() : null)
                 .build();
     }
 
