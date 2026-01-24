@@ -1,10 +1,7 @@
 package com.dokdok.retrospective.service;
 
 import com.dokdok.meeting.entity.MeetingMember;
-import com.dokdok.retrospective.dto.response.MemberInfo;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveDetailResponse;
-import com.dokdok.retrospective.dto.response.PersonalRetrospectiveFormResponse;
-import com.dokdok.retrospective.dto.response.TopicInfo;
+import com.dokdok.retrospective.dto.response.*;
 import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
 import com.dokdok.retrospective.entity.RetrospectiveFreeText;
 import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
@@ -62,13 +59,48 @@ public class PersonalRetrospectiveAssembler {
         );
     }
 
-    public PersonalRetrospectiveDetailResponse assembleDetail(
+    public PersonalRetrospectiveEditResponse assembleEdit(
             Long retrospectiveId,
             List<RetrospectiveChangedThought> changedThoughts,
             List<RetrospectiveOthersPerspective> othersPerspectives,
             List<RetrospectiveFreeText> freeTexts,
             List<Topic> topics,
             List<MeetingMember> meetingMembers
+    ) {
+        List<PersonalRetrospectiveEditResponse.ChangedThought> changedThoughtList =
+                changedThoughts.stream()
+                        .map(PersonalRetrospectiveEditResponse.ChangedThought::from)
+                        .toList();
+
+        List<PersonalRetrospectiveEditResponse.OthersPerspective> othersPerspectiveList =
+                othersPerspectives.stream()
+                        .map(PersonalRetrospectiveEditResponse.OthersPerspective::from)
+                        .toList();
+
+        List<PersonalRetrospectiveEditResponse.FreeText> freeTextList =
+                freeTexts.stream()
+                        .map(PersonalRetrospectiveEditResponse.FreeText::from)
+                        .toList();
+
+        List<TopicInfo> topicDtos = toTopicDtos(topics);
+        List<MemberInfo> memberDtos = toMemberDtos(meetingMembers);
+
+        return PersonalRetrospectiveEditResponse.from(
+                retrospectiveId,
+                changedThoughtList,
+                othersPerspectiveList,
+                freeTextList,
+                topicDtos,
+                memberDtos
+        );
+    }
+
+    public PersonalRetrospectiveDetailResponse assembleView(
+            Long retrospectiveId,
+            List<RetrospectiveChangedThought> changedThoughts,
+            List<RetrospectiveOthersPerspective> othersPerspectives,
+            List<RetrospectiveFreeText> freeTexts,
+            Map<Long, String> memberProfileImageMap
     ) {
         List<PersonalRetrospectiveDetailResponse.ChangedThought> changedThoughtList =
                 changedThoughts.stream()
@@ -77,7 +109,12 @@ public class PersonalRetrospectiveAssembler {
 
         List<PersonalRetrospectiveDetailResponse.OthersPerspective> othersPerspectiveList =
                 othersPerspectives.stream()
-                        .map(PersonalRetrospectiveDetailResponse.OthersPerspective::from)
+                        .map(op ->
+                                PersonalRetrospectiveDetailResponse.OthersPerspective.from(
+                                        op,
+                                        memberProfileImageMap.get(op.getMeetingMember().getId())
+                                )
+                        )
                         .toList();
 
         List<PersonalRetrospectiveDetailResponse.FreeText> freeTextList =
@@ -85,16 +122,11 @@ public class PersonalRetrospectiveAssembler {
                         .map(PersonalRetrospectiveDetailResponse.FreeText::from)
                         .toList();
 
-        List<TopicInfo> topicDtos = toTopicDtos(topics);
-        List<MemberInfo> memberDtos = toMemberDtos(meetingMembers);
-
         return PersonalRetrospectiveDetailResponse.from(
                 retrospectiveId,
                 changedThoughtList,
                 othersPerspectiveList,
-                freeTextList,
-                topicDtos,
-                memberDtos
+                freeTextList
         );
     }
 

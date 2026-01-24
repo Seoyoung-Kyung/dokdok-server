@@ -12,6 +12,7 @@ import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
 import com.dokdok.book.repository.PersonalBookListProjection;
 import com.dokdok.book.repository.PersonalBookRepository;
+import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
@@ -34,6 +35,11 @@ public class PersonalBookService {
     // 생성
     @Transactional
     public PersonalBookCreateResponse createBook(BookCreateRequest bookCreateRequest) {
+        return createBook(bookCreateRequest, null);
+    }
+
+    @Transactional
+    public PersonalBookCreateResponse createBook(BookCreateRequest bookCreateRequest, Gathering gathering) {
         // 사용자 유효성 검증
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
         // 책 유효성 검증 && 없으면 book entity에 저장
@@ -41,7 +47,12 @@ public class PersonalBookService {
                 .orElseGet(() -> bookRepository.save(bookCreateRequest.of()));
 
         bookValidator.validateDuplicatePersonalBook(userEntity.getId(), entity.getId());
-        PersonalBook personalBookEntity = PersonalBook.create(userEntity, entity, BookReadingStatus.READING);
+        PersonalBook personalBookEntity = PersonalBook.create(
+                userEntity,
+                entity,
+                BookReadingStatus.READING,
+                gathering
+        );
 
         personalBookRepository.save(personalBookEntity);
 
@@ -81,5 +92,21 @@ public class PersonalBookService {
         PersonalBook personalBook = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
 
         personalBookRepository.delete(personalBook);
+    }
+
+    /**
+     * 약속 참가 취소시에 PersonalBook에 들어가 있는 책을 삭제한다.
+     * @param bookId 책 식별자
+     * @param gatheringId 모임 식별자
+     */
+    @Transactional
+    public void deleteBookForMeeting(Long bookId, Long gatheringId) {
+        if (gatheringId == null) {
+            return;
+        }
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+        personalBookRepository
+                .findByUserIdAndBookIdAndGatheringId(userEntity.getId(), bookId, gatheringId)
+                .ifPresent(personalBookRepository::delete);
     }
 }

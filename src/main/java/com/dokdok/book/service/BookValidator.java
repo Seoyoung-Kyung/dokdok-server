@@ -55,6 +55,10 @@ public class BookValidator {
                 });
     }
 
+    public boolean isDuplicatePersonalBook(Long userId, Long bookId) {
+        return personalBookRepository.findByUserIdAndBookId(userId, bookId).isPresent();
+    }
+
     // 삭제되지 않은 책 리뷰 존재 여부를 검증하고 반환합니다.
     public BookReview validateAndGetActiveReview(Long bookId, Long userId) {
         return bookReviewRepository.findByBookIdAndUserId(bookId, userId)

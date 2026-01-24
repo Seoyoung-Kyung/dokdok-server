@@ -14,6 +14,7 @@ import java.util.Optional;
 @Repository
 public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long> {
     Optional<PersonalBook> findByUserIdAndBookId(Long userId, Long bookId);
+    Optional<PersonalBook> findByUserIdAndBookIdAndGatheringId(Long userId, Long bookId, Long gatheringId);
     Page<PersonalBook> findByUserId(Long userId, Pageable pageable);
     Page<PersonalBook> findAllByUserIdAndReadingStatus(Long userId, BookReadingStatus bookReadingStatus, Pageable pageable);
     @Query("""

@@ -1,9 +1,13 @@
 package com.dokdok.meeting.service;
 
+import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.entity.Book;
 import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
+import com.dokdok.book.service.BookService;
+import com.dokdok.book.service.BookValidator;
+import com.dokdok.book.service.PersonalBookService;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
@@ -31,13 +35,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -54,7 +53,9 @@ public class MeetingService {
     private final GatheringValidator gatheringValidator;
     private final MeetingValidator meetingValidator;
     private final BookRepository bookRepository;
+    private final BookValidator bookValidator;
     private final UserValidator userValidator;
+    private final PersonalBookService personalBookService;
 
     /**
      * 특정 약속의 정보를 확인할 수 있다. 모임에 속한 사용자만 조회 가능
@@ -221,6 +222,7 @@ public class MeetingService {
         gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
         if (restoreCanceledMemberIfExists(meetingId, userId, meeting.getMaxParticipants())) {
+            saveMeetingBook(meeting, meeting.getGathering());
             return meetingId;
         }
 
@@ -229,8 +231,26 @@ public class MeetingService {
         User user = userValidator.findUserOrThrow(userId);
 
         saveMeetingMember(meeting, user);
+        saveMeetingBook(meeting, meeting.getGathering());
 
         return meetingId;
+    }
+
+    /**
+     * 약속 참가 신청 성공 시 책장에 등록한다.
+     */
+    private void saveMeetingBook(Meeting meeting, Gathering gathering) {
+        Book book = meeting.getBook();
+        if (book == null) {
+            throw new BookException(BookErrorCode.BOOK_NOT_FOUND);
+        }
+
+        Long userId = SecurityUtil.getCurrentUserId();
+        if (bookValidator.isDuplicatePersonalBook(userId, book.getId())) {
+            return;
+        }
+        personalBookService.createBook(BookCreateRequest.from(book), gathering);
+
     }
 
     /**
@@ -291,6 +311,8 @@ public class MeetingService {
         meetingMember.cancel();
         // 참가 취소자가 주제까지 제안한 경우 주제 soft delete
         topicRepository.softDeleteByMeetingIdAndProposedById(meetingId, userId);
+        // 개인 책장에서도 책 삭제
+        personalBookService.deleteBookForMeeting(meeting.getBook().getId(), meeting.getGathering().getId());
 
         return meetingId;
     }
