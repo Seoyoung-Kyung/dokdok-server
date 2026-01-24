@@ -6,21 +6,21 @@ import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
 
 import java.util.List;
 
-public record PersonalRetrospectiveDetailResponse(
+public record PersonalRetrospectiveEditResponse(
         Long retrospectiveId,
-        RetrospectiveData retrospective
+        RetrospectiveData retrospective,  // 작성 데이터 묶음
+        List<TopicInfo> topics,
+        List<MemberInfo> meetingMembers
 ) {
 
     public record RetrospectiveData(
             List<ChangedThought> changedThoughts,
             List<OthersPerspective> othersPerspectives,
             List<FreeText> freeTexts
-    ) {
-    }
+    ) {}
 
     public record ChangedThought(
             Long topicId,
-            String topicTitle,
             String keyIssue,
             String preOpinion,
             String postOpinion
@@ -28,7 +28,6 @@ public record PersonalRetrospectiveDetailResponse(
         public static ChangedThought from(RetrospectiveChangedThought changedThought) {
             return new ChangedThought(
                     changedThought.getTopic().getId(),
-                    changedThought.getTopic().getTitle(),
                     changedThought.getKeyIssue(),
                     changedThought.getPreOpinion(),
                     changedThought.getPostOpinion()
@@ -39,21 +38,13 @@ public record PersonalRetrospectiveDetailResponse(
     public record OthersPerspective(
             Long topicId,
             Long meetingMemberId,
-            String profileImage,
-            String nickname,
             String opinionContent,
             String impressiveReason
     ) {
-        public static OthersPerspective from(
-                RetrospectiveOthersPerspective othersPerspective,
-                String profileImage
-        ) {
-
+        public static OthersPerspective from(RetrospectiveOthersPerspective othersPerspective) {
             return new OthersPerspective(
                     othersPerspective.getTopic().getId(),
                     othersPerspective.getMeetingMember().getId(),
-                    othersPerspective.getMeetingMember().getUser().getNickname(),
-                    profileImage,
                     othersPerspective.getOpinionContent(),
                     othersPerspective.getImpressiveReason()
             );
@@ -72,15 +63,19 @@ public record PersonalRetrospectiveDetailResponse(
         }
     }
 
-    public static PersonalRetrospectiveDetailResponse from(
+    public static PersonalRetrospectiveEditResponse from(
             Long retrospectiveId,
             List<ChangedThought> changedThoughts,
             List<OthersPerspective> othersPerspectives,
-            List<FreeText> freeTexts
+            List<FreeText> freeTexts,
+            List<TopicInfo> topics,
+            List<MemberInfo> meetingMembers
     ) {
-        return new PersonalRetrospectiveDetailResponse(
+        return new PersonalRetrospectiveEditResponse(
                 retrospectiveId,
-                new RetrospectiveData(changedThoughts, othersPerspectives, freeTexts)
+                new RetrospectiveData(changedThoughts, othersPerspectives, freeTexts), // 묶어서 전달
+                topics,
+                meetingMembers
         );
     }
 }
