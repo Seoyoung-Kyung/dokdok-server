@@ -11,9 +11,12 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/gatherings")
@@ -62,11 +65,11 @@ public class GatheringController implements GatheringApi {
     }
 
     @Override
-    @GetMapping
-    public ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(Pageable pageable) {
-        MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
+    @GetMapping("/favorites")
+    public ResponseEntity<ApiResponse<FavoriteGatheringListResponse>> getFavoriteGatherings() {
+        FavoriteGatheringListResponse response = gatheringService.getFavoriteGatherings();
 
-        return ApiResponse.success(response, "나의 모임 리스트 조회 성공");
+        return ApiResponse.success(response, "즐겨찾기 모임 리스트 조회 성공");
     }
 
     @Override
@@ -104,9 +107,20 @@ public class GatheringController implements GatheringApi {
     }
 
     @Override
-    @PatchMapping("/{gatheringId}/favorite")
+    @PatchMapping("/{gatheringId}/favorites")
     public ResponseEntity<ApiResponse<Void>> updateFavorite(@PathVariable Long gatheringId){
         gatheringService.updateFavorite(gatheringId);
         return ApiResponse.success("모임의 즐겨찾기 상태변경 성공");
+    }
+
+    @Override
+    @GetMapping
+    public ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorJoinedAt,
+            @RequestParam(required = false) Long cursorId
+    ) {
+        MyGatheringListResponse response = gatheringService.getMyGatherings(pageSize, cursorJoinedAt, cursorId);
+        return ApiResponse.success(response, "내 모임 전체 목록 조회 성공");
     }
 }

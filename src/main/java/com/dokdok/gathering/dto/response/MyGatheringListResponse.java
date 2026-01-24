@@ -2,28 +2,41 @@ package com.dokdok.gathering.dto.response;
 
 import com.dokdok.gathering.entity.GatheringMember;
 import lombok.Builder;
-import org.springframework.data.domain.Page;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Builder
 public record MyGatheringListResponse(
-        List<GatheringSimpleResponse> gatherings,
-        Integer totalCount,
-        Integer currentPage,
+        List<GatheringListItemResponse> items,
         Integer pageSize,
-        Integer totalPages
+        Boolean hasNext,
+        NextCursor nextCursor
 ) {
+    @Builder
+    public record NextCursor(
+            LocalDateTime joinedAt,
+            Long gatheringMemberId
+    ){}
+
     public static MyGatheringListResponse from(
-            List<GatheringSimpleResponse> gatherings,
-            Page<GatheringMember> page
-    ){
+            List<GatheringListItemResponse> items,
+            int pageSize,
+            boolean hasNext,
+            GatheringMember lastMember
+    ) {
+        NextCursor cursor = hasNext && lastMember != null
+                ? NextCursor.builder()
+                .joinedAt(lastMember.getJoinedAt())
+                .gatheringMemberId(lastMember.getId())
+                .build()
+                : null;
+
         return MyGatheringListResponse.builder()
-                .gatherings(gatherings)
-                .totalCount((int)page.getTotalElements())
-                .currentPage(page.getNumber())
-                .pageSize(page.getSize())
-                .totalPages(page.getTotalPages())
+                .items(items)
+                .pageSize(pageSize)
+                .hasNext(hasNext)
+                .nextCursor(cursor)
                 .build();
     }
 }

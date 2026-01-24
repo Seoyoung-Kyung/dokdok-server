@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,7 +33,7 @@ public interface GatheringMemberRepository extends JpaRepository<GatheringMember
             "JOIN FETCH gm.gathering g " +
             "WHERE gm.user.id = :userId " +
             "AND  gm.removedAt IS NULL")
-    Page<GatheringMember> findActiveGatheringsByUserId(
+    Page<GatheringMember> findActiveGatheringsByUserIdWithPage(
             @Param("userId") Long userId,
             Pageable pageable
     );
@@ -68,4 +69,54 @@ public interface GatheringMemberRepository extends JpaRepository<GatheringMember
             "AND gm.memberStatus = 'ACTIVE' " +
             "AND gm.removedAt IS NULL")
     int countActiveMembersByStatus(@Param("gatheringId") Long gatheringId);
+
+    // 사용자의 즐겨찾기 모임 목록 조회
+    @Query("SELECT gm FROM GatheringMember gm " +
+            "JOIN FETCH gm.gathering g " +
+            "WHERE gm.user.id = :userId " +
+            "AND gm.isFavorite = true " +
+            "AND gm.memberStatus = 'ACTIVE' " +
+            "AND gm.removedAt IS NULL " +
+            "ORDER BY gm.joinedAt DESC")
+    List<GatheringMember> findFavoriteGatheringsByUserId(@Param("userId") Long userId);
+
+    // 사용자 즐겨찾기 개수 조회
+    @Query(" SELECT COUNT(gm) FROM GatheringMember gm " +
+            "WHERE gm.user.id = :userId " +
+            "AND gm.isFavorite = true " +
+            "AND gm.memberStatus = 'ACTIVE' " +
+            "AND gm.removedAt IS NULL ")
+    int countFavoriteGatheringsByUserId(@Param("userId") Long userId);
+
+    /**
+     * 커서 기반 내 모임 목록 조회 (첫 페이지)
+     */
+    @Query("SELECT gm FROM GatheringMember gm " +
+            "JOIN FETCH gm.gathering g " +
+            "WHERE gm.user.id = :userId " +
+            "AND gm.memberStatus = 'ACTIVE' " +
+            "AND gm.removedAt IS NULL " +
+            "ORDER BY gm.joinedAt DESC, gm.id DESC")
+    List<GatheringMember> findMyGatheringsFirstPage(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    /**
+     * 커서 기반 내 모임 목록 조회 (다음 페이지)
+     */
+    @Query("SELECT gm FROM GatheringMember gm " +
+            "JOIN FETCH gm.gathering g " +
+            "WHERE gm.user.id = :userId " +
+            "AND gm.memberStatus = 'ACTIVE' " +
+            "AND gm.removedAt IS NULL " +
+            "AND (gm.joinedAt < :cursorJoinedAt " +
+            "     OR (gm.joinedAt = :cursorJoinedAt AND gm.id < :cursorId)) " +
+            "ORDER BY gm.joinedAt DESC, gm.id DESC")
+    List<GatheringMember> findMyGatheringsAfterCursor(
+            @Param("userId") Long userId,
+            @Param("cursorJoinedAt") LocalDateTime cursorJoinedAt,
+            @Param("cursorId") Long cursorId,
+            Pageable pageable
+    );
 }

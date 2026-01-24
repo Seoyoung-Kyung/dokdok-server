@@ -16,12 +16,13 @@ import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -108,25 +109,57 @@ public class GatheringService {
         gatheringMember.handleJoinRequest(approveType);
     }
 
-	public MyGatheringListResponse getMyGatherings(Pageable pageable) {
+	/**
+	 * 즐겨찾기 한 모임들을 조회합니다.
+	 */
+	public FavoriteGatheringListResponse getFavoriteGatherings() {
 		Long userId = SecurityUtil.getCurrentUserId();
 
-		Page<GatheringMember> gatheringMemberPage = gatheringMemberRepository.findActiveGatheringsByUserId(userId, pageable);
+		List<GatheringMember> favoriteMembers = gatheringMemberRepository.findFavoriteGatheringsByUserId(userId);
 
-		List<GatheringSimpleResponse> gatheringResponses = gatheringMemberPage.getContent()
-				.stream()
+		List<GatheringListItemResponse> gatheringResponses = favoriteMembers.stream()
 				.map(gatheringMember -> {
-					int totalMembers = gatheringMemberRepository.countActiveMembersByStatus(gatheringMember.getGathering().getId());
-					int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gatheringMember.getGathering().getId(), MeetingStatus.DONE);
-
-					return GatheringSimpleResponse.from(gatheringMember, totalMembers,totalMeetings, gatheringMember.getRole());
+					Gathering gathering = gatheringMember.getGathering();
+					int totalMembers = getActiveMemberCount(gathering.getId());
+					int totalMeetings = getMeetingCount(gathering.getId());
+					return GatheringListItemResponse.from(gatheringMember, totalMembers, totalMeetings, gatheringMember.getRole());
 				})
-				.collect(Collectors.toList());
+				.toList();
 
-		return MyGatheringListResponse.from(
-				gatheringResponses,
-				gatheringMemberPage
-		);
+		return FavoriteGatheringListResponse.from(gatheringResponses);
+	}
+
+	/**
+	 * 내 모임 전체 목록을 조회합니다. (페이지네이션)
+	 */
+	public MyGatheringListResponse getMyGatherings(int pageSize, LocalDateTime cursorJoinedAt, Long cursorId){
+		Long userId = SecurityUtil.getCurrentUserId();
+
+		Pageable pageable = PageRequest.of(0, pageSize + 1);
+
+		List<GatheringMember> members;
+		if (cursorJoinedAt == null || cursorId == null) {
+			// 첫 페이지
+			members = gatheringMemberRepository.findMyGatheringsFirstPage(userId, pageable);
+		} else {
+			// 다음 페이지
+			members = gatheringMemberRepository.findMyGatheringsAfterCursor(userId, cursorJoinedAt, cursorId, pageable);
+		}
+
+		boolean hasNext = members.size() > pageSize;
+		List<GatheringMember> pageMembers = hasNext ? members.subList(0, pageSize) : members;
+
+		List<GatheringListItemResponse> items = pageMembers.stream()
+				.map(gm -> GatheringListItemResponse.from(
+						gm,
+						getActiveMemberCount(gm.getGathering().getId()),
+						getMeetingCount(gm.getGathering().getId()),
+						gm.getRole()))
+				.toList();
+
+		GatheringMember lastMember = pageMembers.isEmpty() ? null : pageMembers.get(pageMembers.size() - 1);
+
+		return MyGatheringListResponse.from(items, pageSize, hasNext, lastMember);
 	}
 
 	/**
@@ -223,6 +256,19 @@ public class GatheringService {
 		throw new GatheringException(GatheringErrorCode.INVITATION_CODE_GENERATION_FAILED);
 	}
 
+	@Transactional
+	public void updateFavorite(Long gatheringId){
+		Long userId = SecurityUtil.getCurrentUserId();
+		GatheringMember member = gatheringValidator.validateAndGetMember(gatheringId, userId);
+
+		// 즐겨찾기 추가시 4개 제한 검증
+		if(!member.getIsFavorite()) {
+			gatheringValidator.validateFavoriteLimit(userId);
+		}
+
+		member.updateFavorite();
+	}
+
     /**
      * 공통 메서드
      * 모임 멤버를 추가합니다.
@@ -249,10 +295,5 @@ public class GatheringService {
         return meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE);
     }
 
-	@Transactional
-	public void updateFavorite(Long gatheringId){
-		Long userId = SecurityUtil.getCurrentUserId();
-		GatheringMember member = gatheringValidator.validateAndGetMember(gatheringId, userId);
-		member.updateFavorite();
-	}
+
 }
