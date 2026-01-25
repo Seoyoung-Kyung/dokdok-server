@@ -82,7 +82,7 @@ public interface MeetingRetrospectiveApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "INVALID_INPUT_VALUE", "message": "입력값이 올바르지 않습니다.", "data": null}
+                                    {"code": "G002", "message": "입력값이 올바르지 않습니다.", "data": null}
                                     """))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "접근 권한 없음",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -123,11 +123,16 @@ public interface MeetingRetrospectiveApi {
             }
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "공동 회고 코멘트 삭제 완료"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "공동 회고 코멘트 삭제 완료",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"code": "DELETED", "message": "공동 회고 코멘트 삭제 완료", "data": null}
+                                    """))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "접근 권한 없음",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                    {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
                                     """))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "공동 회고를 찾을 수 없음",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,

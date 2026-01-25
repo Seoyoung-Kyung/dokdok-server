@@ -56,7 +56,13 @@ public interface GatheringApi {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "409",
-                    description = "초대 코드 중복 등으로 인한 생성 실패"
+                    description = "초대 코드 중복 등으로 인한 생성 실패",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA007", "message": "초대 코드 생성에 실패했습니다. 다시 시도해주세요.", "data": null}
+                                    """)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
@@ -98,7 +104,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G010", "message": "초대링크는 필수입니다.", "data": null}
+                                    {"code": "GA010", "message": "초대링크는 필수입니다.", "data": null}
                                     """)
                     )
             ),
@@ -108,7 +114,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
                                     """)
                     )
             ),
@@ -156,7 +162,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G010", "message": "초대링크는 필수입니다.", "data": null}
+                                    {"code": "GA010", "message": "초대링크는 필수입니다.", "data": null}
                                     """)
                     )
             ),
@@ -176,7 +182,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
                                     """)
                     )
             ),
@@ -189,13 +195,13 @@ public interface GatheringApi {
                                     @ExampleObject(
                                             name = "이미 가입된 모임",
                                             value = """
-                                                    {"code": "G008", "message": "이미 가입된 모임입니다.", "data": null}
+                                                    {"code": "GA008", "message": "이미 가입된 모임입니다.", "data": null}
                                                     """
                                     ),
                                     @ExampleObject(
                                             name = "가입 요청 진행 중",
                                             value = """
-                                                    {"code": "G009", "message": "이미 가입 요청이 진행 중입니다.", "data": null}
+                                                    {"code": "GA009", "message": "이미 가입 요청이 진행 중입니다.", "data": null}
                                                     """
                                     )
                             }
@@ -315,7 +321,7 @@ public interface GatheringApi {
     ResponseEntity<ApiResponse<FavoriteGatheringListResponse>> getFavoriteGatherings();
 
     @Operation(
-            summary = "내 모임 상세 조회",
+            summary = "특정 모임 상세 조회",
             description = """
               내가 가입한 모임의 상세 정보를 조회합니다.
               - 모임에 가입한 모임만 조회할 수 있습니다.
@@ -346,7 +352,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G002", "message": "모임의 멤버가 아닙니다.", "data": null}
+                                    {"code": "GA002", "message": "모임의 멤버가 아닙니다.", "data": null}
                                     """)
                     )
             ),
@@ -356,7 +362,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
                                     """)
                     )
             ),
@@ -405,7 +411,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "INVALID_INPUT_VALUE", "message": "입력값이 올바르지 않습니다.", "data": null}
+                                    {"code": "G002", "message": "입력값이 올바르지 않습니다.", "data": null}
                                     """)
                     )
             ),
@@ -425,7 +431,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                    {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
                                     """)
                     )
             ),
@@ -435,7 +441,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
                                     """)
                     )
             ),
@@ -496,7 +502,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                    {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
                                     """)
                     )
             ),
@@ -506,7 +512,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
                                     """)
                     )
             ),
@@ -564,13 +570,13 @@ public interface GatheringApi {
                                     @ExampleObject(
                                             name = "리더 권한 없음",
                                             value = """
-                                                    {"code": "G003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                                    {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
                                                     """
                                     ),
                                     @ExampleObject(
                                             name = "리더 강퇴 불가",
                                             value = """
-                                                    {"code": "G005", "message": "유일한 리더는 강퇴할 수 없습니다.", "data": null}
+                                                    {"code": "GA005", "message": "유일한 리더는 강퇴할 수 없습니다.", "data": null}
                                                     """
                                     )
                             }
@@ -582,7 +588,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
                                     """)
                     )
             ),
@@ -624,7 +630,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G013", "message": "즐겨찾기는 최대 4개까지만 등록할 수 있습니다.", "data": null}
+                                    {"code": "GA013", "message": "즐겨찾기는 최대 4개까지만 등록할 수 있습니다.", "data": null}
                                     """)
                     )
             ),
@@ -644,7 +650,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G002", "message": "모임의 멤버가 아닙니다.", "data": null}
+                                    {"code": "GA002", "message": "모임의 멤버가 아닙니다.", "data": null}
                                     """)
                     )
             ),
@@ -654,7 +660,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
                                     """)
                     )
             ),
@@ -700,13 +706,13 @@ public interface GatheringApi {
                                     @ExampleObject(
                                             name = "잘못된 approve_type",
                                             value = """
-                                                    {"code": "G012", "message": "승인 상태는 ACTIVE 또는 REJECTED만 가능합니다.", "data": null}
+                                                    {"code": "GA012", "message": "승인 상태는 ACTIVE 또는 REJECTED만 가능합니다.", "data": null}
                                                     """
                                     ),
                                     @ExampleObject(
                                             name = "PENDING 상태 아님",
                                             value = """
-                                                    {"code": "G011", "message": "대기 중인 가입 요청만 처리할 수 있습니다.", "data": null}
+                                                    {"code": "GA011", "message": "대기 중인 가입 요청만 처리할 수 있습니다.", "data": null}
                                                     """
                                     )
                             }
@@ -728,7 +734,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                    {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
                                     """)
                     )
             ),
@@ -738,7 +744,7 @@ public interface GatheringApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(value = """
-                                    {"code": "G001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
                                     """)
                     )
             ),
