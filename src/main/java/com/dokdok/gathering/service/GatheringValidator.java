@@ -104,10 +104,8 @@ public class GatheringValidator {
 	/**
 	 * 즐겨찾기 된 모임이 4개 이상인지 검증합니다.
 	 */
-	public void validateFavoriteLimit(Long userId){
-		int currentCount = gatheringMemberRepository.countFavoriteGatheringsByUserId(userId);
-
-		if (currentCount >= 4) {
+	public void validateFavoriteLimit(Long userId) {
+		if (gatheringMemberRepository.isFavoriteLimitExceeded(userId)) {
 			throw new GatheringException(GatheringErrorCode.FAVORITE_LIMIT_EXCEEDED);
 		}
 	}

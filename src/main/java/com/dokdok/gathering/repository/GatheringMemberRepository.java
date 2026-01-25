@@ -68,12 +68,16 @@ public interface GatheringMemberRepository extends JpaRepository<GatheringMember
     List<GatheringMember> findFavoriteGatheringsByUserId(@Param("userId") Long userId);
 
     // 사용자 즐겨찾기 개수 조회
-    @Query(" SELECT COUNT(gm) FROM GatheringMember gm " +
-            "WHERE gm.user.id = :userId " +
-            "AND gm.isFavorite = true " +
-            "AND gm.memberStatus = 'ACTIVE' " +
-            "AND gm.removedAt IS NULL ")
-    int countFavoriteGatheringsByUserId(@Param("userId") Long userId);
+    @Query(value =
+            "SELECT COUNT(*) >= 4 FROM (" +
+                    "SELECT 1 FROM gathering_member " +
+                    "WHERE user_id = :userId " +
+                    "AND is_favorite = true " +
+                    "AND member_status = 'ACTIVE' " +
+                    "AND removed_at IS NULL " +
+                    "LIMIT 4" +
+                    ") sub", nativeQuery = true)
+    boolean isFavoriteLimitExceeded(@Param("userId") Long userId);
 
     /**
      * 커서 기반 내 모임 목록 조회 (첫 페이지)
