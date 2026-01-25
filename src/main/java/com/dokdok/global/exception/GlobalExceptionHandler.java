@@ -184,7 +184,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse<>(
-                        "E-000",
+                        "E000",
                         "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.",
                         null
                 ));

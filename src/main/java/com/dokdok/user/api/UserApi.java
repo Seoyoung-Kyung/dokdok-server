@@ -46,7 +46,7 @@ public interface UserApi {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"온보딩 완료\"}"
+                                    value = "{\"code\":\"SUCCESS\",\"message\":\"온보딩 완료\", \"data\":null}"
                             )
                     )
             ),
@@ -59,27 +59,27 @@ public interface UserApi {
                                     @ExampleObject(
                                             name = "닉네임 필수",
                                             description = "닉네임이 null이거나 빈 문자열인 경우",
-                                            value = "{\"code\":\"U003\",\"message\":\"닉네임은 필수 입력 항목입니다.\"}"
+                                            value = "{\"code\":\"U003\",\"message\":\"닉네임은 필수 입력 항목입니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "닉네임 길이 오류",
                                             description = "닉네임이 2자 미만 또는 20자 초과인 경우",
-                                            value = "{\"code\":\"U004\",\"message\":\"닉네임은 2자 이상 20자 이하로 입력해주세요.\"}"
+                                            value = "{\"code\":\"U004\",\"message\":\"닉네임은 2자 이상 20자 이하로 입력해주세요.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "닉네임 형식 오류",
                                             description = "특수문자, 공백, 이모지 등이 포함된 경우",
-                                            value = "{\"code\":\"U005\",\"message\":\"닉네임은 한글, 영문, 숫자만 사용 가능합니다.\"}"
+                                            value = "{\"code\":\"U005\",\"message\":\"닉네임은 한글, 영문, 숫자만 사용 가능합니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "파일 형식 오류",
                                             description = "지원하지 않는 이미지 형식인 경우",
-                                            value = "{\"code\":\"S003\",\"message\":\"지원하지 않는 파일 형식입니다.\"}"
+                                            value = "{\"code\":\"S003\",\"message\":\"지원하지 않는 파일 형식입니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "파일 크기 초과",
                                             description = "파일 크기가 5MB를 초과한 경우",
-                                            value = "{\"code\":\"S004\",\"message\":\"파일 크기가 제한을 초과했습니다.\"}"
+                                            value = "{\"code\":\"S004\",\"message\":\"파일 크기가 제한을 초과했습니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -90,7 +90,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -100,7 +100,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\"}"
+                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\",\"data\":null}"
                             )
                     )
             ),
@@ -110,7 +110,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"U002\",\"message\":\"이미 존재하는 사용자 닉네임입니다.\"}"
+                                    value = "{\"code\":\"U002\",\"message\":\"이미 존재하는 사용자 닉네임입니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -120,7 +120,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"S001\",\"message\":\"파일 업로드에 실패했습니다.\"}"
+                                    value = "{\"code\":\"S001\",\"message\":\"파일 업로드에 실패했습니다.\",\"data\":null}"
                             )
                     )
             )
@@ -154,7 +154,7 @@ public interface UserApi {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"사용 가능한 닉네임입니다.\"}"
+                                    value = "{\"code\":\"SUCCESS\",\"message\":\"사용 가능한 닉네임입니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -167,17 +167,17 @@ public interface UserApi {
                                     @ExampleObject(
                                             name = "닉네임 필수",
                                             description = "닉네임이 null이거나 빈 문자열인 경우",
-                                            value = "{\"code\":\"U003\",\"message\":\"닉네임은 필수 입력 항목입니다.\"}"
+                                            value = "{\"code\":\"U003\",\"message\":\"닉네임은 필수 입력 항목입니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "닉네임 길이 오류",
                                             description = "닉네임이 2자 미만 또는 20자 초과인 경우",
-                                            value = "{\"code\":\"U004\",\"message\":\"닉네임은 2자 이상 20자 이하로 입력해주세요.\"}"
+                                            value = "{\"code\":\"U004\",\"message\":\"닉네임은 2자 이상 20자 이하로 입력해주세요.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "닉네임 형식 오류",
                                             description = "특수문자, 공백, 이모지 등이 포함된 경우",
-                                            value = "{\"code\":\"U005\",\"message\":\"닉네임은 한글, 영문, 숫자만 사용 가능합니다.\"}"
+                                            value = "{\"code\":\"U005\",\"message\":\"닉네임은 한글, 영문, 숫자만 사용 가능합니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -188,13 +188,19 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"U002\",\"message\":\"이미 존재하는 사용자 닉네임입니다.\"}"
+                                    value = "{\"code\":\"U002\",\"message\":\"이미 존재하는 사용자 닉네임입니다.\",\"data\":null}"
                             )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
-                    description = "서버 오류"
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
+                            )
+                    )
             )
     })
     @GetMapping(value = "/check-nickname", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -236,13 +242,19 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\",\"data\":null}"
                             )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
-                    description = "서버 오류"
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
+                            )
+                    )
             )
     })
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -285,17 +297,17 @@ public interface UserApi {
                                     @ExampleObject(
                                             name = "닉네임 필수",
                                             description = "닉네임이 null이거나 빈 문자열인 경우",
-                                            value = "{\"code\":\"U003\",\"message\":\"닉네임은 필수 입력 항목입니다.\"}"
+                                            value = "{\"code\":\"U003\",\"message\":\"닉네임은 필수 입력 항목입니다.\", \"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "닉네임 길이 오류",
                                             description = "닉네임이 2자 미만 또는 20자 초과인 경우",
-                                            value = "{\"code\":\"U004\",\"message\":\"닉네임은 2자 이상 20자 이하로 입력해주세요.\"}"
+                                            value = "{\"code\":\"U004\",\"message\":\"닉네임은 2자 이상 20자 이하로 입력해주세요.\", \"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "닉네임 형식 오류",
                                             description = "특수문자, 공백, 이모지 등이 포함된 경우",
-                                            value = "{\"code\":\"U005\",\"message\":\"닉네임은 한글, 영문, 숫자만 사용 가능합니다.\"}"
+                                            value = "{\"code\":\"U005\",\"message\":\"닉네임은 한글, 영문, 숫자만 사용 가능합니다.\", \"data\":null}"
                                     )
                             }
                     )
@@ -306,7 +318,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\", \"data\":null}"
                             )
                     )
             ),
@@ -316,7 +328,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\"}"
+                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\", \"data\":null}"
                             )
                     )
             ),
@@ -326,13 +338,19 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"U002\",\"message\":\"이미 존재하는 사용자 닉네임입니다.\"}"
+                                    value = "{\"code\":\"U002\",\"message\":\"이미 존재하는 사용자 닉네임입니다.\", \"data\":null}"
                             )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
-                    description = "서버 오류"
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
+                            )
+                    )
             )
     })
     @PatchMapping(value = "/me", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -352,7 +370,7 @@ public interface UserApi {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"DELETED\",\"message\":\"회원 탈퇴가 완료되었습니다.\"}"
+                                    value = "{\"code\":\"DELETED\",\"message\":\"회원 탈퇴가 완료되었습니다.\", \"data\":null}"
                             )
                     )
             ),
@@ -362,7 +380,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\", \"data\":null}"
                             )
                     )
             ),
@@ -372,13 +390,19 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\"}"
+                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\", \"data\":null}"
                             )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
-                    description = "서버 오류"
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
+                            )
+                    )
             )
     })
     @DeleteMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -428,12 +452,12 @@ public interface UserApi {
                                     @ExampleObject(
                                             name = "파일 형식 오류",
                                             description = "지원하지 않는 이미지 형식인 경우",
-                                            value = "{\"code\":\"S003\",\"message\":\"지원하지 않는 파일 형식입니다.\"}"
+                                            value = "{\"code\":\"S003\",\"message\":\"지원하지 않는 파일 형식입니다.\", \"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "파일 크기 초과",
                                             description = "파일 크기가 5MB를 초과한 경우",
-                                            value = "{\"code\":\"S004\",\"message\":\"파일 크기가 제한을 초과했습니다.\"}"
+                                            value = "{\"code\":\"S004\",\"message\":\"파일 크기가 제한을 초과했습니다.\", \"data\":null}"
                                     )
                             }
                     )
@@ -444,7 +468,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\", \"data\":null}"
                             )
                     )
             ),
@@ -454,7 +478,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\"}"
+                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\", \"data\":null}"
                             )
                     )
             ),
@@ -464,7 +488,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"S001\",\"message\":\"파일 업로드에 실패했습니다.\"}"
+                                    value = "{\"code\":\"S001\",\"message\":\"파일 업로드에 실패했습니다.\", \"data\":null}"
                             )
                     )
             )
@@ -487,7 +511,7 @@ public interface UserApi {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"프로필 이미지가 삭제되었습니다.\"}"
+                                    value = "{\"code\":\"SUCCESS\",\"message\":\"프로필 이미지가 삭제되었습니다.\", \"data\":null}"
                             )
                     )
             ),
@@ -497,7 +521,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\"}"
+                                    value = "{\"code\":\"G001\",\"message\":\"인증되지 않은 사용자입니다.\", \"data\":null}"
                             )
                     )
             ),
@@ -507,7 +531,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\"}"
+                                    value = "{\"code\":\"U001\",\"message\":\"존재하지 않는 사용자입니디.\", \"data\":null}"
                             )
                     )
             ),
@@ -517,7 +541,7 @@ public interface UserApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"S002\",\"message\":\"파일 삭제에 실패했습니다.\"}"
+                                    value = "{\"code\":\"S002\",\"message\":\"파일 삭제에 실패했습니다.\", \"data\":null}"
                             )
                     )
             )
