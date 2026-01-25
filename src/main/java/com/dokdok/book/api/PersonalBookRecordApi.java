@@ -41,7 +41,7 @@ public interface PersonalBookRecordApi {
                     responseCode = "201",
                     description = "독서 기록 등록 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalReadingRecordCreateResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -108,7 +108,7 @@ public interface PersonalBookRecordApi {
                     responseCode = "200",
                     description = "독서 기록 수정 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalReadingRecordCreateResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -213,7 +213,7 @@ public interface PersonalBookRecordApi {
                     responseCode = "200",
                     description = "독서 기록 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalReadingRecordListResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
