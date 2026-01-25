@@ -43,9 +43,10 @@ public class BookController implements BookApi {
 
     @Override
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(BookReadingStatus readingStatus, Long gatheringId, Pageable pageable) {
+    public ResponseEntity<ApiResponse<PageResponse<PersonalBookListResponse>>> getMyBooks(BookReadingStatus readingStatus, Long gatheringId, Pageable pageable) {
         Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(readingStatus, gatheringId, pageable);
-        return ApiResponse.success(personalBookList, "책 리스트 조회 성공");
+        PageResponse<PersonalBookListResponse> response = PageResponse.from(personalBookList);
+        return ApiResponse.success(response, "책 리스트 조회 성공");
     }
 
     @Override
@@ -85,13 +86,14 @@ public class BookController implements BookApi {
 
     @Override
     @GetMapping("/{bookId}/records")
-    public ResponseEntity<ApiResponse<Page<PersonalReadingRecordListResponse>>> getMyReadingRecords(
+    public ResponseEntity<ApiResponse<PageResponse<PersonalReadingRecordListResponse>>> getMyReadingRecords(
             @PathVariable Long bookId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
 
         Page<PersonalReadingRecordListResponse> records = personalReadingRecordService.getRecords(bookId, pageable);
-        return ApiResponse.success(records, "기록 조회 성공");
+        PageResponse<PersonalReadingRecordListResponse> response = PageResponse.from(records);
+        return ApiResponse.success(response, "기록 조회 성공");
 
     }
 }

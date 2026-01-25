@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -124,7 +123,7 @@ public interface BookApi {
                                               "code": "SUCCESS",
                                               "message": "책 리스트 조회 성공",
                                               "data": {
-                                                "content": [
+                                                "items": [
                                                   {
                                                     "bookId": 1,
                                                     "title": "예제 도서명",
@@ -135,31 +134,10 @@ public interface BookApi {
                                                     "gatheringName": "예제 모임"
                                                   }
                                                 ],
-                                                "pageable": {
-                                                  "pageNumber": 0,
-                                                  "pageSize": 10,
-                                                  "offset": 0,
-                                                  "paged": true,
-                                                  "unpaged": false,
-                                                  "sort": {
-                                                    "empty": false,
-                                                    "sorted": true,
-                                                    "unsorted": false
-                                                  }
-                                                },
-                                                "last": true,
-                                                "totalPages": 1,
-                                                "totalElements": 1,
-                                                "size": 10,
-                                                "number": 0,
-                                                "sort": {
-                                                  "empty": false,
-                                                  "sorted": true,
-                                                  "unsorted": false
-                                                },
-                                                "first": true,
-                                                "numberOfElements": 1,
-                                                "empty": false
+                                                "totalCount": 1,
+                                                "currentPage": 0,
+                                                "pageSize": 10,
+                                                "totalPages": 1
                                               }
                                             }
                                             """
@@ -170,7 +148,7 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @GetMapping
-    ResponseEntity<ApiResponse<Page<PersonalBookListResponse>>> getMyBooks(
+    ResponseEntity<ApiResponse<PageResponse<PersonalBookListResponse>>> getMyBooks(
             @RequestParam(required = false) BookReadingStatus readingStatus,
             @RequestParam(required = false) Long gatheringId,
             @ParameterObject
@@ -453,7 +431,7 @@ public interface BookApi {
                                               "code": "SUCCESS",
                                               "message": "기록 조회 성공",
                                               "data": {
-                                                "content": [
+                                                "items": [
                                                   {
                                                     "recordId": 5,
                                                     "recordType": "QUOTE",
@@ -465,31 +443,10 @@ public interface BookApi {
                                                     "bookId": 10
                                                   }
                                                 ],
-                                                "pageable": {
-                                                  "pageNumber": 0,
-                                                  "pageSize": 10,
-                                                  "offset": 0,
-                                                  "paged": true,
-                                                  "unpaged": false,
-                                                  "sort": {
-                                                    "empty": false,
-                                                    "sorted": true,
-                                                    "unsorted": false
-                                                  }
-                                                },
-                                                "last": true,
-                                                "totalPages": 1,
-                                                "totalElements": 1,
-                                                "size": 10,
-                                                "number": 0,
-                                                "sort": {
-                                                  "empty": false,
-                                                  "sorted": true,
-                                                  "unsorted": false
-                                                },
-                                                "first": true,
-                                                "numberOfElements": 1,
-                                                "empty": false
+                                                "totalCount": 1,
+                                                "currentPage": 0,
+                                                "pageSize": 10,
+                                                "totalPages": 1
                                               }
                                             }
                                             """
@@ -500,7 +457,7 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @GetMapping("/{bookId}/records")
-    ResponseEntity<ApiResponse<Page<PersonalReadingRecordListResponse>>> getMyReadingRecords(
+    ResponseEntity<ApiResponse<PageResponse<PersonalReadingRecordListResponse>>> getMyReadingRecords(
             @Parameter(description = "책 ID (book 테이블 PK)", required = true, example = "10")
             @PathVariable Long bookId,
             @ParameterObject
