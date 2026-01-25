@@ -9,6 +9,7 @@ import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.gathering.util.InvitationCodeGenerator;
 import com.dokdok.meeting.entity.MeetingStatus;
@@ -131,7 +132,7 @@ public class GatheringService {
 	/**
 	 * 내 모임 전체 목록을 조회합니다. (페이지네이션)
 	 */
-	public MyGatheringListResponse getMyGatherings(int pageSize, LocalDateTime cursorJoinedAt, Long cursorId){
+	public CursorResponse<GatheringListItemResponse, MyGatheringCursor> getMyGatherings(int pageSize, LocalDateTime cursorJoinedAt, Long cursorId){
 		Long userId = SecurityUtil.getCurrentUserId();
 
 		Pageable pageable = PageRequest.of(0, pageSize + 1);
@@ -157,8 +158,9 @@ public class GatheringService {
 				.toList();
 
 		GatheringMember lastMember = pageMembers.isEmpty() ? null : pageMembers.get(pageMembers.size() - 1);
+		MyGatheringCursor nextCursor = hasNext && lastMember != null ? MyGatheringCursor.from(lastMember) : null;
 
-		return MyGatheringListResponse.from(items, pageSize, hasNext, lastMember);
+		return CursorResponse.of(items, pageSize, hasNext, nextCursor);
 	}
 
 	/**

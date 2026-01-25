@@ -23,6 +23,19 @@ public interface TopicAnswerRepository extends JpaRepository<TopicAnswer, Long> 
     boolean existsByTopicIdAndUserId(Long topicId, Long userId);
 
     @Query("""
+                SELECT CASE WHEN COUNT(ta) > 0 THEN true ELSE false END
+                FROM TopicAnswer ta
+                JOIN ta.topic t
+                JOIN t.meeting m
+                WHERE m.id = :meetingId
+                AND ta.user.id = :userId
+                AND ta.isSubmitted = true
+            """)
+    boolean existsByMeetingIdAndUserId(@Param("meetingId") Long meetingId,
+                                       @Param("userId") Long userId);
+
+
+    @Query("""
                     SELECT ta
                     FROM TopicAnswer ta
                     JOIN FETCH ta.topic t
@@ -52,4 +65,16 @@ public interface TopicAnswerRepository extends JpaRepository<TopicAnswer, Long> 
             AND ta.deletedAt IS NULL
             """)
     void softDeleteByMeetingId(@Param("meetingId") Long meetingId);
+
+    @Query("""
+                    SELECT ta
+                    FROM TopicAnswer ta
+                    LEFT JOIN FETCH ta.user u
+                    JOIN FETCH ta.topic t
+                    WHERE t.meeting.id = :meetingId
+                    AND ta.isSubmitted = true
+                    ORDER BY ta.createdAt DESC
+            """
+    )
+    List<TopicAnswer> findByMeetingId(Long meetingId);
 }

@@ -4,6 +4,8 @@ import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.response.PersonalBookCreateResponse;
 import com.dokdok.book.dto.response.PersonalBookDetailResponse;
 import com.dokdok.book.dto.response.PersonalBookListResponse;
+import com.dokdok.book.dto.response.BookListCursor;
+import com.dokdok.book.dto.response.CursorPageResponse;
 import com.dokdok.book.entity.Book;
 import com.dokdok.book.entity.BookReadingStatus;
 import com.dokdok.book.entity.PersonalBook;
@@ -18,14 +20,21 @@ import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PersonalBookService {
+
+    private static final int DEFAULT_PAGE_SIZE = 10;
 
     private final PersonalBookRepository personalBookRepository;
     private final BookRepository bookRepository;
@@ -78,6 +87,43 @@ public class PersonalBookService {
         return page.map(PersonalBookListResponse::from);
     }
 
+    public CursorPageResponse<PersonalBookListResponse, BookListCursor> getPersonalBookListCursor(
+            BookReadingStatus bookReadingStatus,
+            Long gatheringId,
+            OffsetDateTime cursorAddedAt,
+            Long cursorBookId,
+            Integer size
+    ) {
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+        String readingStatus = bookReadingStatus != null ? bookReadingStatus.name() : null;
+        int pageSize = resolvePageSize(size);
+        LocalDateTime cursorAddedAtValue = cursorAddedAt != null ? cursorAddedAt.toLocalDateTime() : null;
+
+        List<PersonalBookListProjection> results = personalBookRepository
+                .findPersonalBooksByUserIdReadingStatusAndGatheringIdCursor(
+                        userEntity.getId(),
+                        gatheringId,
+                        readingStatus,
+                        cursorAddedAtValue,
+                        cursorBookId,
+                        PageRequest.of(0, pageSize + 1)
+                );
+
+        boolean hasNext = results.size() > pageSize;
+        List<PersonalBookListProjection> pageResults = hasNext ? results.subList(0, pageSize) : results;
+        List<PersonalBookListResponse> items = pageResults.stream()
+                .map(PersonalBookListResponse::from)
+                .toList();
+
+        BookListCursor nextCursor = null;
+        if (hasNext && !pageResults.isEmpty()) {
+            PersonalBookListProjection last = pageResults.get(pageResults.size() - 1);
+            nextCursor = BookListCursor.from(last.getAddedAt(), last.getBookId());
+        }
+
+        return CursorPageResponse.of(items, pageSize, hasNext, nextCursor);
+    }
+
     public PersonalBookDetailResponse getPersonalBook(Long bookId) {
         User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
         // 책 정보 GET Logic
@@ -109,5 +155,12 @@ public class PersonalBookService {
         personalBookRepository
                 .findByUserIdAndBookIdAndGatheringId(userEntity.getId(), bookId, gatheringId)
                 .ifPresent(personalBookRepository::delete);
+    }
+
+    private int resolvePageSize(Integer size) {
+        if (size == null || size < 1) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        return size;
     }
 }

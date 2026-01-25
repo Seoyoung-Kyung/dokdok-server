@@ -29,7 +29,11 @@ public interface PersonalRetrospectiveApi {
 
     @Operation(
             summary = "개인 회고 작성",
-            description = "약속에 대한 개인 회고를 작성합니다.",
+            description = """
+            약속에 대한 개인 회고를 작성합니다.
+            - 권한: 약속 멤버
+            - 제약: 약속 1건당 1회 작성
+            """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
@@ -47,7 +51,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                                    value = """
+                                            {"code": "INVALID_INPUT_VALUE", "message": "입력값이 올바르지 않습니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -57,7 +63,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = """
+                                            {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -67,7 +75,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                    value = """
+                                            {"code": "M004", "message": "약속의 멤버가 아닙니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -77,7 +87,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                    value = """
+                                            {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -87,7 +99,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"R101\",\"message\":\"이미 해당 약속에 대한 회고가 존재합니다.\"}"
+                                    value = """
+                                            {"code": "R101", "message": "이미 해당 약속에 대한 회고가 존재합니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -97,7 +111,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = """
+                                            {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                            """
                             )
                     )
             )
@@ -110,7 +126,10 @@ public interface PersonalRetrospectiveApi {
 
     @Operation(
             summary = "개인 회고 입력 폼 조회",
-            description = "개인 회고 작성에 필요한 폼 데이터(확정된 주제 목록, 사전 의견, 약속 멤버 목록)를 조회합니다.",
+            description = """
+            개인 회고 작성에 필요한 폼 데이터(확정된 주제 목록, 사전 의견, 약속 멤버 목록)를 조회합니다.
+            - 권한: 약속 멤버
+            """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
@@ -128,7 +147,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = """
+                                            {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -138,7 +159,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                    value = """
+                                            {"code": "M004", "message": "약속의 멤버가 아닙니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -148,7 +171,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                    value = """
+                                            {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -158,7 +183,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"R101\",\"message\":\"이미 해당 약속에 대한 회고가 존재합니다.\"}"
+                                    value = """
+                                            {"code": "R101", "message": "이미 해당 약속에 대한 회고가 존재합니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -168,7 +195,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = """
+                                            {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                            """
                             )
                     )
             )
@@ -180,7 +209,10 @@ public interface PersonalRetrospectiveApi {
 
     @Operation(
             summary = "개인 회고 수정 폼 조회",
-            description = "기존에 작성한 개인 회고를 수정하기 위한 데이터를 조회합니다.",
+            description = """
+            기존에 작성한 개인 회고를 수정하기 위한 데이터를 조회합니다.
+            - 권한: 약속 멤버
+            """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
@@ -199,7 +231,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = """
+                                            {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -209,7 +243,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                    value = """
+                                            {"code": "M004", "message": "약속의 멤버가 아닙니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -222,12 +258,16 @@ public interface PersonalRetrospectiveApi {
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = """
+                                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                                    """
                                     ),
                                     @ExampleObject(
                                             name = "회고 없음",
                                             description = "개인 회고를 찾을 수 없는 경우",
-                                            value = "{\"code\":\"R102\",\"message\":\"회고를 찾을 수 없습니다.\"}"
+                                            value = """
+                                                    {"code": "R102", "message": "회고를 찾을 수 없습니다.", "data": null}
+                                                    """
                                     )
                             }
                     )
@@ -238,7 +278,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = """
+                                            {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                            """
                             )
                     )
             )
@@ -251,7 +293,10 @@ public interface PersonalRetrospectiveApi {
 
     @Operation(
             summary = "개인 회고 상세 조회",
-            description = "특정 개인 회고의 상세 정보를 조회합니다.",
+            description = """
+            특정 개인 회고의 상세 정보를 조회합니다.
+            - 권한: 약속 멤버
+            """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
@@ -270,7 +315,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = """
+                                            {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -280,7 +327,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                    value = """
+                                            {"code": "M004", "message": "약속의 멤버가 아닙니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -293,12 +342,16 @@ public interface PersonalRetrospectiveApi {
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = """
+                                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                                    """
                                     ),
                                     @ExampleObject(
                                             name = "회고 없음",
                                             description = "개인 회고를 찾을 수 없는 경우",
-                                            value = "{\"code\":\"R102\",\"message\":\"회고를 찾을 수 없습니다.\"}"
+                                            value = """
+                                                    {"code": "R102", "message": "회고를 찾을 수 없습니다.", "data": null}
+                                                    """
                                     )
                             }
                     )
@@ -309,7 +362,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = """
+                                            {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                            """
                             )
                     )
             )
@@ -322,7 +377,10 @@ public interface PersonalRetrospectiveApi {
 
     @Operation(
             summary = "개인 회고 수정",
-            description = "기존에 작성한 개인 회고를 수정합니다.",
+            description = """
+            기존에 작성한 개인 회고를 수정합니다.
+            - 권한: 약속 멤버 (작성자 본인)
+            """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
@@ -341,7 +399,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                                    value = """
+                                            {"code": "INVALID_INPUT_VALUE", "message": "입력값이 올바르지 않습니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -351,7 +411,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = """
+                                            {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -361,7 +423,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                    value = """
+                                            {"code": "M004", "message": "약속의 멤버가 아닙니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -374,12 +438,16 @@ public interface PersonalRetrospectiveApi {
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = """
+                                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                                    """
                                     ),
                                     @ExampleObject(
                                             name = "회고 없음",
                                             description = "개인 회고를 찾을 수 없는 경우",
-                                            value = "{\"code\":\"R102\",\"message\":\"회고를 찾을 수 없습니다.\"}"
+                                            value = """
+                                                    {"code": "R102", "message": "회고를 찾을 수 없습니다.", "data": null}
+                                                    """
                                     )
                             }
                     )
@@ -390,7 +458,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = """
+                                            {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                            """
                             )
                     )
             )
@@ -404,7 +474,10 @@ public interface PersonalRetrospectiveApi {
 
     @Operation(
             summary = "개인 회고 삭제",
-            description = "기존에 작성한 개인 회고를 삭제합니다. 본인이 작성한 회고만 삭제할 수 있습니다.",
+            description = """
+            기존에 작성한 개인 회고를 삭제합니다.
+            - 권한: 작성자 본인
+            """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
@@ -427,7 +500,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = """
+                                            {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -437,7 +512,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G101\",\"message\":\"접근 권한이 없습니다.\"}"
+                                    value = """
+                                            {"code": "G101", "message": "접근 권한이 없습니다.", "data": null}
+                                            """
                             )
                     )
             ),
@@ -450,17 +527,23 @@ public interface PersonalRetrospectiveApi {
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = """
+                                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                                    """
                                     ),
                                     @ExampleObject(
                                             name = "회고 없음",
                                             description = "개인 회고를 찾을 수 없는 경우",
-                                            value = "{\"code\":\"R102\",\"message\":\"회고를 찾을 수 없습니다.\"}"
+                                            value = """
+                                                    {"code": "R102", "message": "회고를 찾을 수 없습니다.", "data": null}
+                                                    """
                                     ),
                                     @ExampleObject(
                                             name = "이미 삭제됨",
                                             description = "이미 삭제된 개인 회고인 경우",
-                                            value = "{\"code\":\"R104\",\"message\":\"이미 삭제된 개인 회고입니다.\"}"
+                                            value = """
+                                                    {"code": "R104", "message": "이미 삭제된 개인 회고입니다.", "data": null}
+                                                    """
                                     )
                             }
                     )
@@ -471,7 +554,9 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = """
+                                            {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                            """
                             )
                     )
             )

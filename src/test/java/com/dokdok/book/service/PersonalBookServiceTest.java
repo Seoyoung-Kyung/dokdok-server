@@ -430,6 +430,7 @@ class PersonalBookServiceTest {
         PersonalBookDetailResponse response = personalBookService.getPersonalBook(bookId);
 
         // then
+        assertThat(response.personalBookId()).isEqualTo(personalBook.getId());
         assertThat(response.title()).isEqualTo(book.getBookName());
         assertThat(response.publisher()).isEqualTo(book.getPublisher());
         assertThat(response.authors()).isEqualTo(book.getAuthor());

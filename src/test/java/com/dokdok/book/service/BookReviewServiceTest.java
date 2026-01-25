@@ -53,8 +53,8 @@ class BookReviewServiceTest {
     @DisplayName("책 리뷰를 정상적으로 생성한다")
     void createReview_success() {
         Book book = Book.builder().id(1L).build();
-        Keyword keyword = Keyword.builder().id(2L).build();
-        Keyword keywordSecond = Keyword.builder().id(4L).build();
+        Keyword keyword = Keyword.builder().id(2L).keywordName("감동").build();
+        Keyword keywordSecond = Keyword.builder().id(4L).keywordName("몰입").build();
         User user = User.builder().id(3L).build();
         BookReviewRequest request = new BookReviewRequest(new BigDecimal("4.5"), List.of(2L, 4L));
 
@@ -85,7 +85,10 @@ class BookReviewServiceTest {
             assertThat(response.bookId()).isEqualTo(1L);
             assertThat(response.userId()).isEqualTo(3L);
             assertThat(response.rating()).isEqualTo(new BigDecimal("4.5"));
-            assertThat(response.keywordIds()).containsExactly(2L, 4L);
+            assertThat(response.keywords()).containsExactly(
+                    new BookReviewResponse.KeywordInfo(2L, "감동"),
+                    new BookReviewResponse.KeywordInfo(4L, "몰입")
+            );
 
             verify(bookValidator).validateReviewNotExists(1L, 3L);
             verify(bookValidator).validateAndGetBook(1L);
@@ -203,8 +206,8 @@ class BookReviewServiceTest {
     @DisplayName("내 책 리뷰를 정상적으로 조회한다")
     void getMyReview_success() {
         Book book = Book.builder().id(1L).build();
-        Keyword keyword = Keyword.builder().id(2L).build();
-        Keyword keywordSecond = Keyword.builder().id(4L).build();
+        Keyword keyword = Keyword.builder().id(2L).keywordName("감동").build();
+        Keyword keywordSecond = Keyword.builder().id(4L).keywordName("몰입").build();
         User user = User.builder().id(3L).build();
         BookReview review = BookReview.builder()
                 .id(10L)
@@ -229,7 +232,10 @@ class BookReviewServiceTest {
             assertThat(response.bookId()).isEqualTo(1L);
             assertThat(response.userId()).isEqualTo(3L);
             assertThat(response.rating()).isEqualTo(new BigDecimal("4.5"));
-            assertThat(response.keywordIds()).containsExactly(2L, 4L);
+            assertThat(response.keywords()).containsExactly(
+                    new BookReviewResponse.KeywordInfo(2L, "감동"),
+                    new BookReviewResponse.KeywordInfo(4L, "몰입")
+            );
         }
     }
 
@@ -252,9 +258,9 @@ class BookReviewServiceTest {
     @DisplayName("내 책 리뷰를 수정한다")
     void updateMyReview_success() {
         Book book = Book.builder().id(1L).build();
-        Keyword keyword = Keyword.builder().id(2L).build();
-        Keyword newKeyword = Keyword.builder().id(5L).build();
-        Keyword newKeywordSecond = Keyword.builder().id(8L).build();
+        Keyword keyword = Keyword.builder().id(2L).keywordName("감동").build();
+        Keyword newKeyword = Keyword.builder().id(5L).keywordName("희망").build();
+        Keyword newKeywordSecond = Keyword.builder().id(8L).keywordName("위로").build();
         User user = User.builder().id(3L).build();
         BookReview review = BookReview.builder()
                 .id(10L)
@@ -278,7 +284,10 @@ class BookReviewServiceTest {
 
             assertThat(review.getRating()).isEqualTo(new BigDecimal("3.5"));
             assertThat(review.getKeywords()).hasSize(2);
-            assertThat(response.keywordIds()).containsExactly(5L, 8L);
+            assertThat(response.keywords()).containsExactly(
+                    new BookReviewResponse.KeywordInfo(5L, "희망"),
+                    new BookReviewResponse.KeywordInfo(8L, "위로")
+            );
             assertThat(response.reviewId()).isEqualTo(10L);
         }
     }

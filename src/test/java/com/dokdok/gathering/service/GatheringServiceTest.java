@@ -6,10 +6,10 @@ import com.dokdok.gathering.dto.response.GatheringCreateResponse;
 import com.dokdok.gathering.dto.response.GatheringDetailResponse;
 import com.dokdok.gathering.dto.response.GatheringJoinResponse;
 import com.dokdok.gathering.dto.response.GatheringListItemResponse;
+import com.dokdok.gathering.dto.response.MyGatheringCursor;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.response.GatheringUpdateResponse;
 import com.dokdok.gathering.dto.response.FavoriteGatheringListResponse;
-import com.dokdok.gathering.dto.response.MyGatheringListResponse;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.entity.GatheringMemberStatus;
@@ -19,6 +19,7 @@ import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.gathering.util.InvitationCodeGenerator;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.repository.MeetingRepository;
@@ -339,7 +340,8 @@ class GatheringServiceTest {
 
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
 		verify(gatheringMemberRepository, times(1)).findFavoriteGatheringsByUserId(eq(userId));
-		verify(gatheringMemberRepository, times(0)).countByGatheringIdAndRemovedAtIsNull(any());
+		verify(gatheringMemberRepository, times(0)).countActiveMembersByStatus(any());
+		verify(meetingRepository, times(0)).countByGatheringIdAndMeetingStatus(any(), any());
 	}
 
 	@Test
@@ -379,7 +381,8 @@ class GatheringServiceTest {
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE)).willReturn(5);
 
 		// when
-		MyGatheringListResponse response = gatheringService.getMyGatherings(pageSize, null, null);
+		CursorResponse<GatheringListItemResponse, MyGatheringCursor> response =
+				gatheringService.getMyGatherings(pageSize, null, null);
 
 		// then
 		assertThat(response).isNotNull();
@@ -427,7 +430,8 @@ class GatheringServiceTest {
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(any(), eq(MeetingStatus.DONE))).willReturn(0);
 
 		// when
-		MyGatheringListResponse response = gatheringService.getMyGatherings(pageSize, null, null);
+		CursorResponse<GatheringListItemResponse, MyGatheringCursor> response =
+				gatheringService.getMyGatherings(pageSize, null, null);
 
 		// then
 		assertThat(response.items()).hasSize(1);

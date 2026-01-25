@@ -35,42 +35,14 @@ public interface TopicApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201",
                     description = "주제 제안 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = SuggestTopicResponse.class)
-                    )
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = SuggestTopicResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400",
-                    description = "약속 상태로 인해 주제 제안 불가",
-                    content = @Content(
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"M007\",\"message\":\"약속이 확정된 경우에는 주제를 제안할 수 없습니다.\"}"
-                            )
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "403",
-                    description = "모임 또는 약속 멤버가 아님",
-                    content = @Content(
-                            examples = {
-                                    @ExampleObject(value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\"}"),
-                                    @ExampleObject(value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}")
-                            }
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404",
-                    description = "모임 또는 약속을 찾을 수 없음",
-                    content = @Content(
-                            examples = {
-                                    @ExampleObject(value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"),
-                                    @ExampleObject(value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}")
-                            }
-                    )
-            )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 또는 약속의 멤버가 아님"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임 또는 약속을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @PostMapping
     ResponseEntity<ApiResponse<SuggestTopicResponse>> createTopic(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
@@ -124,42 +96,89 @@ public interface TopicApi {
 
     @Operation(
             summary = "제안된 주제 확정",
-            description = "약속에서 제안된 주제를 확정합니다."
+            description = "약속에서 제안된 주제를 확정합니다.",
+            parameters = {
+                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
+            }
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "주제 확정 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ConfirmTopicsResponse.class)
-                    )
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ConfirmTopicsResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "403",
-                    description = "약속장이 아님",
+                    responseCode = "400",
+                    description = "잘못된 요청",
                     content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"M006\",\"message\":\"약속장만 수정할 수 있습니다.\"}"
+                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
                             )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404",
-                    description = "주제 또는 약속을 찾을 수 없음",
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
                     content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "모임 또는 약속의 멤버가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = {
-                                    @ExampleObject(value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\"}"),
-                                    @ExampleObject(value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}")
+                                    @ExampleObject(
+                                            name = "모임 멤버 아님",
+                                            description = "모임의 멤버가 아닌 경우",
+                                            value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "약속 멤버 아님",
+                                            description = "약속의 멤버가 아닌 경우",
+                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                    )
                             }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "409",
-                    description = "이미 삭제된 주제",
+                    responseCode = "404",
+                    description = "모임, 약속 또는 주제를 찾을 수 없음",
                     content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "모임 없음",
+                                            description = "모임을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "약속 없음",
+                                            description = "약속을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "주제 없음",
+                                            description = "주제를 찾을 수 없는 경우",
+                                            value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\"}"
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"E106\",\"message\":\"이미 삭제된 주제입니다.\"}"
+                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
                             )
                     )
             )
@@ -173,7 +192,12 @@ public interface TopicApi {
 
     @Operation(
             summary = "주제 삭제",
-            description = "제안된 주제를 삭제합니다."
+            description = "제안된 주제를 삭제합니다.",
+            parameters = {
+                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "topicId", description = "주제 식별자", in = ParameterIn.PATH, required = true)
+            }
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -181,9 +205,30 @@ public interface TopicApi {
                     description = "주제 삭제 성공"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
                     description = "주제 삭제 권한 없음",
                     content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
                                     value = "{\"code\":\"E105\",\"message\":\"사용자에게 주제 삭제 권한이 없습니다.\"}"
                             )
@@ -191,24 +236,50 @@ public interface TopicApi {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "주제를 찾을 수 없음",
+                    description = "모임, 약속 또는 주제를 찾을 수 없음",
                     content = @Content(
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\"}"
-                            )
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "모임 없음",
+                                            description = "모임을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "약속 없음",
+                                            description = "약속을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "주제 없음",
+                                            description = "주제를 찾을 수 없는 경우",
+                                            value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\"}"
+                                    )
+                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "409",
                     description = "이미 삭제된 주제",
                     content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
                                     value = "{\"code\":\"E106\",\"message\":\"이미 삭제된 주제입니다.\"}"
                             )
                     )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                            )
+                    )
             )
     })
-    @DeleteMapping("/{topicId}")
+    @DeleteMapping(value = "/{topicId}")
     ResponseEntity<ApiResponse<Void>> deleteTopic(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
@@ -217,41 +288,90 @@ public interface TopicApi {
 
     @Operation(
             summary = "주제 좋아요 토글",
-            description = "주제에 대한 좋아요를 추가하거나 취소합니다."
+            description = "주제에 대한 좋아요를 추가하거나 취소합니다. 이미 좋아요한 주제를 다시 요청하면 좋아요가 취소됩니다.",
+            parameters = {
+                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "topicId", description = "주제 식별자", in = ParameterIn.PATH, required = true)
+            }
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "좋아요 토글 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = TopicLikeResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = TopicLikeResponse.class)
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                            )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
-                    description = "약속 멤버가 아님",
+                    description = "모임 또는 약속의 멤버가 아님",
                     content = @Content(
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
-                            )
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "모임 멤버 아님",
+                                            description = "모임의 멤버가 아닌 경우",
+                                            value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "약속 멤버 아님",
+                                            description = "약속의 멤버가 아닌 경우",
+                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                    )
+                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "주제를 찾을 수 없음",
+                    description = "모임, 약속 또는 주제를 찾을 수 없음",
                     content = @Content(
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\"}"
-                            )
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "모임 없음",
+                                            description = "모임을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "약속 없음",
+                                            description = "약속을 찾을 수 없는 경우",
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "주제 없음",
+                                            description = "주제를 찾을 수 없는 경우",
+                                            value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\"}"
+                                    )
+                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "409",
-                    description = "이미 삭제된 주제",
+                    responseCode = "500",
+                    description = "서버 오류",
                     content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"E106\",\"message\":\"이미 삭제된 주제입니다.\"}"
+                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
                             )
                     )
             )
