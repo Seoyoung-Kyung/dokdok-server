@@ -15,8 +15,6 @@ import java.util.Optional;
 public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long> {
     Optional<PersonalBook> findByUserIdAndBookId(Long userId, Long bookId);
     Optional<PersonalBook> findByUserIdAndBookIdAndGatheringId(Long userId, Long bookId, Long gatheringId);
-    Page<PersonalBook> findByUserId(Long userId, Pageable pageable);
-    Page<PersonalBook> findAllByUserIdAndReadingStatus(Long userId, BookReadingStatus bookReadingStatus, Pageable pageable);
     @Query(
             value = """
                 select
@@ -36,7 +34,7 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
                 where pb.user_id = :userId
                     and pb.deleted_at is null
                     and (:gatheringId is null or g.gathering_id = :gatheringId)
-                    and (cast(:readingStatus as varchar) is null or pb.reading_status = cast(:readingStatus as varchar))
+                    and (:readingStatus is null or pb.reading_status = :readingStatus)
                 group by b.book_id, b.book_name, b.publisher, b.author, b.book_image_url
                 """,
             countQuery = """
@@ -48,16 +46,15 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
                 where pb.user_id = :userId
                     and pb.deleted_at is null
                     and (:gatheringId is null or g.gathering_id = :gatheringId)
-                    and (cast(:readingStatus as varchar) is null or pb.reading_status = cast(:readingStatus as varchar))
+                    and (:readingStatus is null or pb.reading_status = :readingStatus)
                 """,
             nativeQuery = true
     )
     Page<PersonalBookListProjection> findPersonalBooksByUserIdReadingStatusAndGatheringId(
             @Param("userId") Long userId,
             @Param("gatheringId") Long gatheringId,
-            @Param("readingStatus") BookReadingStatus readingStatus,
+            @Param("readingStatus") String readingStatus,
             Pageable pageable
     );
-
 
 }

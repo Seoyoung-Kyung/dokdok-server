@@ -2,20 +2,15 @@ package com.dokdok.book.controller;
 
 import com.dokdok.book.api.BookApi;
 import com.dokdok.book.dto.request.BookCreateRequest;
-import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
-import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.*;
 import com.dokdok.book.entity.BookReadingStatus;
 import com.dokdok.book.service.BookService;
 import com.dokdok.book.service.PersonalBookService;
-import com.dokdok.book.service.PersonalReadingRecordService;
 import com.dokdok.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +21,6 @@ public class BookController implements BookApi {
 
     private final BookService bookService;
     private final PersonalBookService personalBookService;
-    private final PersonalReadingRecordService personalReadingRecordService;
 
     @Override
     @GetMapping("/search")
@@ -64,4 +58,12 @@ public class BookController implements BookApi {
     }
 
 
+    @Override
+    @GetMapping("/reading")
+    public ResponseEntity<ApiResponse<PageResponse<PersonalBookListResponse>>> getMyReadingBooks(Pageable pageable) {
+        Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(BookReadingStatus.READING, null, pageable);
+//        Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookReadingList( pageable);
+        PageResponse<PersonalBookListResponse> response = PageResponse.from(personalBookList);
+        return ApiResponse.success(response, "읽고 있는 책 리스트 조회 성공");
+    }
 }

@@ -1,8 +1,6 @@
 package com.dokdok.book.api;
 
 import com.dokdok.book.dto.request.BookCreateRequest;
-import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
-import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.dto.response.*;
 import com.dokdok.book.entity.BookReadingStatus;
 import com.dokdok.global.response.ApiResponse;
@@ -236,5 +234,61 @@ public interface BookApi {
             @PathVariable Long bookId
     );
 
-
+    @Operation(
+            summary = "읽고 있는 책 목록 조회",
+            description = """
+                    읽고 있는 책(READING 상태)만 조회합니다.
+                    - 로그인한 사용자 기준으로 조회합니다.
+                    - page/size/sort 파라미터로 페이징과 정렬을 제어할 수 있습니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "읽고 있는 책 리스트 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PersonalBookListResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "SUCCESS",
+                                              "message": "읽고 있는 책 리스트 조회 성공",
+                                              "data": {
+                                                "items": [
+                                                  {
+                                                    "bookId": 1,
+                                                    "title": "예제 도서명",
+                                                    "publisher": "예제 출판사",
+                                                    "authors": "저자A, 저자B",
+                                                    "bookReadingStatus": "READING",
+                                                    "thumbnail": "https://example.com/thumb.jpg",
+                                                    "gatheringName": "예제 모임"
+                                                  }
+                                                ],
+                                                "totalCount": 1,
+                                                "currentPage": 0,
+                                                "pageSize": 10,
+                                                "totalPages": 1
+                                              }
+                                            }
+                                            """
+                            ))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @GetMapping("/reading")
+    ResponseEntity<ApiResponse<PageResponse<PersonalBookListResponse>>> getMyReadingBooks(
+            @ParameterObject
+            @Parameter(
+                    description = "페이징 정보 (page: 페이지 번호, size: 페이지 크기, sort: 정렬 기준)",
+                    example = "page=0&size=10&sort=addedAt,desc"
+            )
+            @PageableDefault(
+                    size = 10,
+                    sort = "addedAt",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable
+    );
 }
