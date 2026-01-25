@@ -7,6 +7,7 @@ import com.dokdok.gathering.dto.response.*;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.service.GatheringService;
 import com.dokdok.global.response.ApiResponse;
+import com.dokdok.global.response.CursorResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -114,12 +115,12 @@ public class GatheringController implements GatheringApi {
 
     @Override
     @GetMapping
-    public ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(
+    public ResponseEntity<ApiResponse<CursorResponse<GatheringListItemResponse, MyGatheringCursor>>> getMyGatherings(
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorJoinedAt,
             @RequestParam(required = false) Long cursorId
     ) {
-        MyGatheringListResponse response = gatheringService.getMyGatherings(pageSize, cursorJoinedAt, cursorId);
+        CursorResponse<GatheringListItemResponse, MyGatheringCursor> response = gatheringService.getMyGatherings(pageSize, cursorJoinedAt, cursorId);
         return ApiResponse.success(response, "내 모임 전체 목록 조회 성공");
     }
 }

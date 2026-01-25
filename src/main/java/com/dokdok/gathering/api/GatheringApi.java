@@ -5,6 +5,7 @@ import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.response.*;
 import com.dokdok.global.response.ApiResponse;
+import com.dokdok.global.response.CursorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -243,7 +244,7 @@ public interface GatheringApi {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MyGatheringListResponse.class)
+                            schema = @Schema(implementation = CursorResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -268,7 +269,7 @@ public interface GatheringApi {
             )
     })
     @GetMapping
-    ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(
+    ResponseEntity<ApiResponse<CursorResponse<GatheringListItemResponse, MyGatheringCursor>>> getMyGatherings(
             @Parameter(description = "페이지 크기", example = "10")
             @RequestParam(defaultValue = "10") int pageSize,
 
