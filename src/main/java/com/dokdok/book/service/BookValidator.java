@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -86,4 +87,5 @@ public class BookValidator {
             throw new BookException(BookErrorCode.BOOK_REVIEW_INVALID_RATING);
         }
     }
+
 }

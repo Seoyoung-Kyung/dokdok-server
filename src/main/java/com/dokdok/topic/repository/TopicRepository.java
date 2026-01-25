@@ -26,6 +26,14 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             TopicStatus topicStatus
     );
 
+    @Query("""
+            SELECT t
+            FROM Topic t
+            WHERE t.meeting.id = :meetingId
+            AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+    """)
+    List<Topic> findConfirmedTopics(Long meetingId);
+
     @Query("SELECT t " +
             "FROM Topic t " +
             "LEFT JOIN FETCH t.meeting m " +
@@ -143,7 +151,5 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     List<Topic> findTopicsInfoByMeetingId(
             @Param("meetingId") Long meetingId
     );
-
-    List<Topic> findByIdIn(List<Long> topicIds);
 
 }

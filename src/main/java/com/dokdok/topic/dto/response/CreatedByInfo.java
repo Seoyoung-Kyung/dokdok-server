@@ -5,8 +5,8 @@ public record CreatedByInfo(
         String nickname
 ) {
 
-    public static CreatedByInfo of(Long userId, String nickName) {
-        return new CreatedByInfo(userId, nickName);
+    public static CreatedByInfo of(Long userId, String nickname) {
+        return new CreatedByInfo(userId, nickname);
     }
 
 }

@@ -9,14 +9,11 @@ import com.dokdok.topic.dto.response.TopicAnswerSubmitResponse;
 import com.dokdok.topic.service.TopicAnswerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/gatherings/{gathering_id}/meetings/{meeting_id}/topics/{topic_id}/answers")
+@RequestMapping("/api/gatherings/{gatheringId}/meetings/{meetingId}/topics/{topicId}/answers")
 public class TopicAnswerController implements TopicAnswerApi {
 
     private final TopicAnswerService topicAnswerService;
@@ -77,9 +74,9 @@ public class TopicAnswerController implements TopicAnswerApi {
 
     @Override
     public ResponseEntity<ApiResponse<Void>> deleteMyAnswer(
-            @PathVariable("gathering_id") Long gatheringId,
-            @PathVariable("meeting_id") Long meetingId,
-            @PathVariable("topic_id") Long topicId
+            @PathVariable("gatheringId") Long gatheringId,
+            @PathVariable("meetingId") Long meetingId,
+            @PathVariable("topicId") Long topicId
     ) {
 
         topicAnswerService.deleteMyAnswer(gatheringId, meetingId, topicId);
