@@ -9,6 +9,7 @@ import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.user.entity.User;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,15 +17,33 @@ import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 
+@Schema(description = "약속 상세 응답")
 public record MeetingResponse(
+        @Schema(description = "약속 ID", example = "1")
         Long meetingId,
+
+        @Schema(description = "약속 이름", example = "1월 독서 모임")
         String meetingName,
+
+        @Schema(description = "약속 상태", example = "CONFIRMED")
         MeetingStatus meetingStatus,
+
+        @Schema(description = "모임 정보")
         GatheringInfo gathering,
+
+        @Schema(description = "책 정보")
         BookInfo book,
+
+        @Schema(description = "일정 정보")
         ScheduleInfo schedule,
+
+        @Schema(description = "장소", example = "강남역 스타벅스")
         String place,
+
+        @Schema(description = "참가자 정보")
         ParticipantsInfo participants,
+
+        @Schema(description = "주제 목록")
         List<TopicInfo> topics
 ) {
 
@@ -45,7 +64,14 @@ public record MeetingResponse(
         );
     }
 
-    public record GatheringInfo(Long gatheringId, String gatheringName) {
+    @Schema(description = "모임 정보")
+    public record GatheringInfo(
+            @Schema(description = "모임 ID", example = "1")
+            Long gatheringId,
+
+            @Schema(description = "모임 이름", example = "독서 모임")
+            String gatheringName
+    ) {
         public static GatheringInfo from(Gathering gathering) {
             if (gathering == null) {
                 return null;
@@ -54,7 +80,14 @@ public record MeetingResponse(
         }
     }
 
-    public record BookInfo(Long bookId, String bookName) {
+    @Schema(description = "책 정보")
+    public record BookInfo(
+            @Schema(description = "책 ID", example = "1")
+            Long bookId,
+
+            @Schema(description = "책 이름", example = "클린 코드")
+            String bookName
+    ) {
         public static BookInfo from(Book book) {
             if (book == null) {
                 return null;
@@ -63,10 +96,18 @@ public record MeetingResponse(
         }
     }
 
+    @Schema(description = "일정 정보")
     public record ScheduleInfo(
+            @Schema(description = "약속 날짜", example = "2025-02-01")
             LocalDate date,
+
+            @Schema(description = "약속 시간", example = "14:00:00")
             LocalTime time,
+
+            @Schema(description = "시작 일시", example = "2025-02-01T14:00:00")
             LocalDateTime startDateTime,
+
+            @Schema(description = "종료 일시", example = "2025-02-01T16:00:00")
             LocalDateTime endDateTime
     ) {
         public static ScheduleInfo from(LocalDateTime start, LocalDateTime end) {
@@ -79,7 +120,17 @@ public record MeetingResponse(
         }
     }
 
-    public record ParticipantsInfo(Integer currentCount, Integer maxCount, List<MemberInfo> members) {
+    @Schema(description = "참가자 정보")
+    public record ParticipantsInfo(
+            @Schema(description = "현재 참가자 수", example = "5")
+            Integer currentCount,
+
+            @Schema(description = "최대 참가자 수", example = "10")
+            Integer maxCount,
+
+            @Schema(description = "참가자 목록")
+            List<MemberInfo> members
+    ) {
         public static ParticipantsInfo from(List<MeetingMember> meetingMembers, Integer maxCount) {
             List<MemberInfo> members = meetingMembers.stream()
                     .filter(member -> member.getCanceledAt() == null)
@@ -90,18 +141,38 @@ public record MeetingResponse(
         }
     }
 
-    public record MemberInfo(Long userId, String nickname, String profileImageUrl) {
+    @Schema(description = "참가자 정보")
+    public record MemberInfo(
+            @Schema(description = "사용자 ID", example = "1")
+            Long userId,
+
+            @Schema(description = "닉네임", example = "독서왕")
+            String nickname,
+
+            @Schema(description = "프로필 이미지 URL", example = "https://example.com/profile.jpg")
+            String profileImageUrl
+    ) {
         public static MemberInfo from(MeetingMember meetingMember) {
             User user = meetingMember.getUser();
             return new MemberInfo(user.getId(), user.getNickname(), user.getProfileImageUrl());
         }
     }
 
+    @Schema(description = "주제 정보")
     public record TopicInfo(
+            @Schema(description = "주제 ID", example = "1")
             Long topicId,
+
+            @Schema(description = "주제 제목", example = "1장 깨끗한 코드")
             String title,
+
+            @Schema(description = "주제 타입", example = "FREE")
             TopicType topicType,
+
+            @Schema(description = "주제 상태", example = "SELECTED")
             TopicStatus topicStatus,
+
+            @Schema(description = "투표 수", example = "3")
             Integer voteCount
     ) {
         public static TopicInfo from(Topic topic) {
