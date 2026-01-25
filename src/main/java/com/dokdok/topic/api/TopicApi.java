@@ -70,6 +70,7 @@ public interface TopicApi {
                     )
             )
     })
+    @PostMapping
     ResponseEntity<ApiResponse<SuggestTopicResponse>> createTopic(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
@@ -112,6 +113,7 @@ public interface TopicApi {
                     )
             )
     })
+    @GetMapping
     ResponseEntity<ApiResponse<TopicsPageResponse>> getTopics(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
