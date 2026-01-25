@@ -258,8 +258,12 @@ class PersonalBookServiceTest {
     void getPersonalBookList_Success() {
         // given
         Long userId = 1L;
+        Long gatheringId = 5L;
         Pageable pageable = PageRequest.of(0, 10);
         LocalDateTime addedAt = LocalDateTime.now();
+        String thumbnail = "thumbnail-url";
+        String gatheringName = "독서 모임";
+        BookReadingStatus readingStatus = BookReadingStatus.READING;
 
         User user = User.builder()
                 .id(userId)
@@ -272,6 +276,7 @@ class PersonalBookServiceTest {
                 .bookName("테스트 책")
                 .publisher("테스트 출판사")
                 .author("테스트 저자")
+                .thumbnail(thumbnail)
                 .build();
 
         PersonalBookListProjection projection = new PersonalBookListProjection() {
@@ -297,17 +302,17 @@ class PersonalBookServiceTest {
 
             @Override
             public BookReadingStatus getBookReadingStatus() {
-                return BookReadingStatus.READING;
+                return readingStatus;
             }
 
             @Override
             public String getThumbnail() {
-                return null;
+                return thumbnail;
             }
 
             @Override
             public String getGatheringName() {
-                return null;
+                return gatheringName;
             }
 
             @Override
@@ -320,22 +325,35 @@ class PersonalBookServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(personalBookRepository.findMyBooksWithGathering(userId, null, null, pageable)).thenReturn(page);
+        when(personalBookRepository.findPersonalBooksByUserIdReadingStatusAndGatheringId(
+                userId,
+                gatheringId,
+                readingStatus.name(),
+                pageable
+        )).thenReturn(page);
 
         // when
-        Page<PersonalBookListResponse> responses = personalBookService.getPersonalBookList(null, null, pageable);
+        Page<PersonalBookListResponse> responses = personalBookService.getPersonalBookList(readingStatus, gatheringId, pageable);
 
         // then
         assertThat(responses.getContent()).hasSize(1);
         PersonalBookListResponse response = responses.getContent().getFirst();
+        assertThat(response.bookId()).isEqualTo(book.getId());
         assertThat(response.title()).isEqualTo(book.getBookName());
         assertThat(response.publisher()).isEqualTo(book.getPublisher());
         assertThat(response.authors()).isEqualTo(book.getAuthor());
-        assertThat(response.bookReadingStatus()).isEqualTo(BookReadingStatus.READING);
+        assertThat(response.bookReadingStatus()).isEqualTo(readingStatus);
+        assertThat(response.thumbnail()).isEqualTo(thumbnail);
+        assertThat(response.gatheringName()).isEqualTo(gatheringName);
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(personalBookRepository, times(1)).findMyBooksWithGathering(userId, null, null, pageable);
+        verify(personalBookRepository, times(1)).findPersonalBooksByUserIdReadingStatusAndGatheringId(
+                userId,
+                gatheringId,
+                readingStatus.name(),
+                pageable
+        );
     }
 
     @Test
@@ -355,7 +373,12 @@ class PersonalBookServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(personalBookRepository.findMyBooksWithGathering(userId, null, null, pageable)).thenReturn(emptyPage);
+        when(personalBookRepository.findPersonalBooksByUserIdReadingStatusAndGatheringId(
+                userId,
+                null,
+                null,
+                pageable
+        )).thenReturn(emptyPage);
 
         // when & then
         assertThatThrownBy(() -> personalBookService.getPersonalBookList(null, null, pageable))
@@ -364,7 +387,12 @@ class PersonalBookServiceTest {
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(personalBookRepository, times(1)).findMyBooksWithGathering(userId, null, null, pageable);
+        verify(personalBookRepository, times(1)).findPersonalBooksByUserIdReadingStatusAndGatheringId(
+                userId,
+                null,
+                null,
+                pageable
+        );
     }
 
     @Test
