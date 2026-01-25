@@ -40,7 +40,19 @@ public interface BookReviewApi {
                     responseCode = "201",
                     description = "책 리뷰 생성 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = BookReviewResponse.class))
+                            schema = @Schema(implementation = BookReviewResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "reviewId": 101,
+                                      "bookId": 12,
+                                      "userId": 5,
+                                      "rating": 4.5,
+                                      "keywords": [
+                                        { "id": 3, "name": "감동" },
+                                        { "id": 7, "name": "몰입" }
+                                      ]
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -106,7 +118,19 @@ public interface BookReviewApi {
                     responseCode = "200",
                     description = "책 리뷰 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = BookReviewResponse.class))
+                            schema = @Schema(implementation = BookReviewResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "reviewId": 101,
+                                      "bookId": 12,
+                                      "userId": 5,
+                                      "rating": 4.5,
+                                      "keywords": [
+                                        { "id": 3, "name": "감동" },
+                                        { "id": 7, "name": "몰입" }
+                                      ]
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 리뷰를 찾을 수 없음",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -140,7 +164,19 @@ public interface BookReviewApi {
                     responseCode = "200",
                     description = "책 리뷰 수정 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = BookReviewResponse.class))
+                            schema = @Schema(implementation = BookReviewResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "reviewId": 101,
+                                      "bookId": 12,
+                                      "userId": 5,
+                                      "rating": 3.5,
+                                      "keywords": [
+                                        { "id": 5, "name": "희망" },
+                                        { "id": 8, "name": "위로" }
+                                      ]
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
