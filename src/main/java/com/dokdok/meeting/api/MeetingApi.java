@@ -2,6 +2,7 @@ package com.dokdok.meeting.api;
 
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.meeting.dto.MeetingCreateRequest;
+import com.dokdok.meeting.dto.MeetingDetailResponse;
 import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.dto.MeetingStatusResponse;
 import com.dokdok.meeting.dto.MeetingTabCountsResponse;
@@ -39,7 +40,7 @@ public interface MeetingApi {
                     responseCode = "200",
                     description = "약속 상세 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingResponse.class))
+                            schema = @Schema(implementation = MeetingDetailResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -57,7 +58,7 @@ public interface MeetingApi {
                                     {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
                                     """)))
     })
-    ResponseEntity<ApiResponse<MeetingResponse>> findMeeting(
+    ResponseEntity<ApiResponse<MeetingDetailResponse>> findMeeting(
             Long meetingId
     );
 

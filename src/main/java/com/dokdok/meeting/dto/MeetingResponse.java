@@ -5,9 +5,6 @@ import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingStatus;
-import com.dokdok.topic.entity.Topic;
-import com.dokdok.topic.entity.TopicStatus;
-import com.dokdok.topic.entity.TopicType;
 import com.dokdok.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -17,7 +14,7 @@ import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 
-@Schema(description = "약속 상세 응답")
+@Schema(description = "약속 응답")
 public record MeetingResponse(
         @Schema(description = "약속 ID", example = "1")
         Long meetingId,
@@ -41,15 +38,11 @@ public record MeetingResponse(
         String place,
 
         @Schema(description = "참가자 정보")
-        ParticipantsInfo participants,
-
-        @Schema(description = "주제 목록")
-        List<TopicInfo> topics
+        ParticipantsInfo participants
 ) {
 
-    public static MeetingResponse from(Meeting meeting, List<MeetingMember> meetingMembers, List<Topic> topics) {
+    public static MeetingResponse from(Meeting meeting, List<MeetingMember> meetingMembers) {
         List<MeetingMember> safeMembers = meetingMembers == null ? Collections.emptyList() : meetingMembers;
-        List<Topic> safeTopics = topics == null ? Collections.emptyList() : topics;
 
         return new MeetingResponse(
                 meeting.getId(),
@@ -59,8 +52,7 @@ public record MeetingResponse(
                 BookInfo.from(meeting.getBook()),
                 ScheduleInfo.from(meeting.getMeetingStartDate(), meeting.getMeetingEndDate()),
                 meeting.getPlace(),
-                ParticipantsInfo.from(safeMembers, meeting.getMaxParticipants()),
-                safeTopics.stream().map(TopicInfo::from).toList()
+                ParticipantsInfo.from(safeMembers, meeting.getMaxParticipants())
         );
     }
 
@@ -155,34 +147,6 @@ public record MeetingResponse(
         public static MemberInfo from(MeetingMember meetingMember) {
             User user = meetingMember.getUser();
             return new MemberInfo(user.getId(), user.getNickname(), user.getProfileImageUrl());
-        }
-    }
-
-    @Schema(description = "주제 정보")
-    public record TopicInfo(
-            @Schema(description = "주제 ID", example = "1")
-            Long topicId,
-
-            @Schema(description = "주제 제목", example = "1장 깨끗한 코드")
-            String title,
-
-            @Schema(description = "주제 타입", example = "FREE")
-            TopicType topicType,
-
-            @Schema(description = "주제 상태", example = "SELECTED")
-            TopicStatus topicStatus,
-
-            @Schema(description = "투표 수", example = "3")
-            Integer voteCount
-    ) {
-        public static TopicInfo from(Topic topic) {
-            return new TopicInfo(
-                    topic.getId(),
-                    topic.getTitle(),
-                    topic.getTopicType(),
-                    topic.getTopicStatus(),
-                    topic.getLikeCount()
-            );
         }
     }
 }

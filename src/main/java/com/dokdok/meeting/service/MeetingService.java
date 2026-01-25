@@ -63,7 +63,7 @@ public class MeetingService {
      * @return 약속 응답 정보
      */
     @Transactional(readOnly = true)
-    public MeetingResponse findMeeting(Long meetingId) {
+    public MeetingDetailResponse findMeeting(Long meetingId) {
 
         Long userId = SecurityUtil.getCurrentUserId();
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
@@ -72,9 +72,8 @@ public class MeetingService {
         gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
         List<MeetingMember> meetingMembers = meetingMemberRepository.findAllByMeetingId(meetingId);
-        List<Topic> topics = topicRepository.findAllByMeetingId(meetingId);
 
-        return MeetingResponse.from(meeting, meetingMembers, topics);
+        return MeetingDetailResponse.from(meeting, meetingMembers, userId);
     }
 
     /**
@@ -109,7 +108,7 @@ public class MeetingService {
         Meeting meeting = Meeting.create(request, gathering, book, user, maxParticipants);
         Meeting savedMeeting = meetingRepository.save(meeting);
 
-        return MeetingResponse.from(savedMeeting, List.of(), List.of());
+        return MeetingResponse.from(savedMeeting, List.of());
     }
 
     /**
