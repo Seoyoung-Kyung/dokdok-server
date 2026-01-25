@@ -5,6 +5,7 @@ import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.response.*;
 import com.dokdok.global.response.ApiResponse;
+import com.dokdok.global.response.CursorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,10 +42,7 @@ public interface GatheringApi {
                     description = "생성 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"CREATED\",\"message\":\"모임 생성에 성공하였습니다.\",\"data\":{\"gatheringName\":\"독서 모임\",\"totalMembers\":1,\"daysFromCreation\":10,\"totalMeetings\":0,\"invitationLink\":\"ABC123XYZ\"}}"
-                            )
+                            schema = @Schema(implementation = GatheringCreateResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -52,25 +50,29 @@ public interface GatheringApi {
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "409",
-                    description = "초대 코드 중복 등으로 인한 생성 실패"
+                    description = "초대 코드 중복 등으로 인한 생성 실패",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA007", "message": "초대 코드 생성에 실패했습니다. 다시 시도해주세요.", "data": null}
+                                    """)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
@@ -94,10 +96,7 @@ public interface GatheringApi {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"조회에 성공했습니다.\",\"data\":{\"gatheringName\":\"독서 모임\",\"totalMembers\":5,\"daysFromCreation\":12,\"totalMeetings\":3,\"invitationLink\":\"ABC123XYZ\"}}"
-                            )
+                            schema = @Schema(implementation = GatheringCreateResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -105,10 +104,9 @@ public interface GatheringApi {
                     description = "잘못된 요청 - 초대링크가 비어있음",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G010\",\"message\":\"초대링크는 필수입니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA010", "message": "초대링크는 필수입니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -116,10 +114,9 @@ public interface GatheringApi {
                     description = "모임을 찾을 수 없음 - 유효하지 않은 초대링크",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -127,10 +124,9 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
@@ -158,10 +154,7 @@ public interface GatheringApi {
                     description = "가입 요청 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"조회에 성공했습니다.\",\"data\":{\"gatheringId\":1,\"gatheringName\":\"독서 모임\",\"memberStatus\":\"PENDING\"}}"
-                            )
+                            schema = @Schema(implementation = GatheringJoinResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -169,10 +162,9 @@ public interface GatheringApi {
                     description = "잘못된 요청 - 초대링크가 비어있음",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G010\",\"message\":\"초대링크는 필수입니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA010", "message": "초대링크는 필수입니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -180,10 +172,9 @@ public interface GatheringApi {
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -191,10 +182,9 @@ public interface GatheringApi {
                     description = "모임을 찾을 수 없음 - 유효하지 않은 초대링크",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -202,15 +192,18 @@ public interface GatheringApi {
                     description = "이미 가입된 모임이거나 가입 요청 중",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "이미 가입된 모임",
-                                            value = "{\"code\":\"G008\",\"message\":\"이미 가입된 모임입니다.\",\"data\":null}"
+                                            value = """
+                                                    {"code": "GA008", "message": "이미 가입된 모임입니다.", "data": null}
+                                                    """
                                     ),
                                     @ExampleObject(
                                             name = "가입 요청 진행 중",
-                                            value = "{\"code\":\"G009\",\"message\":\"이미 가입 요청이 진행 중입니다.\",\"data\":null}"
+                                            value = """
+                                                    {"code": "GA009", "message": "이미 가입 요청이 진행 중입니다.", "data": null}
+                                                    """
                                     )
                             }
                     )
@@ -220,10 +213,9 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
@@ -252,10 +244,7 @@ public interface GatheringApi {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"내 모임 전체 목록 조회 성공\",\"data\":{\"items\":[{\"gatheringId\":1,\"gatheringName\":\"독서 모임\",\"isFavorite\":true,\"gatheringStatus\":\"ACTIVE\",\"totalMembers\":5,\"totalMeetings\":3,\"currentUserRole\":\"LEADER\",\"daysFromJoined\":12}],\"totalCount\":1,\"currentPage\":0,\"pageSize\":10,\"totalPages\":1}}"
-                            )
+                            schema = @Schema(implementation = CursorResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -263,10 +252,9 @@ public interface GatheringApi {
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -274,15 +262,14 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
     @GetMapping
-    ResponseEntity<ApiResponse<MyGatheringListResponse>> getMyGatherings(
+    ResponseEntity<ApiResponse<CursorResponse<GatheringListItemResponse, MyGatheringCursor>>> getMyGatherings(
             @Parameter(description = "페이지 크기", example = "10")
             @RequestParam(defaultValue = "10") int pageSize,
 
@@ -307,10 +294,7 @@ public interface GatheringApi {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"즐겨찾기 모임 리스트 조회 성공\",\"data\":{\"gatherings\":[{\"gatheringId\":1,\"gatheringName\":\"독서 모임\",\"isFavorite\":true,\"gatheringStatus\":\"ACTIVE\",\"totalMembers\":5,\"totalMeetings\":3,\"currentUserRole\":\"LEADER\",\"daysFromJoined\":12}]}}"
-                            )
+                            schema = @Schema(implementation = FavoriteGatheringListResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -318,10 +302,9 @@ public interface GatheringApi {
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -329,10 +312,9 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
@@ -340,7 +322,7 @@ public interface GatheringApi {
     ResponseEntity<ApiResponse<FavoriteGatheringListResponse>> getFavoriteGatherings();
 
     @Operation(
-            summary = "내 모임 상세 조회",
+            summary = "특정 모임 상세 조회",
             description = """
               내가 가입한 모임의 상세 정보를 조회합니다.
               - 모임에 가입한 모임만 조회할 수 있습니다.
@@ -352,10 +334,7 @@ public interface GatheringApi {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"모임 상세정보 조회 성공\",\"data\":{\"gatheringId\":1,\"gatheringName\":\"독서 모임\",\"description\":\"열심히 읽는 모임\",\"gatheringStatus\":\"ACTIVE\",\"isFavorite\":false,\"invitationLink\":\"ABC123XYZ\",\"daysFromCreation\":10,\"currentUserRole\":\"MEMBER\",\"members\":[{\"gatheringMemberId\":1,\"userId\":1,\"nickname\":\"리더닉네임\",\"profileImageUrl\":\"leader.jpg\",\"role\":\"LEADER\"}],\"totalMembers\":2,\"totalMeetings\":3}}"
-                            )
+                            schema = @Schema(implementation = GatheringDetailResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -363,10 +342,9 @@ public interface GatheringApi {
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -374,10 +352,9 @@ public interface GatheringApi {
                     description = "권한 없음 - 모임 멤버만 조회할 수 있습니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA002", "message": "모임의 멤버가 아닙니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -385,10 +362,9 @@ public interface GatheringApi {
                     description = "모임을 찾을 수 없음",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -396,10 +372,9 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
@@ -428,10 +403,7 @@ public interface GatheringApi {
                     description = "수정 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"UPDATED\",\"message\":\"모임 정보 수정 성공\",\"data\":{\"gatheringId\":1,\"gatheringName\":\"새로운 모임명\",\"description\":\"새로운 설명\",\"updatedAt\":\"2024-01-01T00:00:00\"}}"
-                            )
+                            schema = @Schema(implementation = GatheringUpdateResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -439,10 +411,9 @@ public interface GatheringApi {
                     description = "잘못된 요청 - 유효성 검증 실패 (모임명이 필수이거나 공백만 포함, 또는 12자 초과)",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"모임명은 필수입니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G002", "message": "입력값이 올바르지 않습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -450,10 +421,9 @@ public interface GatheringApi {
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -461,10 +431,9 @@ public interface GatheringApi {
                     description = "권한 없음 - 모임의 리더만 수정할 수 있습니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G003\",\"message\":\"리더만 가능한 작업입니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -472,10 +441,9 @@ public interface GatheringApi {
                     description = "모임을 찾을 수 없음",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -483,10 +451,9 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
@@ -518,23 +485,16 @@ public interface GatheringApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "삭제 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"DELETED\",\"message\":\"모임 삭제 성공\",\"data\":null}"
-                            )
-                    )
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -542,10 +502,9 @@ public interface GatheringApi {
                     description = "권한 없음 - 모임의 리더만 삭제할 수 있습니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G003\",\"message\":\"리더만 가능한 작업입니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -553,10 +512,9 @@ public interface GatheringApi {
                     description = "모임을 찾을 수 없음",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -564,10 +522,9 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
@@ -593,23 +550,16 @@ public interface GatheringApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "강퇴 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"DELETED\",\"message\":\"모임원 강퇴 성공\",\"data\":null}"
-                            )
-                    )
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -617,15 +567,18 @@ public interface GatheringApi {
                     description = "권한 없음 - 모임의 리더만 강퇴할 수 있습니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "리더 권한 없음",
-                                            value = "{\"code\":\"G003\",\"message\":\"리더만 가능한 작업입니다.\",\"data\":null}"
+                                            value = """
+                                                    {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                                    """
                                     ),
                                     @ExampleObject(
                                             name = "리더 강퇴 불가",
-                                            value = "{\"code\":\"G005\",\"message\":\"유일한 리더는 강퇴할 수 없습니다.\",\"data\":null}"
+                                            value = """
+                                                    {"code": "GA005", "message": "유일한 리더는 강퇴할 수 없습니다.", "data": null}
+                                                    """
                                     )
                             }
                     )
@@ -635,10 +588,9 @@ public interface GatheringApi {
                     description = "모임 또는 멤버를 찾을 수 없음",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -646,10 +598,9 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
@@ -672,23 +623,16 @@ public interface GatheringApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "즐겨찾기 상태 변경 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"모임의 즐겨찾기 상태변경 성공\",\"data\":null}"
-                            )
-                    )
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "즐겨찾기 제한 초과",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G013\",\"message\":\"즐겨찾기는 최대 4개까지만 등록할 수 있습니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA013", "message": "즐겨찾기는 최대 4개까지만 등록할 수 있습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -696,10 +640,9 @@ public interface GatheringApi {
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -707,10 +650,9 @@ public interface GatheringApi {
                     description = "권한 없음 - 모임 멤버만 설정할 수 있습니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA002", "message": "모임의 멤버가 아닙니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -718,10 +660,9 @@ public interface GatheringApi {
                     description = "모임을 찾을 수 없음",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -729,10 +670,9 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
@@ -756,35 +696,25 @@ public interface GatheringApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "처리 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = {
-                                    @ExampleObject(
-                                            name = "승인 성공",
-                                            value = "{\"code\":\"SUCCESS\",\"message\":\"해당 멤버가 가입승인 되었습니다.\",\"data\":null}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "거절 성공",
-                                            value = "{\"code\":\"SUCCESS\",\"message\":\"해당 멤버가 가입거절 되었습니다.\",\"data\":null}"
-                                    )
-                            }
-                    )
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "잘못된 요청 - approve_type이 PENDING이거나, 대상 멤버가 PENDING 상태가 아님",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
                             examples = {
                                     @ExampleObject(
                                             name = "잘못된 approve_type",
-                                            value = "{\"code\":\"G012\",\"message\":\"승인 상태는 ACTIVE 또는 REJECTED만 가능합니다.\",\"data\":null}"
+                                            value = """
+                                                    {"code": "GA012", "message": "승인 상태는 ACTIVE 또는 REJECTED만 가능합니다.", "data": null}
+                                                    """
                                     ),
                                     @ExampleObject(
                                             name = "PENDING 상태 아님",
-                                            value = "{\"code\":\"G011\",\"message\":\"대기 중인 가입 요청만 처리할 수 있습니다.\",\"data\":null}"
+                                            value = """
+                                                    {"code": "GA011", "message": "대기 중인 가입 요청만 처리할 수 있습니다.", "data": null}
+                                                    """
                                     )
                             }
                     )
@@ -794,10 +724,9 @@ public interface GatheringApi {
                     description = "인증 실패 - 로그인이 필요합니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -805,10 +734,9 @@ public interface GatheringApi {
                     description = "권한 없음 - 모임장만 가입 요청을 처리할 수 있습니다.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G003\",\"message\":\"리더만 가능한 작업입니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -816,10 +744,9 @@ public interface GatheringApi {
                     description = "모임 또는 멤버를 찾을 수 없음",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -827,10 +754,9 @@ public interface GatheringApi {
                     description = "서버 오류",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"E-000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
-                            )
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
                     )
             )
     })
