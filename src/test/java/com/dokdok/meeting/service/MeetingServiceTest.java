@@ -139,14 +139,11 @@ class MeetingServiceTest {
                 .willReturn(meeting);
         given(meetingMemberRepository.findAllByMeetingId(meetingId))
                 .willReturn(java.util.Collections.emptyList());
-        given(topicRepository.findAllByMeetingId(meetingId))
-                .willReturn(java.util.Collections.emptyList());
-
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when
-            MeetingResponse findMeeting = meetingService.findMeeting(meetingId);
+            MeetingDetailResponse findMeeting = meetingService.findMeeting(meetingId);
 
             // then
             assertThat(findMeeting.meetingName()).isEqualTo(meeting.getMeetingName());
