@@ -17,6 +17,7 @@ import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -103,13 +104,29 @@ public class PersonalReadingRecordService {
         int pageSize = resolvePageSize(size);
         LocalDateTime cursorCreatedAtValue = cursorCreatedAt != null ? cursorCreatedAt.toLocalDateTime() : null;
 
-        List<PersonalReadingRecord> entities = personalReadingRecordRepository.findRecordsByCursor(
-                personalBookEntity.getId(),
-                userEntity.getId(),
-                cursorCreatedAtValue,
-                cursorRecordId,
-                PageRequest.of(0, pageSize + 1)
-        );
+        boolean hasCursor = cursorCreatedAtValue != null && cursorRecordId != null;
+        List<PersonalReadingRecord> entities;
+        if (hasCursor) {
+            entities = personalReadingRecordRepository.findRecordsByCursor(
+                    personalBookEntity.getId(),
+                    userEntity.getId(),
+                    cursorCreatedAtValue,
+                    cursorRecordId,
+                    PageRequest.of(0, pageSize + 1)
+            );
+        } else {
+            entities = personalReadingRecordRepository
+                    .findAllByPersonalBook_IdAndUserId(
+                            personalBookEntity.getId(),
+                            userEntity.getId(),
+                            PageRequest.of(
+                                    0,
+                                    pageSize + 1,
+                                    Sort.by(Sort.Direction.DESC, "createdAt", "id")
+                            )
+                    )
+                    .getContent();
+        }
 
         boolean hasNext = entities.size() > pageSize;
         List<PersonalReadingRecord> pageEntities = hasNext ? entities.subList(0, pageSize) : entities;

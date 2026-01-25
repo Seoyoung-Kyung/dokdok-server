@@ -43,7 +43,7 @@ public class BookValidator {
     }
 
     public PersonalBook validateInBookShelf(Long userId, Long bookId) {
-        return personalBookRepository.findByUserIdAndBookId(userId, bookId)
+        return personalBookRepository.findTopByUserIdAndBookIdAndGatheringIsNullOrderByAddedAtDesc(userId, bookId)
                 .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
     }
 
@@ -53,7 +53,7 @@ public class BookValidator {
     }
 
     public void validateDuplicatePersonalBook(Long userId, Long bookId) {
-        personalBookRepository.findByUserIdAndBookId(userId, bookId)
+        personalBookRepository.findTopByUserIdAndBookIdAndGatheringIsNullOrderByAddedAtDesc(userId, bookId)
                 .ifPresent(personalBook ->
                 {
                     throw new BookException(BookErrorCode.BOOK_ALREADY_EXISTS);
@@ -61,7 +61,7 @@ public class BookValidator {
     }
 
     public boolean isDuplicatePersonalBook(Long userId, Long bookId) {
-        return personalBookRepository.findByUserIdAndBookId(userId, bookId).isPresent();
+        return personalBookRepository.findTopByUserIdAndBookIdAndGatheringIsNullOrderByAddedAtDesc(userId, bookId).isPresent();
     }
 
     // 삭제되지 않은 책 리뷰 존재 여부를 검증하고 반환합니다.
