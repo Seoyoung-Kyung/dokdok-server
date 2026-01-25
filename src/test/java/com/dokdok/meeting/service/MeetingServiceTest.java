@@ -12,6 +12,8 @@ import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.gathering.service.GatheringValidator;
+import com.dokdok.global.response.CursorResponse;
+import com.dokdok.global.response.PageResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.dto.*;
 import com.dokdok.meeting.entity.Meeting;
@@ -39,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-
+import org.springframework.data.domain.Page;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -925,7 +927,7 @@ class MeetingServiceTest {
         // given
         Long gatheringId = 100L;
         Long userId = 55L;
-        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        int size = 10;
         Book book1 = Book.builder().id(1L).bookName("book1").build();
         Book book2 = Book.builder().id(2L).bookName("book2").build();
         Meeting meeting1 = Meeting.builder()
@@ -947,9 +949,14 @@ class MeetingServiceTest {
                 .book(book2)
                 .build();
 
-        Page<Meeting> meetingPage = new PageImpl<>(List.of(meeting1, meeting2), pageable, 2);
-        given(meetingRepository.findByGatheringIdAndMeetingStatus(eq(gatheringId), eq(MeetingStatus.CONFIRMED), any()))
-                .willReturn(meetingPage);
+        List<Meeting> meetings = List.of(meeting1, meeting2);
+        given(meetingRepository.findByGatheringIdAndMeetingStatusAfterCursor(
+                eq(gatheringId),
+                eq(MeetingStatus.CONFIRMED),
+                any(),
+                any(),
+                any()
+        )).willReturn(meetings);
         given(topicRepository.findTopicTypesByMeetingIds(List.of(1L, 2L)))
                 .willReturn(List.of(
                         new Object[]{1L, TopicType.FREE},
@@ -963,27 +970,29 @@ class MeetingServiceTest {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when
-            MeetingListResponse response = meetingService.meetingList(gatheringId, MeetingListFilter.ALL, pageable);
+            CursorResponse<MeetingListItemResponse, MeetingListCursor> response =
+                    meetingService.meetingList(gatheringId, MeetingListFilter.ALL, size, null);
 
             // then
             assertThat(response.items()).hasSize(2);
-            assertThat(response.totalCount()).isEqualTo(2);
-            assertThat(response.currentPage()).isEqualTo(0);
             assertThat(response.pageSize()).isEqualTo(10);
-            assertThat(response.totalPages()).isEqualTo(1);
-            MeetingListResponse.Item item1 = response.items().stream()
+            assertThat(response.hasNext()).isFalse();
+            assertThat(response.nextCursor()).isNull();
+            MeetingListItemResponse item1 = response.items().stream()
                     .filter(item -> item.meetingId().equals(1L))
                     .findFirst()
                     .orElseThrow();
             assertThat(item1.joined()).isTrue();
             assertThat(item1.topicTypes()).containsExactlyInAnyOrder(TopicType.FREE, TopicType.DISCUSSION);
+            assertThat(item1.myRole()).isEqualTo(MeetingMyRole.MEMBER);
 
-            MeetingListResponse.Item item2 = response.items().stream()
+            MeetingListItemResponse item2 = response.items().stream()
                     .filter(item -> item.meetingId().equals(2L))
                     .findFirst()
                     .orElseThrow();
             assertThat(item2.joined()).isFalse();
             assertThat(item2.topicTypes()).containsExactly(TopicType.EMOTION);
+            assertThat(item2.myRole()).isEqualTo(MeetingMyRole.NONE);
         }
     }
 
@@ -993,7 +1002,7 @@ class MeetingServiceTest {
         // given
         Long gatheringId = 100L;
         Long userId = leader.getId();
-        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 15);
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
         Book book = Book.builder().id(1L).bookName("book1").build();
         Meeting pendingMeeting = Meeting.builder()
                 .id(1L)
@@ -1004,8 +1013,8 @@ class MeetingServiceTest {
                 .gathering(gathering)
                 .book(book)
                 .build();
-        Page<Meeting> meetingPage = new PageImpl<>(List.of(pendingMeeting), pageable, 1);
 
+        Page<Meeting> meetingPage = new PageImpl<>(List.of(pendingMeeting), pageable, 1);
         given(meetingRepository.findByGatheringIdAndMeetingStatus(eq(gatheringId), eq(MeetingStatus.PENDING), any()))
                 .willReturn(meetingPage);
         given(topicRepository.findTopicTypesByMeetingIds(List.of(1L)))
@@ -1017,7 +1026,7 @@ class MeetingServiceTest {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when
-            MeetingListResponse response = meetingService.getApprovalMeetingList(
+            PageResponse<MeetingListItemResponse> response = meetingService.getApprovalMeetingList(
                     gatheringId,
                     MeetingStatus.PENDING,
                     pageable
@@ -1036,7 +1045,7 @@ class MeetingServiceTest {
         // given
         Long gatheringId = 100L;
         Long userId = 77L;
-        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 15);
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
         doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_LEADER))
                 .when(gatheringValidator).validateLeader(gatheringId, userId);
 
@@ -1061,7 +1070,7 @@ class MeetingServiceTest {
         // given
         Long gatheringId = 100L;
         Long userId = leader.getId();
-        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 15);
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
 
         try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);

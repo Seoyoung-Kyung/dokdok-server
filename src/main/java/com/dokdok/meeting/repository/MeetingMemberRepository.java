@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -104,6 +105,30 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
             @Param("userId") Long userId,
             @Param("gatheringId") Long gatheringId,
             @Param("meetingStatus") MeetingStatus meetingStatus,
+            Pageable pageable
+    );
+
+    @Query(
+            value = """
+              SELECT m FROM MeetingMember mm
+              JOIN mm.meeting m
+              JOIN FETCH m.book
+              WHERE mm.user.id = :userId
+              AND mm.canceledAt IS NULL
+              AND m.gathering.id = :gatheringId
+              AND m.meetingStatus = :meetingStatus
+              AND (CAST(:cursorStartDateTime AS timestamp) IS NULL
+                  OR m.meetingStartDate > :cursorStartDateTime
+                  OR (m.meetingStartDate = :cursorStartDateTime AND m.id > :cursorMeetingId))
+              ORDER BY m.meetingStartDate ASC, m.id ASC
+              """
+    )
+    List<Meeting> findMeetingsByUserIdAndStatusAfterCursor(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId,
+            @Param("meetingStatus") MeetingStatus meetingStatus,
+            @Param("cursorStartDateTime") LocalDateTime cursorStartDateTime,
+            @Param("cursorMeetingId") Long cursorMeetingId,
             Pageable pageable
     );
 

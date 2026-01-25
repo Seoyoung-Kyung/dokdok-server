@@ -37,6 +37,47 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
             Pageable pageable
     );
 
+    @EntityGraph(attributePaths = {"book"})
+    @Query("""
+            SELECT m
+            FROM Meeting m
+            WHERE m.gathering.id = :gatheringId
+            AND m.meetingStatus = :meetingStatus
+            AND (CAST(:cursorStartDateTime AS timestamp) IS NULL
+                OR m.meetingStartDate > :cursorStartDateTime
+                OR (m.meetingStartDate = :cursorStartDateTime AND m.id > :cursorMeetingId))
+            ORDER BY m.meetingStartDate ASC, m.id ASC
+            """)
+    List<Meeting> findByGatheringIdAndMeetingStatusAfterCursor(
+            @Param("gatheringId") Long gatheringId,
+            @Param("meetingStatus") MeetingStatus meetingStatus,
+            @Param("cursorStartDateTime") LocalDateTime cursorStartDateTime,
+            @Param("cursorMeetingId") Long cursorMeetingId,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"book"})
+    @Query("""
+            SELECT m
+            FROM Meeting m
+            WHERE m.gathering.id = :gatheringId
+            AND m.meetingStatus = :meetingStatus
+            AND m.meetingStartDate BETWEEN :startDate AND :endDate
+            AND (CAST(:cursorStartDateTime AS timestamp) IS NULL
+                OR m.meetingStartDate > :cursorStartDateTime
+                OR (m.meetingStartDate = :cursorStartDateTime AND m.id > :cursorMeetingId))
+            ORDER BY m.meetingStartDate ASC, m.id ASC
+            """)
+    List<Meeting> findByGatheringIdAndMeetingStatusAndMeetingStartDateBetweenAfterCursor(
+            @Param("gatheringId") Long gatheringId,
+            @Param("meetingStatus") MeetingStatus meetingStatus,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("cursorStartDateTime") LocalDateTime cursorStartDateTime,
+            @Param("cursorMeetingId") Long cursorMeetingId,
+            Pageable pageable
+    );
+
     @Query("""
             SELECT count(m)
             FROM Meeting m

@@ -1,8 +1,12 @@
 package com.dokdok.meeting.api;
 
 import com.dokdok.global.response.ApiResponse;
+import com.dokdok.global.response.CursorResponse;
+import com.dokdok.global.response.PageResponse;
 import com.dokdok.meeting.dto.MeetingListFilter;
-import com.dokdok.meeting.dto.MeetingListResponse;
+import com.dokdok.meeting.dto.MeetingListItemResponse;
+import com.dokdok.meeting.dto.MeetingListCursor;
+import com.dokdok.meeting.dto.MeetingListCursorRequest;
 import com.dokdok.meeting.entity.MeetingStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,6 +31,7 @@ public interface MeetingListApi {
             summary = "모임 약속 리스트 조회",
             description = """
             모임 내 약속 리스트를 조회합니다.
+            - 정렬 기준: 약속 시작 시간 오름차순, 약속 ID 오름차순
             - 전체: 확정된 약속
             - 다가오는 약속: 3일 이내 시작하는 확정된 약속
             - 완료된 약속: 종료된 약속
@@ -43,7 +48,7 @@ public interface MeetingListApi {
                     responseCode = "200",
                     description = "약속 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingListResponse.class))
+                            schema = @Schema(implementation = PageResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -66,11 +71,11 @@ public interface MeetingListApi {
                                     {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
                                     """)))
     })
-    ResponseEntity<ApiResponse<MeetingListResponse>> getMeetingList(
+    ResponseEntity<ApiResponse<CursorResponse<MeetingListItemResponse, MeetingListCursor>>> getMeetingList(
             @PathVariable Long gatheringId,
             @RequestParam MeetingListFilter filter,
-            @ParameterObject
-            @PageableDefault(size = 4) Pageable pageable
+            @ParameterObject MeetingListCursorRequest cursor,
+            @RequestParam(defaultValue = "4") int size
     );
 
     @Operation(
@@ -92,7 +97,7 @@ public interface MeetingListApi {
                     responseCode = "200",
                     description = "약속 승인 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingListResponse.class))
+                            schema = @Schema(implementation = CursorResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -115,10 +120,10 @@ public interface MeetingListApi {
                                     {"code": "E-000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
                                     """)))
     })
-    ResponseEntity<ApiResponse<MeetingListResponse>> getApprovalMeetingList(
+    ResponseEntity<ApiResponse<PageResponse<MeetingListItemResponse>>> getApprovalMeetingList(
             @PathVariable Long gatheringId,
             @RequestParam MeetingStatus status,
             @ParameterObject
-            @PageableDefault(size = 15) Pageable pageable
+            @PageableDefault(size = 10) Pageable pageable
     );
 }
