@@ -12,21 +12,32 @@ public record BookReviewResponse(
         Long bookId,
         Long userId,
         BigDecimal rating,
-        List<Long> keywordIds,
+        List<KeywordInfo> keywords,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
     public static BookReviewResponse from(BookReview review) {
+        List<KeywordInfo> keywordInfos = review.getKeywords().stream()
+                .map(reviewKeyword -> new KeywordInfo(
+                        reviewKeyword.getKeyword().getId(),
+                        reviewKeyword.getKeyword().getKeywordName()
+                ))
+                .collect(Collectors.toList());
+
         return new BookReviewResponse(
                 review.getId(),
                 review.getBook().getId(),
                 review.getUser().getId(),
                 review.getRating(),
-                review.getKeywords().stream()
-                        .map(reviewKeyword -> reviewKeyword.getKeyword().getId())
-                        .collect(Collectors.toList()),
+                keywordInfos,
                 review.getCreatedAt(),
                 review.getUpdatedAt()
         );
+    }
+
+    public record KeywordInfo(
+            Long id,
+            String name
+    ) {
     }
 }
