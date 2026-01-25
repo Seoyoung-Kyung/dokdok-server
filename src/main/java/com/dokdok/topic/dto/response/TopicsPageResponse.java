@@ -3,7 +3,6 @@ package com.dokdok.topic.dto.response;
 import com.dokdok.topic.entity.Topic;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.Set;
@@ -11,34 +10,58 @@ import java.util.Set;
 @Builder
 public record TopicsPageResponse(
         @Schema(description = "주제 목록")
-        List<TopicsResponse.TopicDto> topics,
-
-        @Schema(description = "전체 주제 개수")
-        Integer totalCount,
-
-        @Schema(description = "현재 페이지 번호 (0부터 시작)")
-        Integer currentPage,
+        List<TopicsResponse.TopicDto> items,
 
         @Schema(description = "페이지 크기")
         Integer pageSize,
 
-        @Schema(description = "전체 페이지 수")
-        Integer totalPages
+        @Schema(description = "다음 페이지 존재 여부")
+        Boolean hasNext,
+
+        @Schema(description = "다음 페이지 커서 (다음 페이지가 없으면 null)")
+        NextCursor nextCursor
 ) {
-    public static TopicsPageResponse from(Page<Topic> page, Set<Long> deletableTopicIds) {
-        List<TopicsResponse.TopicDto> topicDtos = page.getContent().stream()
+    @Builder
+    @Schema(description = "다음 페이지 조회를 위한 커서")
+    public record NextCursor(
+            @Schema(description = "마지막 항목의 좋아요 수 (정렬 기준)")
+            Integer likeCount,
+
+            @Schema(description = "마지막 항목의 주제 ID (동점 대비)")
+            Long topicId
+    ) {
+        public static NextCursor from(Topic topic) {
+            return NextCursor.builder()
+                    .likeCount(topic.getLikeCount())
+                    .topicId(topic.getId())
+                    .build();
+        }
+    }
+
+    public static TopicsPageResponse from(
+            List<Topic> topics,
+            int pageSize,
+            boolean hasNext,
+            Set<Long> deletableTopicIds
+    ) {
+        List<TopicsResponse.TopicDto> topicDtos = topics.stream()
                 .map(topic -> TopicsResponse.TopicDto.from(
                         topic,
                         deletableTopicIds.contains(topic.getId())
                 ))
                 .toList();
 
+        NextCursor cursor = null;
+        if (hasNext && !topics.isEmpty()) {
+            Topic lastTopic = topics.get(topics.size() - 1);
+            cursor = NextCursor.from(lastTopic);
+        }
+
         return TopicsPageResponse.builder()
-                .topics(topicDtos)
-                .totalCount((int) page.getTotalElements())
-                .currentPage(page.getNumber())
-                .pageSize(page.getSize())
-                .totalPages(page.getTotalPages())
+                .items(topicDtos)
+                .pageSize(pageSize)
+                .hasNext(hasNext)
+                .nextCursor(cursor)
                 .build();
     }
 }
