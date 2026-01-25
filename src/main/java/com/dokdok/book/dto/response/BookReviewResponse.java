@@ -3,7 +3,6 @@ package com.dokdok.book.dto.response;
 import com.dokdok.book.entity.BookReview;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,9 +11,7 @@ public record BookReviewResponse(
         Long bookId,
         Long userId,
         BigDecimal rating,
-        List<KeywordInfo> keywords,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        List<KeywordInfo> keywords
 ) {
     public static BookReviewResponse from(BookReview review) {
         List<KeywordInfo> keywordInfos = review.getKeywords().stream()
@@ -29,9 +26,7 @@ public record BookReviewResponse(
                 review.getBook().getId(),
                 review.getUser().getId(),
                 review.getRating(),
-                keywordInfos,
-                review.getCreatedAt(),
-                review.getUpdatedAt()
+                keywordInfos
         );
     }
 
