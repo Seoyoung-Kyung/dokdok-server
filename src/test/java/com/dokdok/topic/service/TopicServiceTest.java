@@ -134,7 +134,7 @@ class TopicServiceTest {
         Topic topic2 = Topic.builder()
                 .id(13L)
                 .meeting(testMeeting)
-                .topicStatus(TopicStatus.VOTING)
+                .topicStatus(TopicStatus.CONFIRMED)
                 .build();
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
