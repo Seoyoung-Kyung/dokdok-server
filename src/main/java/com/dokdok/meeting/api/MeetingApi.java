@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,9 +41,21 @@ public interface MeetingApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "INVALID_INPUT_VALUE", "message": "입력값이 올바르지 않습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     ResponseEntity<ApiResponse<MeetingResponse>> findMeeting(
             Long meetingId
@@ -63,9 +76,21 @@ public interface MeetingApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임 또는 책 또는 사용자를 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "INVALID_INPUT_VALUE", "message": "입력값이 올바르지 않습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임 또는 책 또는 사용자를 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M002", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     ResponseEntity<ApiResponse<MeetingResponse>> createMeeting(
             MeetingCreateRequest request
@@ -94,9 +119,21 @@ public interface MeetingApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingStatusResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M009", "message": "약속 상태를 변경할 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     ResponseEntity<ApiResponse<MeetingStatusResponse>> confirmMeeting(
             Long meetingId
@@ -120,9 +157,21 @@ public interface MeetingApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingStatusResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M009", "message": "약속 상태를 변경할 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     ResponseEntity<ApiResponse<MeetingStatusResponse>> rejectMeeting(
             Long meetingId
@@ -146,10 +195,31 @@ public interface MeetingApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = Long.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 멤버가 아님"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속 또는 사용자를 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(name = "정원 마감", value = """
+                                            {"code": "M008", "message": "약속 정원이 마감되었습니다.", "data": null}
+                                            """),
+                                    @ExampleObject(name = "이미 참가", value = """
+                                            {"code": "M010", "message": "이미 참가한 약속입니다.", "data": null}
+                                            """)
+                            })),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 멤버가 아님",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M004", "message": "약속의 멤버가 아닙니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속 또는 사용자를 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     ResponseEntity<ApiResponse<Long>> joinMeeting(
             Long meetingId
@@ -174,10 +244,31 @@ public interface MeetingApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = Long.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속 멤버가 아님"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(name = "취소 불가", value = """
+                                            {"code": "M012", "message": "약속 시작 24시간 이내에는 취소할 수 없습니다.", "data": null}
+                                            """),
+                                    @ExampleObject(name = "이미 취소", value = """
+                                            {"code": "M011", "message": "이미 취소된 약속입니다.", "data": null}
+                                            """)
+                            })),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속 멤버가 아님",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M004", "message": "약속의 멤버가 아닙니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     ResponseEntity<ApiResponse<Long>> cancelMeeting(
             Long meetingId
@@ -200,10 +291,31 @@ public interface MeetingApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingUpdateResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속장 아님"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(name = "최대 인원 오류", value = """
+                                            {"code": "M014", "message": "현재 참가 확정된 인원 수보다 적게 수정할 수 없습니다.", "data": null}
+                                            """),
+                                    @ExampleObject(name = "잘못된 최대 인원", value = """
+                                            {"code": "M013", "message": "최대 참가 인원은 1명 이상이어야 하며, 모임 전체 인원을 초과할 수 없습니다.", "data": null}
+                                            """)
+                            })),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속장 아님",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M006", "message": "약속장만 수정할 수 있습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     ResponseEntity<ApiResponse<MeetingUpdateResponse>> updateMeeting(
             @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
@@ -227,10 +339,26 @@ public interface MeetingApi {
                     description = "약속 삭제 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임장 아님"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M015", "message": "약속 시작 24시간 이내에는 삭제할 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임장 아님",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "ACCESS_DENIED", "message": "접근 권한이 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "약속을 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     ResponseEntity<ApiResponse<Void>> deleteMeeting(
             @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
@@ -257,10 +385,26 @@ public interface MeetingApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingTabCountsResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 멤버가 아님"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "INVALID_INPUT_VALUE", "message": "입력값이 올바르지 않습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 멤버가 아님",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M003", "message": "모임에 속한 약속이 아닙니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "모임을 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "M002", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     ResponseEntity<ApiResponse<MeetingTabCountsResponse>> getMeetingTabCounts(
             Long gatheringId
