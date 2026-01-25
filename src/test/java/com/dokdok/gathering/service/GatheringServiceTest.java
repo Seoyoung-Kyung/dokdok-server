@@ -5,9 +5,10 @@ import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
 import com.dokdok.gathering.dto.response.GatheringCreateResponse;
 import com.dokdok.gathering.dto.response.GatheringDetailResponse;
 import com.dokdok.gathering.dto.response.GatheringJoinResponse;
-import com.dokdok.gathering.dto.response.GatheringSimpleResponse;
+import com.dokdok.gathering.dto.response.GatheringListItemResponse;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.response.GatheringUpdateResponse;
+import com.dokdok.gathering.dto.response.FavoriteGatheringListResponse;
 import com.dokdok.gathering.dto.response.MyGatheringListResponse;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.entity.GatheringMember;
@@ -31,9 +32,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
@@ -255,11 +253,101 @@ class GatheringServiceTest {
 	}
 
 	@Test
-	@DisplayName("내 모임 목록 조회 성공")
-	void getMyGatherings_Success() {
+	@DisplayName("즐겨찾기 모임 목록 조회 성공")
+	void getFavoriteGatherings_Success() {
 		// given
 		Long userId = 1L;
-		Pageable pageable = PageRequest.of(0, 10);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+		GatheringMember member1 = GatheringMember.builder()
+				.id(1L)
+				.gathering(gathering1)
+				.user(leader)
+				.isFavorite(true)
+				.role(LEADER)
+				.joinedAt(LocalDateTime.now().minusDays(10))
+				.build();
+
+		GatheringMember member2 = GatheringMember.builder()
+				.id(2L)
+				.gathering(gathering2)
+				.user(leader)
+				.isFavorite(false)
+				.role(MEMBER)
+				.joinedAt(LocalDateTime.now().minusDays(5))
+				.build();
+
+		List<GatheringMember> favoriteMembers = List.of(member1, member2);
+
+		given(gatheringMemberRepository.findFavoriteGatheringsByUserId(userId)).willReturn(favoriteMembers);
+		given(gatheringMemberRepository.countActiveMembersByStatus(1L)).willReturn(1);
+		given(gatheringMemberRepository.countActiveMembersByStatus(2L)).willReturn(1);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE)).willReturn(3);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE)).willReturn(5);
+
+		// when
+		FavoriteGatheringListResponse response = gatheringService.getFavoriteGatherings();
+
+		// then
+		assertThat(response).isNotNull();
+		assertThat(response.gatherings()).hasSize(2);
+
+		GatheringListItemResponse firstGathering = response.gatherings().get(0);
+		assertThat(firstGathering.gatheringId()).isEqualTo(1L);
+		assertThat(firstGathering.gatheringName()).isEqualTo("독서 모임");
+		assertThat(firstGathering.isFavorite()).isTrue();
+		assertThat(firstGathering.gatheringStatus()).isEqualTo(ACTIVE);
+		assertThat(firstGathering.totalMembers()).isEqualTo(1);
+		assertThat(firstGathering.totalMeetings()).isEqualTo(3);
+		assertThat(firstGathering.currentUserRole()).isEqualTo(LEADER);
+		assertThat(firstGathering.daysFromJoined()).isEqualTo(10);
+
+		GatheringListItemResponse secondGathering = response.gatherings().get(1);
+		assertThat(secondGathering.gatheringId()).isEqualTo(2L);
+		assertThat(secondGathering.gatheringName()).isEqualTo("bookbook");
+		assertThat(secondGathering.isFavorite()).isFalse();
+		assertThat(secondGathering.gatheringStatus()).isEqualTo(ACTIVE);
+		assertThat(secondGathering.totalMembers()).isEqualTo(1);
+		assertThat(secondGathering.totalMeetings()).isEqualTo(5);
+		assertThat(secondGathering.currentUserRole()).isEqualTo(MEMBER);
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+		verify(gatheringMemberRepository, times(1)).findFavoriteGatheringsByUserId(eq(userId));
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(1L);
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(2L);
+		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE);
+		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE);
+	}
+
+	@Test
+	@DisplayName("즐겨찾기 모임 목록이 비어있을 때")
+	void getFavoriteGatherings_EmptyList() {
+		// given
+		Long userId = 1L;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+		given(gatheringMemberRepository.findFavoriteGatheringsByUserId(userId)).willReturn(List.of());
+
+		// when
+		FavoriteGatheringListResponse response = gatheringService.getFavoriteGatherings();
+
+		// then
+		assertThat(response).isNotNull();
+		assertThat(response.gatherings()).isEmpty();
+
+		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+		verify(gatheringMemberRepository, times(1)).findFavoriteGatheringsByUserId(eq(userId));
+		verify(gatheringMemberRepository, times(0)).countByGatheringIdAndRemovedAtIsNull(any());
+	}
+
+	@Test
+	@DisplayName("내 모임 목록 조회 성공 - 첫 페이지")
+	void getMyGatherings_Success_FirstPage() {
+		// given
+		Long userId = 1L;
+		int pageSize = 10;
 
 		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
@@ -282,77 +370,70 @@ class GatheringServiceTest {
 				.build();
 
 		List<GatheringMember> members = List.of(member1, member2);
-		Page<GatheringMember> memberPage = new PageImpl<>(members, pageable, members.size());
 
-		given(gatheringMemberRepository.findActiveGatheringsByUserId(userId, pageable)).willReturn(memberPage);
+		given(gatheringMemberRepository.findMyGatheringsFirstPage(eq(userId), any(Pageable.class)))
+				.willReturn(members);
 		given(gatheringMemberRepository.countActiveMembersByStatus(1L)).willReturn(1);
 		given(gatheringMemberRepository.countActiveMembersByStatus(2L)).willReturn(1);
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE)).willReturn(3);
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE)).willReturn(5);
 
 		// when
-		MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
+		MyGatheringListResponse response = gatheringService.getMyGatherings(pageSize, null, null);
 
 		// then
 		assertThat(response).isNotNull();
-		assertThat(response.gatherings()).hasSize(2);
-		assertThat(response.totalCount()).isEqualTo(2);
-		assertThat(response.currentPage()).isEqualTo(0);
-		assertThat(response.pageSize()).isEqualTo(10);
-		assertThat(response.totalPages()).isEqualTo(1);
+		assertThat(response.items()).hasSize(2);
+		assertThat(response.pageSize()).isEqualTo(pageSize);
+		assertThat(response.hasNext()).isFalse();
+		assertThat(response.nextCursor()).isNull();
 
-		GatheringSimpleResponse firstGathering = response.gatherings().get(0);
-		assertThat(firstGathering.gatheringId()).isEqualTo(1L);
-		assertThat(firstGathering.gatheringName()).isEqualTo("독서 모임");
-		assertThat(firstGathering.isFavorite()).isTrue();
-		assertThat(firstGathering.gatheringStatus()).isEqualTo(ACTIVE);
-		assertThat(firstGathering.totalMembers()).isEqualTo(1);
-		assertThat(firstGathering.totalMeetings()).isEqualTo(3);
-		assertThat(firstGathering.currentUserRole()).isEqualTo(LEADER);
-		assertThat(firstGathering.daysFromJoined()).isEqualTo(10);
-
-		GatheringSimpleResponse secondGathering = response.gatherings().get(1);
-		assertThat(secondGathering.gatheringId()).isEqualTo(2L);
-		assertThat(secondGathering.gatheringName()).isEqualTo("bookbook");
-		assertThat(secondGathering.isFavorite()).isFalse();
-		assertThat(secondGathering.gatheringStatus()).isEqualTo(ACTIVE);
-		assertThat(secondGathering.totalMembers()).isEqualTo(1);
-		assertThat(secondGathering.totalMeetings()).isEqualTo(5);
-		assertThat(secondGathering.currentUserRole()).isEqualTo(MEMBER);
-
-		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
-		verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserId(eq(userId), any(Pageable.class));
-		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(1L);
-		verify(gatheringMemberRepository, times(1)).countActiveMembersByStatus(2L);
-		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(1L, MeetingStatus.DONE);
-		verify(meetingRepository, times(1)).countByGatheringIdAndMeetingStatus(2L, MeetingStatus.DONE);
+		verify(gatheringMemberRepository).findMyGatheringsFirstPage(eq(userId), any(Pageable.class));
 	}
 
 	@Test
-	@DisplayName("내 모임 목록이 비어있을 때")
-	void getMyGatherings_EmptyList() {
+	@DisplayName("내 모임 목록 조회 성공 - 다음 페이지 있음")
+	void getMyGatherings_Success_HasNextPage() {
 		// given
 		Long userId = 1L;
-		Pageable pageable = PageRequest.of(0, 10);
+		int pageSize = 1;
 
 		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
-		Page<GatheringMember> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+		GatheringMember member1 = GatheringMember.builder()
+				.id(1L)
+				.gathering(gathering1)
+				.user(leader)
+				.isFavorite(true)
+				.role(LEADER)
+				.joinedAt(LocalDateTime.now().minusDays(10))
+				.build();
 
-		given(gatheringMemberRepository.findActiveGatheringsByUserId(userId, pageable)).willReturn(emptyPage);
+		GatheringMember member2 = GatheringMember.builder()
+				.id(2L)
+				.gathering(gathering2)
+				.user(leader)
+				.isFavorite(false)
+				.role(MEMBER)
+				.joinedAt(LocalDateTime.now().minusDays(5))
+				.build();
+
+		// pageSize + 1 개 반환 → hasNext = true
+		List<GatheringMember> members = List.of(member1, member2);
+
+		given(gatheringMemberRepository.findMyGatheringsFirstPage(eq(userId), any(Pageable.class)))
+				.willReturn(members);
+		given(gatheringMemberRepository.countActiveMembersByStatus(any())).willReturn(1);
+		given(meetingRepository.countByGatheringIdAndMeetingStatus(any(), eq(MeetingStatus.DONE))).willReturn(0);
 
 		// when
-		MyGatheringListResponse response = gatheringService.getMyGatherings(pageable);
+		MyGatheringListResponse response = gatheringService.getMyGatherings(pageSize, null, null);
 
 		// then
-		assertThat(response).isNotNull();
-		assertThat(response.gatherings()).isEmpty();
-		assertThat(response.totalCount()).isEqualTo(0);
-		assertThat(response.totalPages()).isEqualTo(0);
-
-		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
-		verify(gatheringMemberRepository, times(1)).findActiveGatheringsByUserId(eq(userId), any(Pageable.class));
-		verify(gatheringMemberRepository, times(0)).countByGatheringIdAndRemovedAtIsNull(any());
+		assertThat(response.items()).hasSize(1);
+		assertThat(response.hasNext()).isTrue();
+		assertThat(response.nextCursor()).isNotNull();
+		assertThat(response.nextCursor().gatheringMemberId()).isEqualTo(1L);
 	}
 
 	@Test
@@ -502,7 +583,27 @@ class GatheringServiceTest {
 		// then
 		assertThat(normalMember.getIsFavorite()).isTrue();
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
-		verify(gatheringValidator, times(1)).validateAndGetMember(gatheringId, userId);
+		verify(gatheringValidator, times(1)).validateFavoriteLimit(userId);
+	}
+
+	@Test
+	@DisplayName("즐겨찾기 추가 실패 - 최대 4개 초과")
+	void updateFavorite_Fail_FavoriteLimitExceeded() {
+		// given
+		Long gatheringId = 1L;
+		Long userId = 2L;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+		given(gatheringValidator.validateAndGetMember(gatheringId, userId)).willReturn(normalMember);
+		doThrow(new GatheringException(GatheringErrorCode.FAVORITE_LIMIT_EXCEEDED))
+				.when(gatheringValidator).validateFavoriteLimit(userId);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.updateFavorite(gatheringId))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.FAVORITE_LIMIT_EXCEEDED.getMessage());
+
+		assertThat(normalMember.getIsFavorite()).isFalse();
 	}
 
 	@Test

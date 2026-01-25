@@ -6,7 +6,7 @@ import com.dokdok.gathering.entity.GatheringStatus;
 import lombok.Builder;
 
 @Builder
-public record GatheringSimpleResponse(
+public record GatheringListItemResponse(
         Long gatheringId,
         String gatheringName,
         Boolean isFavorite,
@@ -16,13 +16,13 @@ public record GatheringSimpleResponse(
         GatheringRole currentUserRole,
         Integer daysFromJoined
 ) {
-    public static GatheringSimpleResponse from(
+    public static GatheringListItemResponse from(
             GatheringMember gatheringMember,
             int totalMembers,
             int totalMeetings,
             GatheringRole currentUserRole
     ){
-        return GatheringSimpleResponse.builder()
+        return GatheringListItemResponse.builder()
                 .gatheringId(gatheringMember.getGathering().getId())
                 .gatheringName(gatheringMember.getGathering().getGatheringName())
                 .isFavorite(gatheringMember.getIsFavorite())

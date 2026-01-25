@@ -20,7 +20,8 @@ public enum GatheringErrorCode implements BaseErrorCode {
     JOIN_REQUEST_ALREADY_PENDING("G009", "이미 가입 요청이 진행 중입니다.", HttpStatus.CONFLICT),
     INVALID_INVITATION_LINK("G010", "초대링크는 필수입니다.", HttpStatus.BAD_REQUEST),
     NOT_PENDING_STATUS("G011", "대기 중인 가입 요청만 처리할 수 있습니다.", HttpStatus.BAD_REQUEST),
-    INVALID_APPROVE_TYPE("G012", "승인 상태는 ACTIVE 또는 REJECTED만 가능합니다.", HttpStatus.BAD_REQUEST);
+    INVALID_APPROVE_TYPE("G012", "승인 상태는 ACTIVE 또는 REJECTED만 가능합니다.", HttpStatus.BAD_REQUEST),
+    FAVORITE_LIMIT_EXCEEDED("G013", "즐겨찾기는 최대 4개까지만 등록할 수 있습니다.", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;
