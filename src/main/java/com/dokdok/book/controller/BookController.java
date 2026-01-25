@@ -11,8 +11,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.OffsetDateTime;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,8 +27,12 @@ public class BookController implements BookApi {
 
     @Override
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<KakaoBookResponse>> searchBook(@RequestParam String query) {
-        return ApiResponse.success(bookService.searchBook(query), "책 정보 조회 성공");
+    public ResponseEntity<ApiResponse<CursorPageResponse<KakaoBookResponse.Document, BookSearchCursor>>> searchBook(
+            @RequestParam String query,
+            @RequestParam(required = false) Integer cursorPage,
+            @RequestParam(required = false) Integer size
+    ) {
+        return ApiResponse.success(bookService.searchBook(query, cursorPage, size), "책 정보 조회 성공");
     }
 
     @Override
@@ -37,9 +44,17 @@ public class BookController implements BookApi {
 
     @Override
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<PersonalBookListResponse>>> getMyBooks(BookReadingStatus readingStatus, Long gatheringId, Pageable pageable) {
-        Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(readingStatus, gatheringId, pageable);
-        PageResponse<PersonalBookListResponse> response = PageResponse.from(personalBookList);
+    public ResponseEntity<ApiResponse<CursorPageResponse<PersonalBookListResponse, BookListCursor>>> getMyBooks(
+            BookReadingStatus readingStatus,
+            Long gatheringId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            OffsetDateTime cursorAddedAt,
+            @RequestParam(required = false) Long cursorBookId,
+            @RequestParam(required = false) Integer size
+    ) {
+        CursorPageResponse<PersonalBookListResponse, BookListCursor> response = personalBookService
+                .getPersonalBookListCursor(readingStatus, gatheringId, cursorAddedAt, cursorBookId, size);
         return ApiResponse.success(response, "책 리스트 조회 성공");
     }
 

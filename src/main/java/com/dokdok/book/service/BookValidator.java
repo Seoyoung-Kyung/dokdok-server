@@ -47,6 +47,11 @@ public class BookValidator {
                 .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
     }
 
+    public PersonalBook validatePersonalBook(Long userId, Long personalBookId) {
+        return personalBookRepository.findByIdAndUserId(personalBookId, userId)
+                .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
+    }
+
     public void validateDuplicatePersonalBook(Long userId, Long bookId) {
         personalBookRepository.findByUserIdAndBookId(userId, bookId)
                 .ifPresent(personalBook ->

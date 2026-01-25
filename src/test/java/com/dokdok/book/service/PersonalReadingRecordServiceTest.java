@@ -96,7 +96,7 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
+        when(bookValidator.validatePersonalBook(userId, bookId)).thenReturn(personalBook);
 
         // when
         PersonalReadingRecordCreateResponse response = personalReadingRecordService.create(bookId, request);
@@ -118,7 +118,7 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
+        verify(bookValidator, times(1)).validatePersonalBook(userId, bookId);
     }
 
     @Test
@@ -160,7 +160,7 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
+        when(bookValidator.validatePersonalBook(userId, bookId)).thenReturn(personalBook);
 
         // when
         PersonalReadingRecordCreateResponse response = personalReadingRecordService.create(bookId, request);
@@ -184,7 +184,7 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
+        verify(bookValidator, times(1)).validatePersonalBook(userId, bookId);
     }
 
     @Test
@@ -214,7 +214,7 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
+        when(bookValidator.validatePersonalBook(userId, bookId)).thenReturn(personalBook);
 
         // when & then
         assertThatThrownBy(() -> personalReadingRecordService.create(bookId, request))
@@ -224,7 +224,7 @@ class PersonalReadingRecordServiceTest {
         verify(personalReadingRecordRepository, never()).save(any());
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
+        verify(bookValidator, times(1)).validatePersonalBook(userId, bookId);
     }
 
     @Test
@@ -268,8 +268,8 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
-        when(personalReadingRecordRepository.findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId))
+        when(bookValidator.validatePersonalBook(userId, bookId)).thenReturn(personalBook);
+        when(personalReadingRecordRepository.findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId))
                 .thenReturn(Optional.of(record));
 
         // when
@@ -288,11 +288,11 @@ class PersonalReadingRecordServiceTest {
         assertThat(record.getMeta().get("page")).isEqualTo(30);
 
         verify(personalReadingRecordRepository, times(1))
-                .findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId);
+                .findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId);
         verify(personalReadingRecordRepository, never()).save(any());
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
+        verify(bookValidator, times(1)).validatePersonalBook(userId, bookId);
     }
 
     @Test
@@ -324,8 +324,8 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
-        when(personalReadingRecordRepository.findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId))
+        when(bookValidator.validatePersonalBook(userId, bookId)).thenReturn(personalBook);
+        when(personalReadingRecordRepository.findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId))
                 .thenReturn(Optional.empty());
 
         // when & then
@@ -334,11 +334,11 @@ class PersonalReadingRecordServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", RecordErrorCode.RECORD_NOT_FOUND);
 
         verify(personalReadingRecordRepository, times(1))
-                .findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId);
+                .findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId);
         verify(personalReadingRecordRepository, never()).save(any());
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
+        verify(bookValidator, times(1)).validatePersonalBook(userId, bookId);
     }
 
     @Test
@@ -378,8 +378,8 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
-        when(personalReadingRecordRepository.findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId))
+        when(bookValidator.validatePersonalBook(userId, bookId)).thenReturn(personalBook);
+        when(personalReadingRecordRepository.findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId))
                 .thenReturn(Optional.of(record));
 
         // when & then
@@ -388,11 +388,11 @@ class PersonalReadingRecordServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", RecordErrorCode.INVALID_RECORD_REQUEST);
 
         verify(personalReadingRecordRepository, times(1))
-                .findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId);
+                .findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId);
         verify(personalReadingRecordRepository, never()).save(any());
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
+        verify(bookValidator, times(1)).validatePersonalBook(userId, bookId);
     }
 
     @Test
@@ -426,8 +426,8 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
-        when(personalReadingRecordRepository.findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId))
+        when(bookValidator.validatePersonalBook(userId, bookId)).thenReturn(personalBook);
+        when(personalReadingRecordRepository.findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId))
                 .thenReturn(Optional.of(record));
 
         // when
@@ -438,11 +438,11 @@ class PersonalReadingRecordServiceTest {
         assertThat(record.getDeletedAt()).isNotNull();
 
         verify(personalReadingRecordRepository, times(1))
-                .findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId);
+                .findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId);
         verify(personalReadingRecordRepository, never()).save(any());
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
+        verify(bookValidator, times(1)).validatePersonalBook(userId, bookId);
     }
 
     @Test
@@ -468,8 +468,8 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
-        when(personalReadingRecordRepository.findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId))
+        when(bookValidator.validatePersonalBook(userId, bookId)).thenReturn(personalBook);
+        when(personalReadingRecordRepository.findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId))
                 .thenReturn(Optional.empty());
 
         // when & then
@@ -478,10 +478,10 @@ class PersonalReadingRecordServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", RecordErrorCode.RECORD_NOT_FOUND);
 
         verify(personalReadingRecordRepository, times(1))
-                .findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId);
+                .findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId);
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
+        verify(bookValidator, times(1)).validatePersonalBook(userId, bookId);
     }
 
     @Test
@@ -517,8 +517,8 @@ class PersonalReadingRecordServiceTest {
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(bookValidator.validateInBookShelf(userId, bookId)).thenReturn(personalBook);
-        when(personalReadingRecordRepository.findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId))
+        when(bookValidator.validatePersonalBook(userId, bookId)).thenReturn(personalBook);
+        when(personalReadingRecordRepository.findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId))
                 .thenReturn(Optional.of(record));
 
         // when & then
@@ -527,10 +527,10 @@ class PersonalReadingRecordServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", RecordErrorCode.RECORD_ALREADY_DELETED);
 
         verify(personalReadingRecordRepository, times(1))
-                .findByIdAndPersonalBook_Book_IdAndUserId(recordId, bookId, userId);
+                .findByIdAndPersonalBook_IdAndUserId(recordId, bookId, userId);
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
-        verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
+        verify(bookValidator, times(1)).validatePersonalBook(userId, bookId);
     }
 
 }

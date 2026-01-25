@@ -15,9 +15,12 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.OffsetDateTime;
 
 @Tag(name = "책 관리", description = "책 검색 및 내 책장 관리 API")
 @RequestMapping("/api/book")
@@ -25,21 +28,24 @@ public interface BookApi {
 
     @Operation(
             summary = "외부 책 API 조회",
-            description = "검색어로 책 정보를 조회합니다."
+            description = """
+                    검색어로 책 정보를 조회합니다.
+                    - cursorPage/size 파라미터로 다음 페이지를 조회합니다.
+                    """
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "책 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = KakaoBookResponse.class),
+                            schema = @Schema(implementation = CursorPageResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
                                               "code": "SUCCESS",
                                               "message": "책 정보 조회 성공",
                                               "data": {
-                                                "documents": [
+                                                "items": [
                                                   {
                                                     "title": "예제 도서명",
                                                     "contents": "책 소개",
@@ -49,10 +55,10 @@ public interface BookApi {
                                                     "thumbnail": "https://example.com/thumb.jpg"
                                                   }
                                                 ],
-                                                "meta": {
-                                                  "is_end": true,
-                                                  "pageable_count": 1,
-                                                  "total_count": 1
+                                                "pageSize": 10,
+                                                "hasNext": true,
+                                                "nextCursor": {
+                                                  "page": 2
                                                 }
                                               }
                                             }
@@ -64,9 +70,13 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @GetMapping("/search")
-    ResponseEntity<ApiResponse<KakaoBookResponse>> searchBook(
+    ResponseEntity<ApiResponse<CursorPageResponse<KakaoBookResponse.Document, BookSearchCursor>>> searchBook(
             @Parameter(description = "책 제목, 내용 등에 사용할 검색어", required = true)
-            @RequestParam String query
+            @RequestParam String query,
+            @Parameter(description = "다음 페이지 커서 (nextCursor.page 값)")
+            @RequestParam(required = false) Integer cursorPage,
+            @Parameter(description = "한 페이지당 아이템 수", example = "10")
+            @RequestParam(required = false) Integer size
     );
 
 
@@ -104,9 +114,9 @@ public interface BookApi {
     @Operation(
             summary = "내 책장 목록 조회",
             description = """
-                    내 책장에 등록된 책을 페이징으로 조회합니다.
+                    내 책장에 등록된 책을 커서 기반으로 조회합니다.
                     - 로그인한 사용자 기준으로 조회합니다.
-                    - page/size/sort 파라미터로 페이징과 정렬을 제어할 수 있습니다.
+                    - cursorAddedAt/cursorBookId/size 파라미터로 다음 페이지를 조회합니다.
                     """
     )
     @ApiResponses({
@@ -114,7 +124,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalBookListResponse.class),
+                            schema = @Schema(implementation = CursorPageResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -132,10 +142,12 @@ public interface BookApi {
                                                     "gatheringName": "예제 모임"
                                                   }
                                                 ],
-                                                "totalCount": 1,
-                                                "currentPage": 0,
                                                 "pageSize": 10,
-                                                "totalPages": 1
+                                                "hasNext": true,
+                                                "nextCursor": {
+                                                  "addedAt": "2026-01-22T10:25:40Z",
+                                                  "bookId": 127
+                                                }
                                               }
                                             }
                                             """
@@ -146,19 +158,19 @@ public interface BookApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @GetMapping
-    ResponseEntity<ApiResponse<PageResponse<PersonalBookListResponse>>> getMyBooks(
+    ResponseEntity<ApiResponse<CursorPageResponse<PersonalBookListResponse, BookListCursor>>> getMyBooks(
             @RequestParam(required = false) BookReadingStatus readingStatus,
             @RequestParam(required = false) Long gatheringId,
-            @ParameterObject
             @Parameter(
-                    description = "페이징 정보 (page: 페이지 번호, size: 페이지 크기, sort: 정렬 기준)",
-                    example = "page=0&size=10&sort=addedAt,desc"
+                    description = "커서 - 마지막 아이템 addedAt (ISO 8601, cursorBookId와 함께 전달)"
             )
-            @PageableDefault(
-                    size = 10,
-                    sort = "addedAt",
-                    direction = Sort.Direction.DESC
-            ) Pageable pageable
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            OffsetDateTime cursorAddedAt,
+            @Parameter(description = "커서 - 마지막 아이템 bookId (cursorAddedAt과 함께 전달)")
+            @RequestParam(required = false) Long cursorBookId,
+            @Parameter(description = "한 페이지당 아이템 수", example = "10")
+            @RequestParam(required = false) Integer size
     );
 
     @Operation(
@@ -180,6 +192,7 @@ public interface BookApi {
                                               "code": "SUCCESS",
                                               "message": "책 상세 정보 조회 성공",
                                               "data": {
+                                                "personalBookId": 100,
                                                 "bookId": 1,
                                                 "title": "예제 도서명",
                                                 "publisher": "예제 출판사",
