@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface ConfirmTopicApi {
 
     @Operation(
-            summary = "확정된 주제 조회",
+            summary = "확정된 주제 조회 (developer: 양재웅)",
             description = "약속에서 확정된 주제 목록을 조회합니다.",
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),

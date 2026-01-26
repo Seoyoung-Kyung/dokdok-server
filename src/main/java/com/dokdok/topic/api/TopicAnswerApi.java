@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public interface TopicAnswerApi {
 
     @Operation(
-            summary = "토픽 답변 저장",
+            summary = "토픽 답변 저장 (developer: 양재웅)",
             description = """
             토픽 답변을 저장합니다.
             - 권한: 모임 구성원
@@ -83,7 +83,7 @@ public interface TopicAnswerApi {
     );
 
     @Operation(
-            summary = "내 토픽 답변 조회",
+            summary = "내 토픽 답변 조회 (developer: 양재웅)",
             description = """
             현재 로그인 사용자의 토픽 답변을 조회합니다.
             - 권한: 모임 구성원
@@ -125,7 +125,7 @@ public interface TopicAnswerApi {
     );
 
     @Operation(
-            summary = "내 토픽 답변 수정",
+            summary = "내 토픽 답변 수정 (developer: 양재웅)",
             description = """
             현재 로그인 사용자의 토픽 답변을 수정합니다.
             - 권한: 모임 구성원
@@ -179,7 +179,7 @@ public interface TopicAnswerApi {
     );
 
     @Operation(
-            summary = "내 토픽 답변 제출",
+            summary = "내 토픽 답변 제출 (developer: 양재웅)",
             description = """
             현재 로그인 사용자의 토픽 답변을 제출합니다.
             - 권한: 모임 구성원
