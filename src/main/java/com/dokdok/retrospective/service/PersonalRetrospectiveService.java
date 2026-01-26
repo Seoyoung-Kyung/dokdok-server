@@ -1,7 +1,7 @@
 package com.dokdok.retrospective.service;
 
-import com.dokdok.book.entity.RecordType;
 import com.dokdok.book.service.BookValidator;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
 import com.dokdok.retrospective.dto.projection.FreeTextProjection;
 import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
@@ -164,7 +164,7 @@ public class PersonalRetrospectiveService {
     }
 
     @Transactional(readOnly = true)
-    public RetrospectiveRecordsPageResponse getRetrospectiveRecords(
+    public CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor> getRetrospectiveRecords(
             Long bookId,
             int pageSize,
             LocalDateTime cursorCreatedAt,
@@ -194,7 +194,7 @@ public class PersonalRetrospectiveService {
         }
 
         if (retrospectives.isEmpty()) {
-            return RetrospectiveRecordsPageResponse.from(List.of(), pageSize, false, null);
+            return CursorResponse.of(List.of(), pageSize, false, null);
         }
 
         List<Long> retrospectiveIds = retrospectives.stream()

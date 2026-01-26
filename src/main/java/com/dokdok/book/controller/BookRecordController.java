@@ -1,8 +1,10 @@
 package com.dokdok.book.controller;
 
 import com.dokdok.book.api.BookRecordApi;
-import com.dokdok.retrospective.dto.response.RetrospectiveRecordsPageResponse;
 import com.dokdok.global.response.ApiResponse;
+import com.dokdok.global.response.CursorResponse;
+import com.dokdok.retrospective.dto.response.RetrospectiveRecordResponse;
+import com.dokdok.retrospective.dto.response.RetrospectiveRecordsCursor;
 import com.dokdok.retrospective.service.PersonalRetrospectiveService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -25,15 +27,14 @@ public class BookRecordController implements BookRecordApi {
 
     @Override
     @GetMapping(value = "/retrospectives", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<RetrospectiveRecordsPageResponse>> getRetrospectiveRecords(
+    public ResponseEntity<ApiResponse<CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor>>> getRetrospectiveRecords(
             @PathVariable Long bookId,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorCreatedAt,
             @RequestParam(required = false) Long cursorRetrospectiveId
     ) {
-        RetrospectiveRecordsPageResponse response = retrospectiveService.getRetrospectiveRecords(
-                bookId, pageSize, cursorCreatedAt, cursorRetrospectiveId
-        );
+        CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor> response =
+                retrospectiveService.getRetrospectiveRecords(bookId, pageSize, cursorCreatedAt, cursorRetrospectiveId);
 
         return ApiResponse.success(response, "해당 책의 개인 회고 목록 조회를 성공했습니다.");
     }

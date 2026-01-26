@@ -1,7 +1,9 @@
 package com.dokdok.book.api;
 
 import com.dokdok.global.response.ApiResponse;
-import com.dokdok.retrospective.dto.response.RetrospectiveRecordsPageResponse;
+import com.dokdok.global.response.CursorResponse;
+import com.dokdok.retrospective.dto.response.RetrospectiveRecordResponse;
+import com.dokdok.retrospective.dto.response.RetrospectiveRecordsCursor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -52,7 +54,7 @@ public interface BookRecordApi {
                     responseCode = "200",
                     description = "개인 회고 목록 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = RetrospectiveRecordsPageResponse.class))
+                            schema = @Schema(implementation = CursorResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
@@ -92,7 +94,7 @@ public interface BookRecordApi {
             )
     })
     @GetMapping(value = "/retrospectives", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ApiResponse<RetrospectiveRecordsPageResponse>> getRetrospectiveRecords(
+    ResponseEntity<ApiResponse<CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor>>> getRetrospectiveRecords(
             @PathVariable Long bookId,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorCreatedAt,

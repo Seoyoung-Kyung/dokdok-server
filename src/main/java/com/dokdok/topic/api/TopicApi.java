@@ -1,12 +1,14 @@
 package com.dokdok.topic.api;
 
 import com.dokdok.global.response.ApiResponse;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
-import com.dokdok.topic.dto.response.TopicsPageResponse;
+import com.dokdok.topic.dto.response.TopicsCursor;
+import com.dokdok.topic.dto.response.TopicsResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -174,7 +176,7 @@ public interface TopicApi {
                     description = "주제 조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = TopicsPageResponse.class)
+                            schema = @Schema(implementation = CursorResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -218,7 +220,7 @@ public interface TopicApi {
             )
     })
     @GetMapping
-    ResponseEntity<ApiResponse<TopicsPageResponse>> getTopics(
+    ResponseEntity<ApiResponse<CursorResponse<TopicsResponse.TopicDto, TopicsCursor>>> getTopics(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
             @RequestParam(defaultValue = "10") Integer pageSize,

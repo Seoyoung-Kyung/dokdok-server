@@ -1,44 +1,17 @@
 package com.dokdok.topic.dto.response;
 
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.topic.entity.Topic;
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
 
 import java.util.List;
 import java.util.Set;
 
-@Builder
-public record TopicsPageResponse(
-        @Schema(description = "주제 목록")
-        List<TopicsResponse.TopicDto> items,
+/**
+ * 주제 목록 페이지네이션 응답을 위한 헬퍼 클래스
+ */
+public class TopicsPageResponse {
 
-        @Schema(description = "페이지 크기")
-        Integer pageSize,
-
-        @Schema(description = "다음 페이지 존재 여부")
-        Boolean hasNext,
-
-        @Schema(description = "다음 페이지 커서 (다음 페이지가 없으면 null)")
-        NextCursor nextCursor
-) {
-    @Builder
-    @Schema(description = "다음 페이지 조회를 위한 커서")
-    public record NextCursor(
-            @Schema(description = "마지막 항목의 좋아요 수 (정렬 기준)")
-            Integer likeCount,
-
-            @Schema(description = "마지막 항목의 주제 ID (동점 대비)")
-            Long topicId
-    ) {
-        public static NextCursor from(Topic topic) {
-            return NextCursor.builder()
-                    .likeCount(topic.getLikeCount())
-                    .topicId(topic.getId())
-                    .build();
-        }
-    }
-
-    public static TopicsPageResponse from(
+    public static CursorResponse<TopicsResponse.TopicDto, TopicsCursor> from(
             List<Topic> topics,
             int pageSize,
             boolean hasNext,
@@ -51,17 +24,12 @@ public record TopicsPageResponse(
                 ))
                 .toList();
 
-        NextCursor cursor = null;
+        TopicsCursor cursor = null;
         if (hasNext && !topics.isEmpty()) {
             Topic lastTopic = topics.get(topics.size() - 1);
-            cursor = NextCursor.from(lastTopic);
+            cursor = TopicsCursor.from(lastTopic);
         }
 
-        return TopicsPageResponse.builder()
-                .items(topicDtos)
-                .pageSize(pageSize)
-                .hasNext(hasNext)
-                .nextCursor(cursor)
-                .build();
+        return CursorResponse.of(topicDtos, pageSize, hasNext, cursor);
     }
 }
