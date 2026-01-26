@@ -342,6 +342,7 @@ public interface BookApi {
                                                 "title": "예제 도서명",
                                                 "publisher": "예제 출판사",
                                                 "authors": "저자A, 저자B",
+                                                "thumbnail": "https://kakaoapi.com/afd123sdfs",
                                                 "bookReadingStatus": "READING"
                                               }
                                             }
