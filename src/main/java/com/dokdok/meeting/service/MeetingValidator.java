@@ -108,4 +108,16 @@ public class MeetingValidator {
     public int countActiveMembers(Long meetingId) {
         return meetingMemberRepository.countActiveMembers(meetingId);
     }
+
+    /**
+     * 요청한 사용자가 약속장인지 검증한다.
+     */
+    public boolean isMeetingLeader(Long meetingId, Long userId) {
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND));
+
+        return meeting.getMeetingLeader() != null
+                && meeting.getMeetingLeader().getId() != null
+                && meeting.getMeetingLeader().getId().equals(userId);
+    }
 }
