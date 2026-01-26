@@ -30,13 +30,15 @@ public record TopicsResponse(
             @Schema(description = "주제 설명", example = "이 책에서 전달하고자 하는 핵심 메시지는 무엇인가요?")
             String description,
 
-            @Schema(description = "주제 타입")
+            @Schema(description = "주제 타입", example = "DISCUSSION",
+                    allowableValues = {"FREE", "DISCUSSION", "EMOTION", "EXPERIENCE", "CHARACTER_ANALYSIS", "COMPARISON", "STRUCTURE", "IN_DEPTH", "CREATIVE", "CUSTOM"})
             TopicType topicType,
 
-            @Schema(description = "주제 타입 라벨", example = "토론")
+            @Schema(description = "주제 타입 라벨", example = "토론형")
             String topicTypeLabel,
 
-            @Schema(description = "주제 상태")
+            @Schema(description = "주제 상태", example = "PROPOSED",
+                    allowableValues = {"PROPOSED", "CONFIRMED"})
             TopicStatus topicStatus,
 
             @Schema(description = "좋아요 수", example = "5")

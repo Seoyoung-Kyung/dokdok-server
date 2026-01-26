@@ -24,8 +24,14 @@ import org.springframework.web.bind.annotation.*;
 public interface TopicApi {
 
     @Operation(
-            summary = "주제 제안",
-            description = "약속에 대한 주제를 제안합니다.",
+            summary = "주제 제안 (developer: 경서영)",
+            description = """
+                    약속에 대한 주제를 제안합니다.
+                    - 입력: 제목*, 설명*, 주제 타입*
+                    - 주제 타입: FREE(자유형), DISCUSSION(토론형), EMOTION(감정 공유형), EXPERIENCE(경험 연결형), CHARACTER_ANALYSIS(인물 분석형), COMPARISON(비교 분석형), STRUCTURE(구조 분석형), IN_DEPTH(심층 분석형), CREATIVE(창작형), CUSTOM(질문형)
+                    - 권한: 약속의 멤버
+                    - 제약: 약속 상태가 주제 제안 가능 상태여야 함
+                    """,
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
@@ -127,6 +133,7 @@ public interface TopicApi {
                     )
             )
     })
+    @PostMapping
     ResponseEntity<ApiResponse<SuggestTopicResponse>> createTopic(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
@@ -134,9 +141,12 @@ public interface TopicApi {
     );
 
     @Operation(
-            summary = "제안된 주제 조회 (커서 기반 페이지네이션)",
+            summary = "제안된 주제 조회 (developer: 경서영)",
             description = """
                     약속에 제안된 주제 목록을 커서 기반 페이지네이션으로 조회합니다.
+                    - 권한: 모임의 멤버
+                    - 주제 상태: PROPOSED(제안됨), CONFIRMED(확정됨)
+                    - 주제 타입: FREE(자유형), DISCUSSION(토론형), EMOTION(감정 공유형), EXPERIENCE(경험 연결형), CHARACTER_ANALYSIS(인물 분석형), COMPARISON(비교 분석형), STRUCTURE(구조 분석형), IN_DEPTH(심층 분석형), CREATIVE(창작형), CUSTOM(질문형)
 
                     **정렬 기준**
                     - 1차: likeCount(좋아요 수) 내림차순
@@ -217,8 +227,14 @@ public interface TopicApi {
     );
 
     @Operation(
-            summary = "제안된 주제 확정",
-            description = "약속에서 제안된 주제를 확정합니다.",
+            summary = "제안된 주제 확정 (developer: 양재웅)",
+            description = """
+                    약속에서 제안된 주제를 확정합니다.
+                    - 입력: 확정할 주제 ID 목록* (순서대로 confirmOrder 부여)
+                    - 상태: PROPOSED(제안됨) → CONFIRMED(확정됨)
+                    - 권한: 모임의 멤버
+                    - 제약: 요청된 모든 주제가 해당 약속에 존재해야 함
+                    """,
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
@@ -313,8 +329,14 @@ public interface TopicApi {
     );
 
     @Operation(
-            summary = "주제 삭제",
-            description = "제안된 주제를 삭제합니다.",
+            summary = "주제 삭제 (developer: 양재웅)",
+            description = """
+                    제안된 주제를 삭제합니다.
+                    - 권한: 주제 작성자 또는 약속장
+                    - 제약: 약속의 멤버만 삭제 가능
+                    - 제약: 이미 삭제된 주제는 다시 삭제 불가
+                    - 삭제 방식: Soft Delete
+                    """,
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
@@ -409,8 +431,13 @@ public interface TopicApi {
     );
 
     @Operation(
-            summary = "주제 좋아요 토글",
-            description = "주제에 대한 좋아요를 추가하거나 취소합니다. 이미 좋아요한 주제를 다시 요청하면 좋아요가 취소됩니다.",
+            summary = "주제 좋아요 토글 (developer: 경서영)",
+            description = """
+                    주제에 대한 좋아요를 추가하거나 취소합니다.
+                    - 동작: 좋아요가 없으면 추가, 있으면 취소 (토글)
+                    - 권한: 약속의 멤버
+                    - 응답: 좋아요 상태(liked)와 변경 후 좋아요 수(newCount) 반환
+                    """,
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),

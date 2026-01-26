@@ -15,8 +15,8 @@ public record RetrospectiveRecordResponse(
         Long retrospectiveId,
         @Schema(description = "모임 이름", example = "독서 모임")
         String gatheringName,
-        @Schema(description = "기록 유형", example = "RETROSPECTIVE")
-        RecordType recordType,
+        @Schema(description = "기록 유형", example = "개인 회고")
+        String recordType,
         @Schema(description = "작성 일시", example = "2025-02-01T16:30:00")
         LocalDateTime createdAt,
         @Schema(description = "생각 변화 목록")
@@ -87,7 +87,7 @@ public record RetrospectiveRecordResponse(
     public static RetrospectiveRecordResponse of(
             Long retrospectiveId,
             String gatheringName,
-            RecordType recordType,
+            String recordType,
             LocalDateTime createdAt,
             List<RetrospectiveRecordResponse.ChangedThought> changedThoughts,
             List<RetrospectiveRecordResponse.OthersPerspective> othersPerspectives,

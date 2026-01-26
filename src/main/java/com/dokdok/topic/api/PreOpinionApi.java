@@ -21,11 +21,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public interface PreOpinionApi {
 
     @Operation(
-            summary = "사전 의견 목록 조회",
+            summary = "사전 의견 목록 조회 (developer: 경서영)",
             description = """
-                    약속에 참여한 멤버들의 사전 의견(독서 리뷰, 토픽 답변)을 조회합니다.
-                    - 본인이 사전 의견을 작성한 경우에만 조회 가능합니다.
-                    - 각 멤버의 독서 평가 및 토픽 답변을 포함합니다.
+                    약속에 참여한 멤버들의 사전 의견(독서 리뷰, 주제 답변)을 조회합니다.
+                    - 권한: 약속의 멤버
+                    - 제약: 본인이 사전 의견을 작성한 경우에만 조회 가능
+                    - 응답: 확정된 주제 목록, 멤버별 사전 의견 (책 평가, 주제 답변)
+
+                    **응답 구조**
+                    - topicInfos: 확정된 주제 목록 (confirmOrder 순)
+                    - memberPreOpinions: 멤버별 사전 의견 (프로필, 책 평가, 주제별 답변)
                     """,
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),

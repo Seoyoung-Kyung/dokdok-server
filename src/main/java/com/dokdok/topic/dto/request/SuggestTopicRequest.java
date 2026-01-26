@@ -19,7 +19,9 @@ public record SuggestTopicRequest(
         @Size(max = 1000, message = "설명은 1000자 이내여야 합니다")
         String description,
 
-        @Schema(description = "주제 타입", example = "DISCUSSION", requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = "주제 타입 (FREE: 자유형, DISCUSSION: 토론형, EMOTION: 감정 공유형, EXPERIENCE: 경험 연결형, CHARACTER_ANALYSIS: 인물 분석형, COMPARISON: 비교 분석형, STRUCTURE: 구조 분석형, IN_DEPTH: 심층 분석형, CREATIVE: 창작형, CUSTOM: 질문형)",
+                example = "DISCUSSION", requiredMode = Schema.RequiredMode.REQUIRED,
+                allowableValues = {"FREE", "DISCUSSION", "EMOTION", "EXPERIENCE", "CHARACTER_ANALYSIS", "COMPARISON", "STRUCTURE", "IN_DEPTH", "CREATIVE", "CUSTOM"})
         @NotNull(message = "주제 타입은 필수입니다")
         TopicType topicType
 ) {
