@@ -28,11 +28,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface PersonalRetrospectiveApi {
 
     @Operation(
-            summary = "개인 회고 작성",
+            summary = "개인 회고 작성 (developer: 경서영)",
             description = """
             약속에 대한 개인 회고를 작성합니다.
+            - 입력: 생각의 변화(changedThoughts), 인상 깊은 의견(othersPerspectives), 자유 기록(freeTexts)
             - 권한: 약속 멤버
-            - 제약: 약속 1건당 1회 작성
+            - 제약: 약속 1건당 1회 작성 (이미 작성한 경우 409 에러)
             """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
@@ -125,10 +126,16 @@ public interface PersonalRetrospectiveApi {
     );
 
     @Operation(
-            summary = "개인 회고 입력 폼 조회",
+            summary = "개인 회고 입력 폼 조회 (developer: 경서영)",
             description = """
-            개인 회고 작성에 필요한 폼 데이터(확정된 주제 목록, 사전 의견, 약속 멤버 목록)를 조회합니다.
+            개인 회고 작성에 필요한 폼 데이터를 조회합니다.
             - 권한: 약속 멤버
+            - 제약: 이미 회고를 작성한 경우 409 에러
+
+            **응답 구조**
+            - topics: 확정된 주제 목록 (confirmOrder 순)
+            - topicAnswers: 본인의 사전 의견 목록
+            - meetingMembers: 본인 제외 약속 멤버 목록
             """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
@@ -208,10 +215,17 @@ public interface PersonalRetrospectiveApi {
     );
 
     @Operation(
-            summary = "개인 회고 수정 폼 조회",
+            summary = "개인 회고 수정 폼 조회 (developer: 경서영)",
             description = """
             기존에 작성한 개인 회고를 수정하기 위한 데이터를 조회합니다.
             - 권한: 약속 멤버
+
+            **응답 구조**
+            - changedThoughts: 기존 생각의 변화 목록
+            - othersPerspectives: 기존 인상 깊은 의견 목록
+            - freeTexts: 기존 자유 기록 목록
+            - topics: 확정된 주제 목록 (confirmOrder 순)
+            - meetingMembers: 본인 제외 약속 멤버 목록
             """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
@@ -292,10 +306,15 @@ public interface PersonalRetrospectiveApi {
     );
 
     @Operation(
-            summary = "개인 회고 상세 조회",
+            summary = "개인 회고 상세 조회 (developer: 경서영)",
             description = """
             특정 개인 회고의 상세 정보를 조회합니다.
             - 권한: 약속 멤버
+
+            **응답 구조**
+            - changedThoughts: 생각의 변화 목록 (주제별 사전/사후 의견)
+            - othersPerspectives: 인상 깊은 의견 목록 (멤버 프로필 이미지 포함)
+            - freeTexts: 자유 기록 목록
             """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
@@ -376,10 +395,12 @@ public interface PersonalRetrospectiveApi {
     );
 
     @Operation(
-            summary = "개인 회고 수정",
+            summary = "개인 회고 수정 (developer: 경서영)",
             description = """
             기존에 작성한 개인 회고를 수정합니다.
-            - 권한: 약속 멤버 (작성자 본인)
+            - 입력: 생각의 변화(changedThoughts), 인상 깊은 의견(othersPerspectives), 자유 기록(freeTexts)
+            - 권한: 작성자 본인
+            - 동작: 기존 데이터 삭제 후 새로운 데이터로 전체 교체
             """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
@@ -473,10 +494,12 @@ public interface PersonalRetrospectiveApi {
     );
 
     @Operation(
-            summary = "개인 회고 삭제",
+            summary = "개인 회고 삭제 (developer: 경서영)",
             description = """
             기존에 작성한 개인 회고를 삭제합니다.
             - 권한: 작성자 본인
+            - 삭제 방식: Soft Delete
+            - 제약: 이미 삭제된 회고는 다시 삭제 불가
             """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),

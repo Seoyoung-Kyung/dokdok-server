@@ -220,7 +220,7 @@ public class PersonalRetrospectiveService {
                 .map(retrospective -> RetrospectiveRecordResponse.of(
                         retrospective.getId(),
                         retrospective.getMeeting().getGathering().getGatheringName(),
-                        RecordType.RETROSPECTIVE,
+                        "개인 회고",
                         retrospective.getCreatedAt(),
                         changedThoughtsMap.getOrDefault(retrospective.getId(), List.of())
                                 .stream().map(RetrospectiveRecordResponse.ChangedThought::from).toList(),
