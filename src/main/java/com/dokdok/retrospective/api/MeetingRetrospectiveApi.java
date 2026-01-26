@@ -39,7 +39,11 @@ public interface MeetingRetrospectiveApi {
                     responseCode = "200",
                     description = "공동 회고 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingRetrospectiveResponse.class))
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"code": "SUCCESS", "message": "공동 회고 조회 성공", "data": {"meetingId": 1, "meetingName": "1월 독서 모임", "meetingDate": "2025-02-01", "meetingTime": "14:00", "topics": []}}
+                                    """)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "접근 권한 없음",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -77,7 +81,11 @@ public interface MeetingRetrospectiveApi {
                     responseCode = "201",
                     description = "공동 회고 작성 완료",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingRetrospectiveResponse.CommentResponse.class))
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"code": "CREATED", "message": "공동 회고 작성 완료", "data": {"meetingRetrospectiveId": 1, "userId": 1, "nickname": "독서왕", "profileImageUrl": "https://example.com/profile.jpg", "comment": "좋았습니다.", "createdAt": "2025-02-01T16:30:00"}}
+                                    """)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
