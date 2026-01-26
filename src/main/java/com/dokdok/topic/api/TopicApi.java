@@ -16,16 +16,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "주제 관리", description = "주제 관련 API")
 public interface TopicApi {
@@ -47,12 +40,31 @@ public interface TopicApi {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "잘못된 요청",
+                    description = "잘못된 요청 (유효성 검사 실패)",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
-                            )
+                            examples = {
+                                    @ExampleObject(
+                                            name = "제목 필수",
+                                            description = "제목이 null이거나 빈 문자열인 경우",
+                                            value = "{\"code\":\"G002\",\"message\":\"제목은 필수입니다\",\"data\":null}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "제목 길이 오류",
+                                            description = "제목이 100자를 초과하는 경우",
+                                            value = "{\"code\":\"G002\",\"message\":\"제목은 100자 이내여야 합니다\",\"data\":null}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "설명 필수",
+                                            description = "설명이 null이거나 빈 문자열인 경우",
+                                            value = "{\"code\":\"G002\",\"message\":\"설명은 필수입니다\",\"data\":null}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "주제 타입 필수",
+                                            description = "주제 타입이 null인 경우",
+                                            value = "{\"code\":\"G002\",\"message\":\"주제 타입은 필수입니다\",\"data\":null}"
+                                    )
+                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -61,27 +73,18 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
                             )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "403",
-                    description = "모임 또는 약속의 멤버가 아님",
+                    description = "약속의 멤버가 아님",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            examples = {
-                                    @ExampleObject(
-                                            name = "모임 멤버 아님",
-                                            description = "모임의 멤버가 아닌 경우",
-                                            value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\"}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "약속 멤버 아님",
-                                            description = "약속의 멤버가 아닌 경우",
-                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
-                                    )
-                            }
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\",\"data\":null}"
+                            )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -93,14 +96,24 @@ public interface TopicApi {
                                     @ExampleObject(
                                             name = "모임 없음",
                                             description = "모임을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\",\"data\":null}"
                                     )
                             }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "약속 상태 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    value = "{\"code\":\"M002\",\"message\":\"주제 제안이 불가능한 약속 상태입니다.\",\"data\":null}"
+                            )
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -109,7 +122,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
                             )
                     )
             )
@@ -121,34 +134,37 @@ public interface TopicApi {
     );
 
     @Operation(
-            summary = "제안된 주제 조회 (페이지네이션)",
+            summary = "제안된 주제 조회 (커서 기반 페이지네이션)",
             description = """
-                    약속에 제안된 주제 목록을 페이지네이션으로 조회합니다.
-                    - 정렬: likeCount(투표 수) 내림차순, topicId 오름차순
-                    - page: 페이지 번호 (0부터 시작, 기본값: 0)
-                    - size: 페이지 크기 (기본값: 10)
+                    약속에 제안된 주제 목록을 커서 기반 페이지네이션으로 조회합니다.
+
+                    **정렬 기준**
+                    - 1차: likeCount(좋아요 수) 내림차순
+                    - 2차: topicId 오름차순 (동점일 경우)
+
+                    **사용 방법**
+                    - 첫 페이지: `?pageSize=10` (커서 파라미터 없이 요청)
+                    - 다음 페이지: `?pageSize=10&cursorLikeCount={nextCursor.likeCount}&cursorTopicId={nextCursor.topicId}`
+
+                    **응답 구조**
+                    - hasNext: 다음 페이지 존재 여부
+                    - nextCursor: 다음 페이지 요청 시 사용할 커서 (hasNext가 false면 null)
                     """,
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "page", description = "페이지 번호 (0부터 시작)", in = ParameterIn.QUERY)
+                    @Parameter(name = "pageSize", description = "페이지 크기 (기본값: 10)", in = ParameterIn.QUERY),
+                    @Parameter(name = "cursorLikeCount", description = "커서: 이전 페이지 마지막 항목의 좋아요 수", in = ParameterIn.QUERY),
+                    @Parameter(name = "cursorTopicId", description = "커서: 이전 페이지 마지막 항목의 주제 ID", in = ParameterIn.QUERY)
             }
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "주제 조회 성공",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = TopicsPageResponse.class))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 요청",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
-                            )
+                            schema = @Schema(implementation = TopicsPageResponse.class)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -157,27 +173,8 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
                             )
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "403",
-                    description = "모임 또는 약속의 멤버가 아님",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            examples = {
-                                    @ExampleObject(
-                                            name = "모임 멤버 아님",
-                                            description = "모임의 멤버가 아닌 경우",
-                                            value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\"}"
-                                    ),
-                                    @ExampleObject(
-                                            name = "약속 멤버 아님",
-                                            description = "약속의 멤버가 아닌 경우",
-                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
-                                    )
-                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -189,12 +186,12 @@ public interface TopicApi {
                                     @ExampleObject(
                                             name = "모임 없음",
                                             description = "모임을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -205,16 +202,18 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
                             )
                     )
             )
     })
+    @GetMapping
     ResponseEntity<ApiResponse<TopicsPageResponse>> getTopics(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
-            @ParameterObject
-            @PageableDefault(size = 10) Pageable pageable
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) Integer cursorLikeCount,
+            @RequestParam(required = false) Long cursorTopicId
     );
 
     @Operation(
@@ -238,7 +237,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -248,7 +247,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -261,12 +260,12 @@ public interface TopicApi {
                                     @ExampleObject(
                                             name = "모임 멤버 아님",
                                             description = "모임의 멤버가 아닌 경우",
-                                            value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\"}"
+                                            value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "약속 멤버 아님",
                                             description = "약속의 멤버가 아닌 경우",
-                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -280,17 +279,17 @@ public interface TopicApi {
                                     @ExampleObject(
                                             name = "모임 없음",
                                             description = "모임을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "주제 없음",
                                             description = "주제를 찾을 수 없는 경우",
-                                            value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -301,7 +300,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
                             )
                     )
             )
@@ -333,7 +332,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -343,7 +342,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -353,7 +352,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"E105\",\"message\":\"사용자에게 주제 삭제 권한이 없습니다.\"}"
+                                    value = "{\"code\":\"E105\",\"message\":\"사용자에게 주제 삭제 권한이 없습니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -366,17 +365,17 @@ public interface TopicApi {
                                     @ExampleObject(
                                             name = "모임 없음",
                                             description = "모임을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "주제 없음",
                                             description = "주제를 찾을 수 없는 경우",
-                                            value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -387,7 +386,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"E106\",\"message\":\"이미 삭제된 주제입니다.\"}"
+                                    value = "{\"code\":\"E106\",\"message\":\"이미 삭제된 주제입니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -397,7 +396,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
                             )
                     )
             )
@@ -431,7 +430,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -441,7 +440,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -454,12 +453,12 @@ public interface TopicApi {
                                     @ExampleObject(
                                             name = "모임 멤버 아님",
                                             description = "모임의 멤버가 아닌 경우",
-                                            value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\"}"
+                                            value = "{\"code\":\"G002\",\"message\":\"모임의 멤버가 아닙니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "약속 멤버 아님",
                                             description = "약속의 멤버가 아닌 경우",
-                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -473,17 +472,17 @@ public interface TopicApi {
                                     @ExampleObject(
                                             name = "모임 없음",
                                             description = "모임을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "주제 없음",
                                             description = "주제를 찾을 수 없는 경우",
-                                            value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"E101\",\"message\":\"주제를 찾을 수 없습니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -494,7 +493,7 @@ public interface TopicApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.\",\"data\":null}"
                             )
                     )
             )
