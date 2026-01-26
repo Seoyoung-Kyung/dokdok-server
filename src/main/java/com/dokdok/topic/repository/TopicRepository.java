@@ -10,14 +10,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Repository
 public interface TopicRepository extends JpaRepository<Topic, Long> {
-
-    List<Topic> findAllByMeetingId(Long meetingId);
 
     List<Topic> findAllByIdInAndMeetingId(List<Long> topicIds, Long meetingId);
 
@@ -27,11 +26,11 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     );
 
     @Query("""
-            SELECT t
-            FROM Topic t
-            WHERE t.meeting.id = :meetingId
-            AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
-    """)
+                    SELECT t
+                    FROM Topic t
+                    WHERE t.meeting.id = :meetingId
+                    AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+            """)
     List<Topic> findConfirmedTopics(Long meetingId);
 
     @Query("SELECT t " +
@@ -181,5 +180,57 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     List<Topic> findTopicsInfoByMeetingId(
             @Param("meetingId") Long meetingId
     );
+
+    /**
+     * 확정된 주제가 없고, 약속장 혹은 모임장일 경우 true
+     */
+    @Query("""
+                SELECT CASE WHEN
+                    EXISTS (
+                        SELECT 1 FROM Meeting m
+                        JOIN m.gathering g
+                        WHERE m.id = :meetingId
+                          AND (
+                                m.meetingLeader.id = :userId
+                             OR g.gatheringLeader.id = :userId
+                          )
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM Topic t
+                        WHERE t.meeting.id = :meetingId
+                          AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+                    )
+                THEN true ELSE false END
+            """)
+    boolean canConfirmTopic(
+            @Param("meetingId") Long meetingId,
+            @Param("userId") Long userId
+    );
+
+
+    /**
+     * 확정된 약속이며, 확정된 주제가 없고, 약속 멤버일 경우
+     */
+    @Query("""
+                SELECT CASE WHEN
+                    EXISTS (
+                        SELECT 1 FROM Meeting m
+                        WHERE m.id = :meetingId
+                          AND m.meetingStatus = com.dokdok.meeting.entity.MeetingStatus.CONFIRMED
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM Topic t
+                        WHERE t.meeting.id = :meetingId
+                          AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM MeetingMember mm
+                        WHERE mm.meeting.id = :meetingId
+                          AND mm.user.id = :userId
+                    )
+                THEN true ELSE false END
+            """)
+    boolean canSuggestTopic(Long meetingId, Long userId);
+
 
 }

@@ -7,8 +7,7 @@ import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
-import com.dokdok.topic.dto.response.TopicsCursor;
-import com.dokdok.topic.dto.response.TopicsResponse;
+import com.dokdok.topic.dto.response.TopicsWithActionsResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -159,8 +158,14 @@ public interface TopicApi {
                     - 다음 페이지: `?pageSize=10&cursorLikeCount={nextCursor.likeCount}&cursorTopicId={nextCursor.topicId}`
 
                     **응답 구조**
-                    - hasNext: 다음 페이지 존재 여부
-                    - nextCursor: 다음 페이지 요청 시 사용할 커서 (hasNext가 false면 null)
+                    - page: 주제 목록 페이지 정보
+                      - items: 주제 목록
+                      - pageSize: 페이지 크기
+                      - hasNext: 다음 페이지 존재 여부
+                      - nextCursor: 다음 페이지 요청 시 사용할 커서 (hasNext가 false면 null)
+                    - actions: 현재 사용자의 권한 정보
+                      - canConfirm: 주제 확정 가능 여부 (모임장과 약속장만 true)
+                      - canSuggest: 주제 제안 가능 여부 (약속 멤버이고 약속 상태가 CONFIRMED일 때 true)
                     """,
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
@@ -220,7 +225,7 @@ public interface TopicApi {
             )
     })
     @GetMapping
-    ResponseEntity<ApiResponse<CursorResponse<TopicsResponse.TopicDto, TopicsCursor>>> getTopics(
+    ResponseEntity<ApiResponse<TopicsWithActionsResponse>> getTopics(
             @PathVariable Long gatheringId,
             @PathVariable Long meetingId,
             @RequestParam(defaultValue = "10") Integer pageSize,
