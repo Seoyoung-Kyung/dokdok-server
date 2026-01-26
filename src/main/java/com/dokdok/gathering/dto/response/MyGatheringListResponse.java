@@ -13,13 +13,13 @@ public record MyGatheringListResponse(
         )
         List<GatheringListItemResponse> items,
 
-        @Schema(description = "페이지 크기", example = "10")
+        @Schema(hidden = true)
         int pageSize,
 
-        @Schema(description = "다음 페이지 존재 여부", example = "false")
+        @Schema(hidden = true)
         boolean hasNext,
 
-        @Schema(description = "다음 페이지 커서 (hasNext가 false면 null)", implementation = MyGatheringCursor.class)
+        @Schema(hidden = true)
         MyGatheringCursor nextCursor
 ) {
 }
