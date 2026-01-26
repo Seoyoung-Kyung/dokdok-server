@@ -78,6 +78,36 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     @Query("SELECT t " +
             "FROM Topic t " +
+            "JOIN FETCH t.proposedBy p " +
+            "JOIN FETCH t.meeting m " +
+            "JOIN FETCH m.gathering g " +
+            "WHERE t.meeting.id = :meetingId " +
+            "AND t.deletedAt IS NULL " +
+            "ORDER BY t.likeCount DESC, t.id ASC")
+    List<Topic> findTopicsFirstPage(
+            @Param("meetingId") Long meetingId,
+            Pageable pageable
+    );
+
+    @Query("SELECT t " +
+            "FROM Topic t " +
+            "JOIN FETCH t.proposedBy p " +
+            "JOIN FETCH t.meeting m " +
+            "JOIN FETCH m.gathering g " +
+            "WHERE t.meeting.id = :meetingId " +
+            "AND t.deletedAt IS NULL " +
+            "AND (t.likeCount < :cursorLikeCount " +
+            "     OR (t.likeCount = :cursorLikeCount AND t.id > :cursorTopicId)) " +
+            "ORDER BY t.likeCount DESC, t.id ASC")
+    List<Topic> findTopicsAfterCursor(
+            @Param("meetingId") Long meetingId,
+            @Param("cursorLikeCount") Integer cursorLikeCount,
+            @Param("cursorTopicId") Long cursorTopicId,
+            Pageable pageable
+    );
+
+    @Query("SELECT t " +
+            "FROM Topic t " +
             "LEFT JOIN FETCH t.meeting m " +
             "LEFT JOIN FETCH m.gathering g " +
             "WHERE t.id = :topicId " +

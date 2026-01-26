@@ -45,7 +45,7 @@ public interface PreOpinionApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\"}"
+                                    value = "{\"code\":\"G002\",\"message\":\"입력값이 올바르지 않습니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -55,7 +55,7 @@ public interface PreOpinionApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\"}"
+                                    value = "{\"code\":\"G102\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
                             )
                     )
             ),
@@ -68,12 +68,12 @@ public interface PreOpinionApi {
                                     @ExampleObject(
                                             name = "약속 멤버 아님",
                                             description = "약속의 멤버가 아닌 경우",
-                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\"}"
+                                            value = "{\"code\":\"M004\",\"message\":\"약속의 멤버가 아닙니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "사전 의견 미작성",
                                             description = "본인이 사전 의견을 작성하지 않은 경우",
-                                            value = "{\"code\":\"B010\",\"message\":\"평가를 작성한 사용자만 조회할 수 있습니다.\"}"
+                                            value = "{\"code\":\"B010\",\"message\":\"평가를 작성한 사용자만 조회할 수 있습니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -87,17 +87,17 @@ public interface PreOpinionApi {
                                     @ExampleObject(
                                             name = "모임 없음",
                                             description = "모임을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"G001\",\"message\":\"모임을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "약속 없음",
                                             description = "약속을 찾을 수 없는 경우",
-                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\"}"
+                                            value = "{\"code\":\"M001\",\"message\":\"약속을 찾을 수 없습니다.\",\"data\":null}"
                                     ),
                                     @ExampleObject(
                                             name = "약속이 모임에 속하지 않음",
                                             description = "약속이 해당 모임에 속하지 않는 경우",
-                                            value = "{\"code\":\"M003\",\"message\":\"해당 약속은 해당 모임에 속해있지 않습니다.\"}"
+                                            value = "{\"code\":\"M003\",\"message\":\"해당 약속은 해당 모임에 속해있지 않습니다.\",\"data\":null}"
                                     )
                             }
                     )
@@ -108,7 +108,7 @@ public interface PreOpinionApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"G001\",\"message\":\"서버 내부 오류가 발생했습니다.\"}"
+                                    value = "{\"code\":\"E000\",\"message\":\"서버 내부 오류가 발생했습니다.\",\"data\":null}"
                             )
                     )
             )
