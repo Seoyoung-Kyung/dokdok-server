@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public interface TopicSummaryApi {
 
     @Operation(
-            summary = "토픽 요약 요청 (AI 테스트)",
+            summary = "토픽 요약 요청 (AI 테스트) (developer: 양재웅)",
             description = "AI 서버로 토픽 답변 요약 요청을 전달합니다.",
             parameters = {
                     @Parameter(name = "gathering_id", description = "모임 식별자", in = ParameterIn.PATH, required = true),
