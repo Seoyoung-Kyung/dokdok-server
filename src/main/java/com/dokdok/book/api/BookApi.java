@@ -27,7 +27,7 @@ import java.time.OffsetDateTime;
 public interface BookApi {
 
     @Operation(
-            summary = "외부 책 API 조회(developer: 권우희)",
+            summary = "외부 책 API 조회 (developer: 권우희)",
             description = """
                     검색어로 책 정보를 조회합니다.
                     - cursorPage/size 파라미터로 다음 페이지를 조회합니다.
@@ -129,7 +129,7 @@ public interface BookApi {
 
 
     @Operation(
-            summary = "내 책장에 책 등록",
+            summary = "내 책장에 책 등록 (developer: 권우희)",
             description = "조회한 책을 내 책장에 등록합니다."
     )
     @ApiResponses({
@@ -208,7 +208,7 @@ public interface BookApi {
     ResponseEntity<ApiResponse<PersonalBookCreateResponse>> createBook(@Valid @RequestBody BookCreateRequest bookCreateRequest);
 
     @Operation(
-            summary = "내 책장 목록 조회",
+            summary = "내 책장 목록 조회 (developer: 권우희)",
             description = """
                     내 책장에 등록된 책을 커서 기반으로 조회합니다.
                     - 로그인한 사용자 기준으로 조회합니다.
@@ -318,7 +318,7 @@ public interface BookApi {
     );
 
     @Operation(
-            summary = "내 책장 단일 조회",
+            summary = "내 책장 단일 조회 (developer: 권우희)",
             description = """
                     내 책장에 등록된 책 한 권의 상세 정보를 조회합니다.
                     - 로그인한 사용자 소유의 책만 조회됩니다.
@@ -423,7 +423,7 @@ public interface BookApi {
     );
 
     @Operation(
-            summary = "내 책장에서 책 삭제",
+            summary = "내 책장에서 책 삭제 (developer: 권우희)",
             description = """
                     내 책장에 등록된 책을 삭제합니다.
                     - 로그인한 사용자 소유의 책만 삭제할 수 있습니다.
@@ -521,7 +521,7 @@ public interface BookApi {
     );
 
     @Operation(
-            summary = "읽고 있는 책 목록 조회",
+            summary = "읽고 있는 책 목록 조회 (developer: 권우희)",
             description = """
                     읽고 있는 책(READING 상태)만 조회합니다.
                     - 로그인한 사용자 기준으로 조회합니다.

@@ -23,7 +23,7 @@ public interface PersonalBookRecordApi {
 
 
     @Operation(
-            summary = "독서 기록 등록",
+            summary = "독서 기록 등록 (developer: 권우희)",
             description = """
                     내 책장에 있는 책의 독서 기록을 등록합니다.
                     - 경로의 personalBookId로 책을 지정합니다.
@@ -167,7 +167,7 @@ public interface PersonalBookRecordApi {
     );
 
     @Operation(
-            summary = "독서 기록 수정",
+            summary = "독서 기록 수정 (developer: 권우희)",
             description = """
                     내 책장에 있는 책의 독서 기록을 수정합니다.
                     - 경로의 personalBookId와 recordId로 대상을 지정합니다.
@@ -326,7 +326,7 @@ public interface PersonalBookRecordApi {
     );
 
     @Operation(
-            summary = "독서 기록 삭제",
+            summary = "독서 기록 삭제 (developer: 권우희)",
             description = """
                     내 책장에 있는 책의 독서 기록을 삭제합니다.
                     - 경로의 personalBookId와 recordId로 대상을 지정합니다.
@@ -425,7 +425,7 @@ public interface PersonalBookRecordApi {
 
 
     @Operation(
-            summary = "독서 기록 목록 조회",
+            summary = "독서 기록 목록 조회 (developer: 권우희)",
             description = """
                     내 책장에 있는 책의 독서 기록을 조회합니다.
                     - 경로의 personalBookId로 책을 지정합니다.
