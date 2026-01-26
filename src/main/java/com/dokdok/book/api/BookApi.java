@@ -27,7 +27,7 @@ import java.time.OffsetDateTime;
 public interface BookApi {
 
     @Operation(
-            summary = "외부 책 API 조회",
+            summary = "외부 책 API 조회(developer: 권우희)",
             description = """
                     검색어로 책 정보를 조회합니다.
                     - cursorPage/size 파라미터로 다음 페이지를 조회합니다.
@@ -38,7 +38,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorPageResponse.class),
+                            schema = @Schema(implementation = BookSearchApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -89,7 +89,7 @@ public interface BookApi {
                     responseCode = "201",
                     description = "책장에 책 등록 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalBookCreateResponse.class),
+                            schema = @Schema(implementation = PersonalBookCreateApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -124,7 +124,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorPageResponse.class),
+                            schema = @Schema(implementation = PersonalBookListApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -185,7 +185,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 상세 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalBookDetailResponse.class),
+                            schema = @Schema(implementation = PersonalBookDetailApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -226,12 +226,13 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 삭제 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalBookDeleteApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
                                               "code": "DELETED",
-                                              "message": "책 삭제 성공"
+                                              "message": "책 삭제 성공",
+                                              "data": null
                                             }
                                             """
                             ))
@@ -260,7 +261,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "읽고 있는 책 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalBookListResponse.class),
+                            schema = @Schema(implementation = PersonalBookReadingListApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -304,4 +305,52 @@ public interface BookApi {
                     direction = Sort.Direction.DESC
             ) Pageable pageable
     );
+
+    @Schema(name = "BookSearchApiResponse")
+    record BookSearchApiResponse(
+            String code,
+            String message,
+            CursorPageResponse<KakaoBookResponse.Document, BookSearchCursor> data
+    ) {
+    }
+
+    @Schema(name = "PersonalBookCreateApiResponse")
+    record PersonalBookCreateApiResponse(
+            String code,
+            String message,
+            PersonalBookCreateResponse data
+    ) {
+    }
+
+    @Schema(name = "PersonalBookListApiResponse")
+    record PersonalBookListApiResponse(
+            String code,
+            String message,
+            CursorPageResponse<PersonalBookListResponse, BookListCursor> data
+    ) {
+    }
+
+    @Schema(name = "PersonalBookDetailApiResponse")
+    record PersonalBookDetailApiResponse(
+            String code,
+            String message,
+            PersonalBookDetailResponse data
+    ) {
+    }
+
+    @Schema(name = "PersonalBookDeleteApiResponse")
+    record PersonalBookDeleteApiResponse(
+            String code,
+            String message,
+            Void data
+    ) {
+    }
+
+    @Schema(name = "PersonalBookReadingListApiResponse")
+    record PersonalBookReadingListApiResponse(
+            String code,
+            String message,
+            PageResponse<PersonalBookListResponse> data
+    ) {
+    }
 }

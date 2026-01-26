@@ -37,7 +37,7 @@ public interface PersonalBookRecordApi {
                     responseCode = "201",
                     description = "독서 기록 등록 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalReadingRecordCreateResponse.class),
+                            schema = @Schema(implementation = PersonalReadingRecordApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -104,7 +104,7 @@ public interface PersonalBookRecordApi {
                     responseCode = "200",
                     description = "독서 기록 수정 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalReadingRecordCreateResponse.class),
+                            schema = @Schema(implementation = PersonalReadingRecordApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -172,12 +172,13 @@ public interface PersonalBookRecordApi {
                     responseCode = "200",
                     description = "독서 기록 삭제 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalReadingRecordDeleteApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
                                               "code": "DELETED",
-                                              "message": "기록 삭제 성공"
+                                              "message": "기록 삭제 성공",
+                                              "data": null
                                             }
                                             """
                             ))
@@ -209,7 +210,7 @@ public interface PersonalBookRecordApi {
                     responseCode = "200",
                     description = "독서 기록 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorPageResponse.class),
+                            schema = @Schema(implementation = PersonalReadingRecordListApiResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -259,4 +260,28 @@ public interface PersonalBookRecordApi {
             @Parameter(description = "한 페이지당 아이템 수", example = "10")
             @RequestParam(required = false) Integer size
     );
+
+    @Schema(name = "PersonalReadingRecordApiResponse")
+    record PersonalReadingRecordApiResponse(
+            String code,
+            String message,
+            PersonalReadingRecordCreateResponse data
+    ) {
+    }
+
+    @Schema(name = "PersonalReadingRecordListApiResponse")
+    record PersonalReadingRecordListApiResponse(
+            String code,
+            String message,
+            CursorPageResponse<PersonalReadingRecordListResponse, ReadingRecordCursor> data
+    ) {
+    }
+
+    @Schema(name = "PersonalReadingRecordDeleteApiResponse")
+    record PersonalReadingRecordDeleteApiResponse(
+            String code,
+            String message,
+            Void data
+    ) {
+    }
 }
