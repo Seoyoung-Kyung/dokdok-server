@@ -438,10 +438,10 @@ public interface PersonalBookRecordApi {
                     responseCode = "200",
                     description = "독서 기록 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorPageResponse.class),
+                            schema = @Schema(implementation = PersonalReadingRecordListResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
-                                            {
+                                             {
                                               "code": "SUCCESS",
                                               "message": "기록 조회 성공",
                                               "data": {

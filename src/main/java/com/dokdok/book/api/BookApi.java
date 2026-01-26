@@ -38,7 +38,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorPageResponse.class),
+                            schema = @Schema(implementation = KakaoBookResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -220,7 +220,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorPageResponse.class),
+                            schema = @Schema(implementation = PersonalBookListResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -533,7 +533,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "읽고 있는 책 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PageResponse.class),
+                            schema = @Schema(implementation = PersonalBookListResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
