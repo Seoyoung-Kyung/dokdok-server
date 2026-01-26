@@ -44,9 +44,11 @@ public record MeetingRetrospectiveResponse(
             @Schema(description = "주제 ID", example = "1")
             Long topicId,
             @Schema(description = "주제 제목", example = "가짜 욕망, 유사 욕망에 대해 이야기해봅시다.")
-            String topicName,
-            @Schema(description = "요약된 의견 목록", example = "[\"의견1\", \"의견2\"]")
-            List<String> summarizedOpinions,
+            String topicTitle,
+            @Schema(description = "핵심 요약", example = "참여자들은 『데미안』 속 싱클레어가...")
+            String summary,
+            @Schema(description = "주요 포인트", example = "1) 사회가 만든 욕망의 구조...")
+            String keyPoint,
             @Schema(description = "코멘트 목록")
             List<CommentResponse> comments
     ){
@@ -57,8 +59,9 @@ public record MeetingRetrospectiveResponse(
         ) {
             return TopicResponse.builder()
                     .topicId(topic.getId())
-                    .topicName(topic.getTitle())
-                    .summarizedOpinions(summary.getSummarizedOpinions())
+                    .topicTitle(topic.getTitle())
+                    .summary(summary != null ? summary.getSummary() : null)
+                    .keyPoint(summary != null ? summary.getKeyPoint() : null)
                     .comments(comments)
                     .build();
         }

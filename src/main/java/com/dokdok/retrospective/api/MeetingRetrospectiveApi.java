@@ -40,65 +40,45 @@ public interface MeetingRetrospectiveApi {
                     description = "공동 회고 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingRetrospectiveResponse.class),
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "code": "SUCCESS",
-                                      "message": "공동 회고 조회 성공",
-                                      "data": {
-                                        "meetingId": 1,
-                                        "meetingName": "데미안을 읽어보아요 데미안을 읽어보아요 데미",
-                                        "meetingDate": "2026-01-15",
-                                        "meetingTime": "19:00-20:00",
-                                        "topics": [
-                                          {
-                                            "topicId": 1,
-                                            "topicName": "가볍 목업, 유사 목업",
-                                            "summarizedOpinions": [
-                                              "실제적인 것에 찾기 과정이 없어 학습해야 고려할 때마다 알도다",
-                                              "데미안이라는 인물이 실존하는지, 아니면 내면의 동일시인 때문에 찾아 온미팅다",
-                                              "아브락시스 과잉이 실제 역에 아브발달 남아되는 결과적 때시대를 안정한다"
-                                            ],
-                                            "comments": [
-                                              {
-                                                "meetingRetrospectiveId": 1,
-                                                "userId": 1,
-                                                "nickname": "사용자1",
-                                                "profileImageUrl": "https://...",
-                                                "comment": "모임 하기전엔 이랬는데, 누구의 이런 발을 듣고 이렇게 생각이 바뀌었다.",
-                                                "createdAt": "2026-01-15T15:30:00"
-                                              },
-                                              {
-                                                "meetingRetrospectiveId": 2,
-                                                "userId": 2,
-                                                "nickname": "사용자2",
-                                                "profileImageUrl": "https://...",
-                                                "comment": "모임 하기전엔 이랬는데, 누구의 이런 발을 듣고 이렇게 생각이 바뀌었다.",
-                                                "createdAt": "2026-01-15T15:35:00"
-                                              }
-                                            ]
-                                          },
-                                          {
-                                            "topicId": 2,
-                                            "topicName": "신과 악",
-                                            "summarizedOpinions": [
-                                              "세가 앞에서 나으는 일만은 자연의 언성을 실질적는 감정전 아이라",
-                                              "발과 어둠의 세계가 대조적으로 묘사되며 갈등을 고조한다다"
-                                            ],
-                                            "comments": [
-                                              {
-                                                "meetingRetrospectiveId": 3,
-                                                "userId": 1,
-                                                "nickname": "사용자1",
-                                                "profileImageUrl": "https://...",
-                                                "comment": "또 다른 의견 내용",
-                                                "createdAt": "2026-01-15T15:40:00"
-                                              }
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    }
-                                    """)
+                            examples = @ExampleObject(value = """                                                                                                                
+                                      {                                                                                                                                            
+                                        "code": "SUCCESS",                                                                                                                         
+                                        "message": "공동 회고 조회 성공",                                                                                                          
+                                        "data": {                                                                                                                                  
+                                          "meetingId": 1,                                                                                                                          
+                                          "meetingName": "데미안을 읽어보아요",                                                                                                    
+                                          "meetingDate": "2026-01-15",                                                                                                             
+                                          "meetingTime": "19:00-20:00",                                                                                                            
+                                          "topics": [                                                                                                                              
+                                            {                                                                                                                                      
+                                              "topicId": 1,                                                                                                                        
+                                              "topicTitle": "가짜 욕망, 유사 욕망",                                                                                                
+                                              "topicDescription": "가짜욕망, 유사욕망에 대해 이야기해봅시다.",                                                                     
+                                              "summary": "참여자들은 『데미안』 속 싱클레어가 느꼈던 혼란을 자신들의 경험과 연결하며...",                                          
+                                              "keyPoint": "1) 사회가 만든 욕망의 구조...",                                                                                         
+                                              "comments": [                                                                                                                        
+                                                {                                                                                                                                  
+                                                  "meetingRetrospectiveId": 1,                                                                                                     
+                                                  "userId": 1,                                                                                                                     
+                                                  "nickname": "사용자1",                                                                                                           
+                                                  "profileImageUrl": "https://example.com/profile.jpg",                                                                            
+                                                  "comment": "모임 하기전엔 이랬는데, 누구의 이런 말을 듣고 이렇게 생각이 바뀌었다.",                                              
+                                                  "createdAt": "2026-01-15T15:30:00"                                                                                               
+                                                }                                                                                                                                  
+                                              ]                                                                                                                                    
+                                            },                                                                                                                                     
+                                            {                                                                                                                                      
+                                              "topicId": 2,                                                                                                                        
+                                              "topicTitle": "선과 악",                                                                                                             
+                                              "topicDescription": "인간의 세계에서 선과 악 어느 것이 힘이 더 셀까",                                                                
+                                              "summary": "선과 악 중 어느 쪽이 더 강한지를 묻기보다...",                                                                           
+                                              "keyPoint": "악이 더 강해보이는 이유",                                                                                               
+                                              "comments": []                                                                                                                       
+                                            }                                                                                                                                      
+                                          ]                                                                                                                                        
+                                        }                                                                                                                                          
+                                      }                                                                                                                                            
+                                      """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "접근 권한 없음",
@@ -138,9 +118,20 @@ public interface MeetingRetrospectiveApi {
                     description = "공동 회고 작성 완료",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingRetrospectiveResponse.CommentResponse.class),
-                            examples = @ExampleObject(value = """
-                                    {"code": "CREATED", "message": "공동 회고 작성 완료", "data": {"meetingRetrospectiveId": 1, "userId": 1, "nickname": "독서왕", "profileImageUrl": "https://example.com/profile.jpg", "comment": "좋았습니다.", "createdAt": "2025-02-01T16:30:00"}}
-                                    """)
+                            examples = @ExampleObject(value = """                                                                                                                
+                                      {                                                                                                                                            
+                                        "code": "CREATED",                                                                                                                         
+                                        "message": "공동 회고 작성 완료",                                                                                                          
+                                        "data": {                                                                                                                                  
+                                          "meetingRetrospectiveId": 1,                                                                                                             
+                                          "userId": 1,                                                                                                                             
+                                          "nickname": "독서왕",                                                                                                                    
+                                          "profileImageUrl": "https://example.com/profile.jpg",                                                                                    
+                                          "comment": "좋았습니다.",                                                                                                                
+                                          "createdAt": "2025-02-01T16:30:00"                                                                                                       
+                                        }                                                                                                                                          
+                                      }                                                                                                                                            
+                                      """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
