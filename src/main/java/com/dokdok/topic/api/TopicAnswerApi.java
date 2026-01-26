@@ -227,7 +227,7 @@ public interface TopicAnswerApi {
     );
 
     @Operation(
-            summary = "내 토픽 답변 삭제",
+            summary = "내 토픽 답변 삭제 (developer: 경서영)",
             description = """
             현재 로그인 사용자의 토픽 답변을 삭제합니다.
             - 권한: 모임 구성원

@@ -5,6 +5,7 @@ import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
@@ -17,7 +18,8 @@ import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.ConfirmedTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
-import com.dokdok.topic.dto.response.TopicsPageResponse;
+import com.dokdok.topic.dto.response.TopicsCursor;
+import com.dokdok.topic.dto.response.TopicsResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicLike;
@@ -537,7 +539,7 @@ class TopicServiceTest {
                 given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
                         .willReturn(Set.of(1L));
 
-                TopicsPageResponse response = topicService.getTopics(
+                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
@@ -602,7 +604,7 @@ class TopicServiceTest {
                 given(topicRepository.findTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(topics);
 
-                TopicsPageResponse response = topicService.getTopics(
+                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
@@ -635,7 +637,7 @@ class TopicServiceTest {
                 given(topicRepository.findTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(List.of());
 
-                TopicsPageResponse response = topicService.getTopics(
+                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
@@ -707,7 +709,7 @@ class TopicServiceTest {
                 given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
                         .willReturn(Set.of());
 
-                TopicsPageResponse response = topicService.getTopics(
+                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
@@ -761,7 +763,7 @@ class TopicServiceTest {
                 given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
                         .willReturn(Set.of());
 
-                TopicsPageResponse response = topicService.getTopics(
+                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, cursorLikeCount, cursorTopicId
                 );
 

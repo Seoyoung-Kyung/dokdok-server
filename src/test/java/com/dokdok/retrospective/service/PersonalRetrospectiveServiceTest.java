@@ -3,6 +3,7 @@ package com.dokdok.retrospective.service;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
@@ -1324,7 +1325,7 @@ class PersonalRetrospectiveServiceTest {
                     .thenReturn(List.of());
 
             // when
-            RetrospectiveRecordsPageResponse response =
+            CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor> response =
                     personalRetrospectiveService.getRetrospectiveRecords(bookId, pageSize, null, null);
 
             // then
@@ -1356,7 +1357,7 @@ class PersonalRetrospectiveServiceTest {
                     .thenReturn(List.of());
 
             // when
-            RetrospectiveRecordsPageResponse response =
+            CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor> response =
                     personalRetrospectiveService.getRetrospectiveRecords(bookId, pageSize, null, null);
 
             // then

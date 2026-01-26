@@ -1,6 +1,7 @@
 package com.dokdok.topic.service;
 
 import com.dokdok.gathering.service.GatheringValidator;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
@@ -11,7 +12,9 @@ import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.ConfirmedTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
+import com.dokdok.topic.dto.response.TopicsCursor;
 import com.dokdok.topic.dto.response.TopicsPageResponse;
+import com.dokdok.topic.dto.response.TopicsResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicLike;
 import com.dokdok.topic.entity.TopicMessage;
@@ -75,7 +78,7 @@ public class TopicService {
     }
 
     @Transactional(readOnly = true)
-    public TopicsPageResponse getTopics(
+    public CursorResponse<TopicsResponse.TopicDto, TopicsCursor> getTopics(
             Long gatheringId,
             Long meetingId,
             int pageSize,
@@ -93,13 +96,9 @@ public class TopicService {
         List<Topic> topics;
         boolean hasCursor = cursorLikeCount != null && cursorTopicId != null;
 
-        if (hasCursor) {
-            topics = topicRepository.findTopicsAfterCursor(
-                    meetingId, cursorLikeCount, cursorTopicId, pageable
-            );
-        } else {
-            topics = topicRepository.findTopicsFirstPage(meetingId, pageable);
-        }
+        topics = hasCursor
+                ? topicRepository.findTopicsAfterCursor(meetingId, cursorLikeCount, cursorTopicId, pageable)
+                : topicRepository.findTopicsFirstPage(meetingId, pageable);
 
         // hasNext 판단: pageSize + 1개를 조회했으므로 초과 시 다음 페이지 존재
         boolean hasNext = topics.size() > pageSize;
