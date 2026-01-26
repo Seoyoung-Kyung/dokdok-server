@@ -213,6 +213,7 @@ public interface BookApi {
                     내 책장에 등록된 책을 커서 기반으로 조회합니다.
                     - 로그인한 사용자 기준으로 조회합니다.
                     - cursorAddedAt/cursorBookId/size 파라미터로 다음 페이지를 조회합니다.
+                    - 독서 상태 필터 (ENUM: READING/COMPLETED/PENDING)
                     """
     )
     @ApiResponses({

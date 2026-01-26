@@ -27,7 +27,7 @@ public interface PersonalBookRecordApi {
             description = """
                     내 책장에 있는 책의 독서 기록을 등록합니다.
                     - 경로의 personalBookId로 책을 지정합니다.
-                    - 요청 본문: recordType(MEMO/QUOTE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
+                    - 요청 본문: recordType(ENUM: MEMO/QUOTE/RETROSPECTIVE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
                     - recordType이 MEMO이면 meta는 null로 저장됩니다.
                     - 로그인한 사용자 기준으로 본인 책에만 기록을 남길 수 있습니다.
                     """
@@ -144,7 +144,6 @@ public interface PersonalBookRecordApi {
             @Parameter(description = "독서 기록을 남길 개인 책장 ID (personal_book 테이블 PK)", required = true, example = "10")
             @PathVariable Long personalBookId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "등록할 독서 기록 내용 및 유형",
                     required = true,
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -171,8 +170,8 @@ public interface PersonalBookRecordApi {
             description = """
                     내 책장에 있는 책의 독서 기록을 수정합니다.
                     - 경로의 personalBookId와 recordId로 대상을 지정합니다.
-                    - 요청 본문: recordType(MEMO/QUOTE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
-                    - recordType이 MEMO이면 meta는 null로 저장됩니다.
+                    - 요청 본문: recordType (ENUM: MEMO/QUOTE/RETROSPECTIVE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
+                    - recordType이 MEMO 이면 meta는 null로 저장됩니다.
                     - 로그인한 사용자 기준으로 본인 기록만 수정할 수 있습니다.
                     """
     )
@@ -303,7 +302,6 @@ public interface PersonalBookRecordApi {
             @Parameter(description = "수정할 기록 ID", required = true, example = "5")
             @PathVariable Long recordId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "수정할 독서 기록 내용 및 유형",
                     required = true,
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
