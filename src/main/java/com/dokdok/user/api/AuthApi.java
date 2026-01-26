@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public interface AuthApi {
 
     @Operation(
-            summary = "현재 로그인 사용자 정보 조회",
+            summary = "현재 로그인 사용자 정보 조회 (developer: 조건희)",
             description = "현재 로그인한 사용자의 세션 정보를 조회합니다. 온보딩 필요 여부도 함께 반환됩니다."
     )
     @ApiResponses({
@@ -69,7 +69,7 @@ public interface AuthApi {
     ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUser();
 
     @Operation(
-            summary = "로그아웃",
+            summary = "로그아웃 (developer: 조건희)",
             description = "현재 세션을 무효화하고 보안 컨텍스트를 초기화합니다."
     )
     @ApiResponses({

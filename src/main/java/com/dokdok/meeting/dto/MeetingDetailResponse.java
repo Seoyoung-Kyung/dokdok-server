@@ -259,7 +259,16 @@ public record MeetingDetailResponse(
 
     @Schema(description = "화면 버튼 상태")
     public record ActionState(
-            @Schema(description = "버튼 타입", example = "CAN_EDIT")
+            @Schema(description = """
+                    버튼 타입
+                    - 약속장: CAN_EDIT (enabled=true, buttonLabel=수정하기)
+                    - 약속장(24시간 전): EDIT_TIME_EXPIRED (enabled=false, buttonLabel=수정 가능 시간이 지났어요)
+                    - 모임원 + 미참가: CAN_JOIN (enabled=true, buttonLabel=참가 신청하기)
+                    - 모임원 + 참가: CAN_CANCEL (enabled=true, buttonLabel=참가 신청 취소하기)
+                    - 모임원 + 모집 마감: RECRUITMENT_CLOSED (enabled=false, buttonLabel=모집인원이 마감되었어요)
+                    - 약속 종료(DONE): DONE (enabled=false, buttonLabel=약속이 끝났어요)
+                    - 약속 거절(REJECTED): REJECTED (enabled=false, buttonLabel=약속 신청이 거절됐어요)
+                    """, example = "CAN_EDIT")
             MeetingActionType type,
 
             @Schema(description = "버튼 라벨", example = "수정하기")

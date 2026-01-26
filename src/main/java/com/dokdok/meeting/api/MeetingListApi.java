@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface MeetingListApi {
 
     @Operation(
-            summary = "모임 약속 리스트 조회",
+            summary = "모임 약속 리스트 조회 (developer: 김윤영)",
             description = """
             모임 내 약속 리스트를 조회합니다.
             - 정렬 기준: 약속 시작 시간 오름차순, 약속 ID 오름차순
@@ -40,7 +40,8 @@ public interface MeetingListApi {
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "filter", description = "탭 필터 (ALL, UPCOMING, DONE, JOINED)",
-                            in = ParameterIn.QUERY, required = true)
+                            in = ParameterIn.QUERY, required = true,
+                            schema = @Schema(allowableValues = {"ALL", "UPCOMING", "DONE", "JOINED"}))
             }
     )
     @ApiResponses({
@@ -48,7 +49,31 @@ public interface MeetingListApi {
                     responseCode = "200",
                     description = "약속 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PageResponse.class))
+                            schema = @Schema(implementation = CursorResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "약속 리스트 조회 성공",
+                                      "data": {
+                                        "items": [
+                                          {
+                                            "meetingId": 1,
+                                            "meetingName": "1월 독서 모임",
+                                            "bookName": "클린 코드",
+                                            "startDateTime": "2025-02-01T14:00:00",
+                                            "endDateTime": "2025-02-01T16:00:00",
+                                            "meetingStatus": "CONFIRMED"
+                                          }
+                                        ],
+                                        "pageSize": 4,
+                                        "hasNext": true,
+                                        "nextCursor": {
+                                          "meetingId": 2,
+                                          "startDateTime": "2025-02-03T14:00:00"
+                                        }
+                                      }
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -79,7 +104,7 @@ public interface MeetingListApi {
     );
 
     @Operation(
-            summary = "모임장 약속 승인 리스트 조회",
+            summary = "모임장 약속 승인 리스트 조회 (developer: 김윤영)",
             description = """
             모임장이 약속 승인 상태별 리스트를 조회합니다.
             - 확정 대기: PENDING
@@ -89,7 +114,8 @@ public interface MeetingListApi {
             parameters = {
                     @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
                     @Parameter(name = "status", description = "상태 (PENDING, CONFIRMED)",
-                            in = ParameterIn.QUERY, required = true)
+                            in = ParameterIn.QUERY, required = true,
+                            schema = @Schema(allowableValues = {"PENDING", "CONFIRMED"}))
             }
     )
     @ApiResponses({
@@ -97,7 +123,29 @@ public interface MeetingListApi {
                     responseCode = "200",
                     description = "약속 승인 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorResponse.class))
+                            schema = @Schema(implementation = PageResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "약속 승인 리스트 조회 성공",
+                                      "data": {
+                                        "items": [
+                                          {
+                                            "meetingId": 1,
+                                            "meetingName": "1월 독서 모임",
+                                            "bookName": "클린 코드",
+                                            "startDateTime": "2025-02-01T14:00:00",
+                                            "endDateTime": "2025-02-01T16:00:00",
+                                            "meetingStatus": "PENDING"
+                                          }
+                                        ],
+                                        "totalCount": 1,
+                                        "currentPage": 0,
+                                        "pageSize": 10,
+                                        "totalPages": 1
+                                      }
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,

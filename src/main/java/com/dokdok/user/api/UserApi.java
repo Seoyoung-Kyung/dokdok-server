@@ -30,7 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 public interface UserApi {
 
     @Operation(
-            summary = "사용자 온보딩",
+            summary = "사용자 온보딩 (developer: 조건희)",
             description = """
                     신규 사용자의 닉네임과 프로필 이미지를 설정합니다.
                     - 인증된 사용자만 접근 가능
@@ -134,7 +134,7 @@ public interface UserApi {
     );
 
     @Operation(
-            summary = "닉네임 중복 확인",
+            summary = "닉네임 중복 확인 (developer: 조건희)",
             description = "닉네임 사용 가능 여부를 확인합니다. 유효성 검사(null, 길이, 형식) 및 중복 여부를 검증합니다.",
             parameters = {
                     @Parameter(
@@ -209,7 +209,7 @@ public interface UserApi {
     );
 
     @Operation(
-            summary = "현재 사용자 정보 조회",
+            summary = "현재 사용자 정보 조회 (developer: 조건희)",
             description = "현재 인증된 사용자의 프로필 정보를 조회합니다. SecurityContext에서 사용자 정보를 가져옵니다."
     )
     @ApiResponses({
@@ -261,7 +261,7 @@ public interface UserApi {
     ResponseEntity<ApiResponse<UserDetailResponse>> getCurrentUser();
 
     @Operation(
-            summary = "사용자 정보 수정",
+            summary = "사용자 정보 수정 (developer: 조건희)",
             description = "현재 사용자의 프로필 정보를 수정합니다. 현재는 닉네임만 수정 가능하며, 유효성 검사 및 중복 확인을 수행합니다."
     )
     @ApiResponses({
@@ -359,7 +359,7 @@ public interface UserApi {
     );
 
     @Operation(
-            summary = "회원 탈퇴",
+            summary = "회원 탈퇴 (developer: 조건희)",
             description = "현재 인증된 사용자를 소프트 삭제합니다. 처리 후 인증 세션이 해제됩니다."
     )
     @ApiResponses({
@@ -411,7 +411,7 @@ public interface UserApi {
     );
 
     @Operation(
-            summary = "프로필 이미지 변경",
+            summary = "프로필 이미지 변경 (developer: 조건희)",
             description = """
                     현재 사용자의 프로필 이미지를 변경합니다.
                     - 기존 이미지가 있으면 삭제 후 새 이미지로 교체
@@ -500,7 +500,7 @@ public interface UserApi {
     );
 
     @Operation(
-            summary = "프로필 이미지 삭제",
+            summary = "프로필 이미지 삭제 (developer: 조건희)",
             description = "현재 사용자의 프로필 이미지를 삭제합니다. 삭제 후 기본 이미지(null)로 설정됩니다."
     )
     @ApiResponses({

@@ -23,7 +23,7 @@ public interface PersonalBookRecordApi {
 
 
     @Operation(
-            summary = "독서 기록 등록",
+            summary = "독서 기록 등록 (developer: 권우희)",
             description = """
                     내 책장에 있는 책의 독서 기록을 등록합니다.
                     - 경로의 personalBookId로 책을 지정합니다.
@@ -57,10 +57,87 @@ public interface PersonalBookRecordApi {
                                             """
                             ))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청 (recordType 혹은 meta 오류)"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 (recordType 혹은 meta 오류)",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "기록 타입 누락",
+                                            value = """
+                                                    {
+                                                      "code": "R001",
+                                                      "message": "기록 타입에 필요한 입력값이 누락되었습니다.",
+                                                      "data": null
+                                                    }
+                                                    """
+                                    ),
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "기록 타입 오류",
+                                            value = """
+                                                    {
+                                                      "code": "R002",
+                                                      "message": "존재하지 않는 타입입니다.",
+                                                      "data": null
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "G102",
+                                              "message": "인증이 필요합니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "책을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "B003",
+                                              "message": "책장에 해당 책이 존재하지 않습니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "E000",
+                                              "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            )
     })
     @PostMapping("/{personalBookId}/records")
     ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> createMyReadingRecord(
@@ -90,7 +167,7 @@ public interface PersonalBookRecordApi {
     );
 
     @Operation(
-            summary = "독서 기록 수정",
+            summary = "독서 기록 수정 (developer: 권우희)",
             description = """
                     내 책장에 있는 책의 독서 기록을 수정합니다.
                     - 경로의 personalBookId와 recordId로 대상을 지정합니다.
@@ -124,10 +201,100 @@ public interface PersonalBookRecordApi {
                                             """
                             ))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청 (recordType 혹은 meta 오류)"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 또는 기록을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 (recordType 혹은 meta 오류)",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "기록 타입 누락",
+                                            value = """
+                                                    {
+                                                      "code": "R001",
+                                                      "message": "기록 타입에 필요한 입력값이 누락되었습니다.",
+                                                      "data": null
+                                                    }
+                                                    """
+                                    ),
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "기록 타입 오류",
+                                            value = """
+                                                    {
+                                                      "code": "R002",
+                                                      "message": "존재하지 않는 타입입니다.",
+                                                      "data": null
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "G102",
+                                              "message": "인증이 필요합니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "책 또는 기록을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "책 없음",
+                                            value = """
+                                                    {
+                                                      "code": "B003",
+                                                      "message": "책장에 해당 책이 존재하지 않습니다.",
+                                                      "data": null
+                                                    }
+                                                    """
+                                    ),
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "기록 없음",
+                                            value = """
+                                                    {
+                                                      "code": "R003",
+                                                      "message": "기록을 찾을 수 없습니다.",
+                                                      "data": null
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "E000",
+                                              "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            )
     })
     @PatchMapping("/{personalBookId}/records/{recordId}")
     ResponseEntity<ApiResponse<PersonalReadingRecordCreateResponse>> updateMyReadingRecord(
@@ -159,7 +326,7 @@ public interface PersonalBookRecordApi {
     );
 
     @Operation(
-            summary = "독서 기록 삭제",
+            summary = "독서 기록 삭제 (developer: 권우희)",
             description = """
                     내 책장에 있는 책의 독서 기록을 삭제합니다.
                     - 경로의 personalBookId와 recordId로 대상을 지정합니다.
@@ -172,19 +339,81 @@ public interface PersonalBookRecordApi {
                     responseCode = "200",
                     description = "독서 기록 삭제 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = Void.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
                                               "code": "DELETED",
-                                              "message": "기록 삭제 성공"
+                                              "message": "기록 삭제 성공",
+                                              "data": null
                                             }
                                             """
                             ))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 또는 기록을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "G102",
+                                              "message": "인증이 필요합니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "책 또는 기록을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "책 없음",
+                                            value = """
+                                                    {
+                                                      "code": "B003",
+                                                      "message": "책장에 해당 책이 존재하지 않습니다.",
+                                                      "data": null
+                                                    }
+                                                    """
+                                    ),
+                                    @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                            name = "기록 없음",
+                                            value = """
+                                                    {
+                                                      "code": "R003",
+                                                      "message": "기록을 찾을 수 없습니다.",
+                                                      "data": null
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "E000",
+                                              "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            )
     })
     @DeleteMapping("/{personalBookId}/records/{recordId}")
     ResponseEntity<ApiResponse<Void>> deleteMyReadingRecord(
@@ -196,7 +425,7 @@ public interface PersonalBookRecordApi {
 
 
     @Operation(
-            summary = "독서 기록 목록 조회",
+            summary = "독서 기록 목록 조회 (developer: 권우희)",
             description = """
                     내 책장에 있는 책의 독서 기록을 조회합니다.
                     - 경로의 personalBookId로 책을 지정합니다.
@@ -209,10 +438,10 @@ public interface PersonalBookRecordApi {
                     responseCode = "200",
                     description = "독서 기록 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorPageResponse.class),
+                            schema = @Schema(implementation = PersonalReadingRecordListResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
-                                            {
+                                             {
                                               "code": "SUCCESS",
                                               "message": "기록 조회 성공",
                                               "data": {
@@ -239,9 +468,57 @@ public interface PersonalBookRecordApi {
                                             """
                             ))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "G102",
+                                              "message": "인증이 필요합니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "책을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "B003",
+                                              "message": "책장에 해당 책이 존재하지 않습니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "E000",
+                                              "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            )
     })
     @GetMapping("/{personalBookId}/records")
     ResponseEntity<ApiResponse<CursorPageResponse<PersonalReadingRecordListResponse, ReadingRecordCursor>>> getMyReadingRecords(
