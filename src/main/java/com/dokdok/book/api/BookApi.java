@@ -38,7 +38,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = BookSearchApiResponse.class),
+                            schema = @Schema(implementation = CursorPageResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -137,7 +137,7 @@ public interface BookApi {
                     responseCode = "201",
                     description = "책장에 책 등록 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalBookCreateApiResponse.class),
+                            schema = @Schema(implementation = PersonalBookCreateResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -220,7 +220,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalBookListApiResponse.class),
+                            schema = @Schema(implementation = CursorPageResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -329,7 +329,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 상세 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalBookDetailApiResponse.class),
+                            schema = @Schema(implementation = PersonalBookDetailResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -434,7 +434,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "책 삭제 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalBookDeleteApiResponse.class),
+                            schema = @Schema(implementation = Void.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -533,7 +533,7 @@ public interface BookApi {
                     responseCode = "200",
                     description = "읽고 있는 책 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PersonalBookReadingListApiResponse.class),
+                            schema = @Schema(implementation = PageResponse.class),
                             examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
                                     value = """
                                             {
@@ -625,52 +625,4 @@ public interface BookApi {
                     direction = Sort.Direction.DESC
             ) Pageable pageable
     );
-
-    @Schema(name = "BookSearchApiResponse")
-    record BookSearchApiResponse(
-            String code,
-            String message,
-            CursorPageResponse<KakaoBookResponse.Document, BookSearchCursor> data
-    ) {
-    }
-
-    @Schema(name = "PersonalBookCreateApiResponse")
-    record PersonalBookCreateApiResponse(
-            String code,
-            String message,
-            PersonalBookCreateResponse data
-    ) {
-    }
-
-    @Schema(name = "PersonalBookListApiResponse")
-    record PersonalBookListApiResponse(
-            String code,
-            String message,
-            CursorPageResponse<PersonalBookListResponse, BookListCursor> data
-    ) {
-    }
-
-    @Schema(name = "PersonalBookDetailApiResponse")
-    record PersonalBookDetailApiResponse(
-            String code,
-            String message,
-            PersonalBookDetailResponse data
-    ) {
-    }
-
-    @Schema(name = "PersonalBookDeleteApiResponse")
-    record PersonalBookDeleteApiResponse(
-            String code,
-            String message,
-            Void data
-    ) {
-    }
-
-    @Schema(name = "PersonalBookReadingListApiResponse")
-    record PersonalBookReadingListApiResponse(
-            String code,
-            String message,
-            PageResponse<PersonalBookListResponse> data
-    ) {
-    }
 }
