@@ -51,6 +51,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -1279,12 +1280,13 @@ class PersonalRetrospectiveServiceTest {
     // ==================== getRetrospectiveRecords 테스트 ====================
 
     @Test
-    @DisplayName("책별 개인 회고 목록을 정상적으로 조회한다")
+    @DisplayName("책별 개인 회고 목록을 정상적으로 조회한다 (첫 페이지)")
     void getRetrospectiveRecords_success() {
         // given
         Long bookId = 1L;
         Long userId = 3L;
         Long retrospectiveId = 100L;
+        int pageSize = 10;
 
         Gathering gathering = Gathering.builder()
                 .id(1L)
@@ -1312,7 +1314,8 @@ class PersonalRetrospectiveServiceTest {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             doNothing().when(bookValidator).validateBook(bookId);
-            when(retrospectiveValidator.getRetrospectives(bookId, userId)).thenReturn(retrospectives);
+            when(personalRetrospectiveRepository.findRetrospectivesFirstPage(eq(bookId), eq(userId), any()))
+                    .thenReturn(retrospectives);
             when(changedThoughtRepository.findByRetrospectiveIds(List.of(retrospectiveId)))
                     .thenReturn(List.of());
             when(othersPerspectiveRepository.findByRetrospectiveIds(List.of(retrospectiveId)))
@@ -1321,14 +1324,16 @@ class PersonalRetrospectiveServiceTest {
                     .thenReturn(List.of());
 
             // when
-            List<RetrospectiveRecordResponse> response =
-                    personalRetrospectiveService.getRetrospectiveRecords(bookId);
+            RetrospectiveRecordsPageResponse response =
+                    personalRetrospectiveService.getRetrospectiveRecords(bookId, pageSize, null, null);
 
             // then
-            assertThat(response).hasSize(1);
+            assertThat(response.items()).hasSize(1);
+            assertThat(response.pageSize()).isEqualTo(pageSize);
+            assertThat(response.hasNext()).isFalse();
 
             verify(bookValidator).validateBook(bookId);
-            verify(retrospectiveValidator).getRetrospectives(bookId, userId);
+            verify(personalRetrospectiveRepository).findRetrospectivesFirstPage(eq(bookId), eq(userId), any());
             verify(changedThoughtRepository).findByRetrospectiveIds(List.of(retrospectiveId));
             verify(othersPerspectiveRepository).findByRetrospectiveIds(List.of(retrospectiveId));
             verify(freeTextRepository).findByRetrospectiveIds(List.of(retrospectiveId));
@@ -1341,22 +1346,26 @@ class PersonalRetrospectiveServiceTest {
         // given
         Long bookId = 1L;
         Long userId = 3L;
+        int pageSize = 10;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             doNothing().when(bookValidator).validateBook(bookId);
-            when(retrospectiveValidator.getRetrospectives(bookId, userId)).thenReturn(List.of());
+            when(personalRetrospectiveRepository.findRetrospectivesFirstPage(eq(bookId), eq(userId), any()))
+                    .thenReturn(List.of());
 
             // when
-            List<RetrospectiveRecordResponse> response =
-                    personalRetrospectiveService.getRetrospectiveRecords(bookId);
+            RetrospectiveRecordsPageResponse response =
+                    personalRetrospectiveService.getRetrospectiveRecords(bookId, pageSize, null, null);
 
             // then
-            assertThat(response).isEmpty();
+            assertThat(response.items()).isEmpty();
+            assertThat(response.hasNext()).isFalse();
+            assertThat(response.nextCursor()).isNull();
 
             verify(bookValidator).validateBook(bookId);
-            verify(retrospectiveValidator).getRetrospectives(bookId, userId);
+            verify(personalRetrospectiveRepository).findRetrospectivesFirstPage(eq(bookId), eq(userId), any());
             verify(changedThoughtRepository, never()).findByRetrospectiveIds(any());
             verify(othersPerspectiveRepository, never()).findByRetrospectiveIds(any());
             verify(freeTextRepository, never()).findByRetrospectiveIds(any());
@@ -1369,6 +1378,7 @@ class PersonalRetrospectiveServiceTest {
         // given
         Long bookId = 999L;
         Long userId = 3L;
+        int pageSize = 10;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -1377,11 +1387,11 @@ class PersonalRetrospectiveServiceTest {
                     .when(bookValidator).validateBook(bookId);
 
             // when & then
-            assertThatThrownBy(() -> personalRetrospectiveService.getRetrospectiveRecords(bookId))
+            assertThatThrownBy(() -> personalRetrospectiveService.getRetrospectiveRecords(bookId, pageSize, null, null))
                     .isInstanceOf(BookException.class)
                     .hasFieldOrPropertyWithValue("errorCode", BookErrorCode.BOOK_NOT_FOUND);
 
-            verify(retrospectiveValidator, never()).getRetrospectives(any(), any());
+            verify(personalRetrospectiveRepository, never()).findRetrospectivesFirstPage(any(), any(), any());
         }
     }
 
@@ -1390,13 +1400,14 @@ class PersonalRetrospectiveServiceTest {
     void getRetrospectiveRecords_throwsWhenUnauthenticated() {
         // given
         Long bookId = 1L;
+        int pageSize = 10;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId)
                     .thenThrow(new GlobalException(GlobalErrorCode.UNAUTHORIZED));
 
             // when & then
-            assertThatThrownBy(() -> personalRetrospectiveService.getRetrospectiveRecords(bookId))
+            assertThatThrownBy(() -> personalRetrospectiveService.getRetrospectiveRecords(bookId, pageSize, null, null))
                     .isInstanceOf(GlobalException.class)
                     .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
 

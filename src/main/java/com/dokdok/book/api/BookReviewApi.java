@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface BookReviewApi {
 
     @Operation(
-            summary = "책 리뷰 생성",
+            summary = "책 리뷰 생성 (developer: 양재웅)",
             description = """
             책 리뷰를 생성합니다.
             - 입력: 별점(0.5 단위, 0.5~5.0), 키워드 ID 리스트
@@ -104,7 +104,7 @@ public interface BookReviewApi {
     );
 
     @Operation(
-            summary = "내 책 리뷰 조회",
+            summary = "내 책 리뷰 조회 (developer: 양재웅)",
             description = """
             로그인한 사용자의 책 리뷰를 조회합니다.
             - 권한: 로그인 사용자
@@ -149,7 +149,7 @@ public interface BookReviewApi {
     );
 
     @Operation(
-            summary = "내 책 리뷰 수정",
+            summary = "내 책 리뷰 수정 (developer: 양재웅)",
             description = """
             로그인한 사용자의 책 리뷰를 수정합니다.
             - 입력: 별점(0.5 단위, 0.5~5.0), 키워드 ID 리스트
@@ -229,7 +229,7 @@ public interface BookReviewApi {
     );
 
     @Operation(
-            summary = "내 책 리뷰 삭제",
+            summary = "내 책 리뷰 삭제 (developer: 양재웅)",
             description = """
             로그인한 사용자의 책 리뷰를 삭제합니다.
             - 권한: 로그인 사용자

@@ -11,15 +11,7 @@ import com.dokdok.topic.dto.response.TopicsPageResponse;
 import com.dokdok.topic.entity.TopicMessage;
 import com.dokdok.topic.service.TopicService;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -47,13 +39,16 @@ public class TopicController implements TopicApi {
     public ResponseEntity<ApiResponse<TopicsPageResponse>> getTopics(
             Long gatheringId,
             Long meetingId,
-            @ParameterObject
-            @PageableDefault(size = 10) Pageable pageable
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) Integer cursorLikeCount,
+            @RequestParam(required = false) Long cursorTopicId
     ) {
 
-        TopicsPageResponse response = topicService.getTopics(gatheringId, meetingId, pageable);
+        TopicsPageResponse response = topicService.getTopics(
+                gatheringId, meetingId, pageSize, cursorLikeCount, cursorTopicId
+        );
 
-        return ApiResponse.success(response, "제안된 주제 조회를 완료했습니다.");
+        return ApiResponse.success(response, "제안된 주제 조회를 성공했습니다.");
     }
 
     @Override

@@ -22,9 +22,7 @@ import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -80,29 +78,47 @@ public class TopicService {
     public TopicsPageResponse getTopics(
             Long gatheringId,
             Long meetingId,
-            Pageable pageable
+            int pageSize,
+            Integer cursorLikeCount,
+            Long cursorTopicId
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         gatheringValidator.validateGathering(gatheringId);
         meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
 
-        Pageable noSortPageable =
-                PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        // pageSize + 1개를 조회하여 다음 페이지 존재 여부 판단
+        PageRequest pageable = PageRequest.of(0, pageSize + 1);
 
-        Page<Topic> topicPage =
-                topicRepository.findTopicsByMeetingId(meetingId, noSortPageable);
+        List<Topic> topics;
+        boolean hasCursor = cursorLikeCount != null && cursorTopicId != null;
+
+        if (hasCursor) {
+            topics = topicRepository.findTopicsAfterCursor(
+                    meetingId, cursorLikeCount, cursorTopicId, pageable
+            );
+        } else {
+            topics = topicRepository.findTopicsFirstPage(meetingId, pageable);
+        }
+
+        // hasNext 판단: pageSize + 1개를 조회했으므로 초과 시 다음 페이지 존재
+        boolean hasNext = topics.size() > pageSize;
+
+        // 실제 반환할 목록은 pageSize만큼만
+        if (hasNext) {
+            topics = topics.subList(0, pageSize);
+        }
 
         Set<Long> deletableTopicIds = Set.of();
 
-        if (userId != null && !topicPage.isEmpty()) {
-            List<Long> topicIds = topicPage.getContent().stream()
+        if (userId != null && !topics.isEmpty()) {
+            List<Long> topicIds = topics.stream()
                     .map(Topic::getId)
                     .toList();
             deletableTopicIds = topicRepository.findDeletableTopicIds(topicIds, userId);
         }
 
-        return TopicsPageResponse.from(topicPage, deletableTopicIds);
+        return TopicsPageResponse.from(topics, pageSize, hasNext, deletableTopicIds);
     }
 
     @Transactional

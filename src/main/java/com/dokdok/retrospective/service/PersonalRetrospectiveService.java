@@ -33,10 +33,13 @@ import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.user.entity.User;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.PageRequest;
 
 import static java.util.stream.Collectors.groupingBy;
 
@@ -161,21 +164,42 @@ public class PersonalRetrospectiveService {
     }
 
     @Transactional(readOnly = true)
-    public List<RetrospectiveRecordResponse> getRetrospectiveRecords(Long bookId) {
+    public RetrospectiveRecordsPageResponse getRetrospectiveRecords(
+            Long bookId,
+            int pageSize,
+            LocalDateTime cursorCreatedAt,
+            Long cursorRetrospectiveId
+    ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         bookValidator.validateBook(bookId);
 
-        List<PersonalMeetingRetrospective> retrospectives
-                = retrospectiveValidator.getRetrospectives(bookId, userId);
+        int fetchSize = pageSize + 1;
+        PageRequest pageable = PageRequest.of(0, fetchSize);
+
+        List<PersonalMeetingRetrospective> retrospectives;
+        if (cursorCreatedAt == null || cursorRetrospectiveId == null) {
+            retrospectives = personalRetrospectiveRepository.findRetrospectivesFirstPage(
+                    bookId, userId, pageable
+            );
+        } else {
+            retrospectives = personalRetrospectiveRepository.findRetrospectivesAfterCursor(
+                    bookId, userId, cursorCreatedAt, cursorRetrospectiveId, pageable
+            );
+        }
+
+        boolean hasNext = retrospectives.size() > pageSize;
+        if (hasNext) {
+            retrospectives = retrospectives.subList(0, pageSize);
+        }
+
+        if (retrospectives.isEmpty()) {
+            return RetrospectiveRecordsPageResponse.from(List.of(), pageSize, false, null);
+        }
 
         List<Long> retrospectiveIds = retrospectives.stream()
                 .map(PersonalMeetingRetrospective::getId)
                 .toList();
-
-        if(retrospectiveIds.isEmpty()) {
-            return List.of();
-        }
 
         Map<Long, List<ChangedThoughtProjection>> changedThoughtsMap =
                 changedThoughtRepository.findByRetrospectiveIds(retrospectiveIds)
@@ -192,7 +216,7 @@ public class PersonalRetrospectiveService {
                         .stream()
                         .collect(groupingBy(FreeTextProjection::retrospectiveId));
 
-        return retrospectives.stream()
+        List<RetrospectiveRecordResponse> items = retrospectives.stream()
                 .map(retrospective -> RetrospectiveRecordResponse.of(
                         retrospective.getId(),
                         retrospective.getMeeting().getGathering().getGatheringName(),
@@ -206,6 +230,10 @@ public class PersonalRetrospectiveService {
                                 .stream().map(RetrospectiveRecordResponse.FreeText::from).toList()
                 ))
                 .toList();
+
+        PersonalMeetingRetrospective lastRetrospective = retrospectives.get(retrospectives.size() - 1);
+
+        return RetrospectiveRecordsPageResponse.from(items, pageSize, hasNext, lastRetrospective);
     }
 
     @Transactional
