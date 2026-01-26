@@ -294,9 +294,32 @@ public interface PersonalBookRecordApi {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 또는 약속을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 또는 약속을 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = {
+                                    @ExampleObject(
+                                            name = "책장에 없는 책",
+                                            value = """
+                                                    {"code": "B003", "message": "책장에 해당 책이 존재하지 않습니다.", "data": null}
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "약속 없음",
+                                            value = """
+                                                    {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                                    """
+                                    )
+                            })),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
     })
     @GetMapping("/{personalBookId}/records/topic-answer")
     ResponseEntity<ApiResponse<PersonalReadingTopicAnswerResponse>> getMyTopicAnswer(
