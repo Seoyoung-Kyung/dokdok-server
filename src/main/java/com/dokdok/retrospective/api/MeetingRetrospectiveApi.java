@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface MeetingRetrospectiveApi {
 
     @Operation(
-            summary = "공동 회고 조회",
+            summary = "공동 회고 조회 (developer: 오주현)",
             description = """
             약속에 대한 공동 회고를 조회합니다.
             - 권한: 모임장, 약속장, 약속 참여자
@@ -39,7 +39,67 @@ public interface MeetingRetrospectiveApi {
                     responseCode = "200",
                     description = "공동 회고 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingRetrospectiveResponse.class))
+                            schema = @Schema(implementation = MeetingRetrospectiveResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "공동 회고 조회 성공",
+                                      "data": {
+                                        "meetingId": 1,
+                                        "meetingName": "데미안을 읽어보아요 데미안을 읽어보아요 데미",
+                                        "meetingDate": "2026-01-15",
+                                        "meetingTime": "19:00-20:00",
+                                        "topics": [
+                                          {
+                                            "topicId": 1,
+                                            "topicName": "가볍 목업, 유사 목업",
+                                            "summarizedOpinions": [
+                                              "실제적인 것에 찾기 과정이 없어 학습해야 고려할 때마다 알도다",
+                                              "데미안이라는 인물이 실존하는지, 아니면 내면의 동일시인 때문에 찾아 온미팅다",
+                                              "아브락시스 과잉이 실제 역에 아브발달 남아되는 결과적 때시대를 안정한다"
+                                            ],
+                                            "comments": [
+                                              {
+                                                "meetingRetrospectiveId": 1,
+                                                "userId": 1,
+                                                "nickname": "사용자1",
+                                                "profileImageUrl": "https://...",
+                                                "comment": "모임 하기전엔 이랬는데, 누구의 이런 발을 듣고 이렇게 생각이 바뀌었다.",
+                                                "createdAt": "2026-01-15T15:30:00"
+                                              },
+                                              {
+                                                "meetingRetrospectiveId": 2,
+                                                "userId": 2,
+                                                "nickname": "사용자2",
+                                                "profileImageUrl": "https://...",
+                                                "comment": "모임 하기전엔 이랬는데, 누구의 이런 발을 듣고 이렇게 생각이 바뀌었다.",
+                                                "createdAt": "2026-01-15T15:35:00"
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "topicId": 2,
+                                            "topicName": "신과 악",
+                                            "summarizedOpinions": [
+                                              "세가 앞에서 나으는 일만은 자연의 언성을 실질적는 감정전 아이라",
+                                              "발과 어둠의 세계가 대조적으로 묘사되며 갈등을 고조한다다"
+                                            ],
+                                            "comments": [
+                                              {
+                                                "meetingRetrospectiveId": 3,
+                                                "userId": 1,
+                                                "nickname": "사용자1",
+                                                "profileImageUrl": "https://...",
+                                                "comment": "또 다른 의견 내용",
+                                                "createdAt": "2026-01-15T15:40:00"
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    }
+                                    """)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "접근 권한 없음",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -63,7 +123,7 @@ public interface MeetingRetrospectiveApi {
     );
 
     @Operation(
-            summary = "공동 회고 작성",
+            summary = "공동 회고 작성 (developer: 오주현)",
             description = """
             약속에 대한 공동 회고를 작성합니다.
             - 제약: 약속에 참여한 사용자만 작성 가능
@@ -77,7 +137,11 @@ public interface MeetingRetrospectiveApi {
                     responseCode = "201",
                     description = "공동 회고 작성 완료",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingRetrospectiveResponse.CommentResponse.class))
+                            schema = @Schema(implementation = MeetingRetrospectiveResponse.CommentResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"code": "CREATED", "message": "공동 회고 작성 완료", "data": {"meetingRetrospectiveId": 1, "userId": 1, "nickname": "독서왕", "profileImageUrl": "https://example.com/profile.jpg", "comment": "좋았습니다.", "createdAt": "2025-02-01T16:30:00"}}
+                                    """)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -112,7 +176,7 @@ public interface MeetingRetrospectiveApi {
     );
 
     @Operation(
-            summary = "공동 회고 코멘트 삭제",
+            summary = "공동 회고 코멘트 삭제 (developer: 오주현)",
             description = """
             약속에 대한 공동 회고 코멘트를 삭제합니다.
             - 권한: 작성자 또는 모임장
