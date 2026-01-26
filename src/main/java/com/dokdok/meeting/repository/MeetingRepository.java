@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MeetingRepository extends JpaRepository<Meeting, Long> {
@@ -95,6 +96,12 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     // Scheduler용: 종료 시간이 지난 CONFIRMED 상태의 Meeting 조회
     List<Meeting> findByMeetingEndDateBeforeAndMeetingStatus(
             LocalDateTime endDate,
+            MeetingStatus meetingStatus
+    );
+
+    Optional<Meeting> findTopByGatheringIdAndBookIdAndMeetingStatusOrderByMeetingStartDateDescIdDesc(
+            Long gatheringId,
+            Long bookId,
             MeetingStatus meetingStatus
     );
 

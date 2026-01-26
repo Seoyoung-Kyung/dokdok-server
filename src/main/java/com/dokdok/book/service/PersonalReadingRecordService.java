@@ -1,9 +1,10 @@
 package com.dokdok.book.service;
 
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
+import com.dokdok.book.dto.response.CursorPageResponse;
 import com.dokdok.book.dto.response.PersonalReadingRecordCreateResponse;
 import com.dokdok.book.dto.response.PersonalReadingRecordListResponse;
-import com.dokdok.book.dto.response.CursorPageResponse;
+import com.dokdok.book.dto.response.PersonalReadingTopicAnswerResponse;
 import com.dokdok.book.dto.response.ReadingRecordCursor;
 import com.dokdok.book.entity.PersonalBook;
 import com.dokdok.book.entity.PersonalReadingRecord;
@@ -13,6 +14,15 @@ import com.dokdok.book.exception.RecordException;
 import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
 import com.dokdok.book.repository.PersonalReadingRecordRepository;
 import com.dokdok.global.util.SecurityUtil;
+import com.dokdok.meeting.entity.Meeting;
+import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.meeting.exception.MeetingErrorCode;
+import com.dokdok.meeting.exception.MeetingException;
+import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicAnswer;
+import com.dokdok.topic.repository.TopicAnswerRepository;
+import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +31,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +49,9 @@ public class PersonalReadingRecordService {
     private final PersonalReadingRecordRepository personalReadingRecordRepository;
     private final UserValidator userValidator;
     private final BookValidator bookValidator;
+    private final MeetingRepository meetingRepository;
+    private final TopicRepository topicRepository;
+    private final TopicAnswerRepository topicAnswerRepository;
 
     @Transactional
     public PersonalReadingRecordCreateResponse create(Long personalBookId, PersonalReadingRecordCreateRequest request) {
@@ -141,6 +157,49 @@ public class PersonalReadingRecordService {
         }
 
         return CursorPageResponse.of(items, pageSize, hasNext, nextCursor);
+    }
+
+    public PersonalReadingTopicAnswerResponse getTopicAnswers(Long personalBookId) {
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+        PersonalBook personalBookEntity = bookValidator.validatePersonalBook(userEntity.getId(), personalBookId);
+
+        if (personalBookEntity.getGathering() == null || personalBookEntity.getBook() == null) {
+            throw new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND);
+        }
+
+        Meeting meeting = meetingRepository
+                .findTopByGatheringIdAndBookIdAndMeetingStatusOrderByMeetingStartDateDescIdDesc(
+                        personalBookEntity.getGathering().getId(),
+                        personalBookEntity.getBook().getId(),
+                        MeetingStatus.CONFIRMED
+                )
+                .orElseThrow(() -> new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND));
+
+        List<Topic> topics = topicRepository.findTopicsInfoByMeetingId(meeting.getId());
+        List<TopicAnswer> topicAnswers = topicAnswerRepository.findByMeetingIdUserId(meeting.getId(), userEntity.getId());
+
+        Map<Long, TopicAnswer> topicAnswerMap = topicAnswers.stream()
+                .collect(Collectors.toMap(ta -> ta.getTopic().getId(), Function.identity()));
+
+        List<PersonalReadingTopicAnswerResponse.TopicAnswerInfo> items = topics.stream()
+                .sorted(Comparator
+                        .comparing(Topic::getConfirmOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(Topic::getId))
+                .map(topic -> new PersonalReadingTopicAnswerResponse.TopicAnswerInfo(
+                        topic.getTitle(),
+                        topic.getDescription(),
+                        topicAnswerMap.containsKey(topic.getId())
+                                ? topicAnswerMap.get(topic.getId()).getContent()
+                                : null
+                ))
+                .toList();
+
+        return new PersonalReadingTopicAnswerResponse(
+                "PRE_OPINION",
+                meeting.getGathering().getGatheringName(),
+                meeting.getMeetingStartDate(),
+                items
+        );
     }
 
     private Map<String, Object> normalizeMeta(RecordType recordType, Map<String, Object> meta) {

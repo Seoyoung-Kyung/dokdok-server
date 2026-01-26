@@ -56,4 +56,13 @@ public class PersonalBookRecordController implements PersonalBookRecordApi {
         return ApiResponse.success(response, "기록 조회 성공");
 
     }
+
+    @Override
+    @GetMapping("/{personalBookId}/records/topic-answer")
+    public ResponseEntity<ApiResponse<PersonalReadingTopicAnswerResponse>> getMyTopicAnswer(
+            @PathVariable Long personalBookId
+    ) {
+        PersonalReadingTopicAnswerResponse response = personalReadingRecordService.getTopicAnswers(personalBookId);
+        return ApiResponse.success(response, "사전 의견 조회 성공");
+    }
 }

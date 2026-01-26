@@ -7,6 +7,7 @@ import com.dokdok.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -258,5 +259,48 @@ public interface PersonalBookRecordApi {
             @RequestParam(required = false) Long cursorRecordId,
             @Parameter(description = "한 페이지당 아이템 수", example = "10")
             @RequestParam(required = false) Integer size
+    );
+
+    @Operation(
+            summary = "사전 의견 조회",
+            description = """
+                    독서 기록의 사전 의견 정보를 조회합니다.
+                    - 경로의 personalBookId로 책을 지정합니다.
+                    - 로그인한 사용자 기준으로 본인 사전 의견만 조회됩니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "사전 의견 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PersonalReadingTopicAnswerResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "사전 의견 조회 성공",
+                                      "data": {
+                                        "type": "PRE_OPINION",
+                                        "gatheringName": "책책책 책을 읽자",
+                                        "sharedAt": "2026-01-05T21:38:00",
+                                        "topics": [
+                                          {
+                                            "topicTitle": "가짜 욕망, 유사 욕망",
+                                            "topicDescription": "가짜 욕망, 유사 욕망에 대해 이야기해봅시다.",
+                                            "answer": "가짜 욕망과 유사 욕망은 비슷해 보이지만 결이 다르다고 느꼈다."
+                                          }
+                                        ]
+                                      }
+                                    }
+                                    """))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 실패 - 로그인이 필요합니다."),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 또는 약속을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @GetMapping("/{personalBookId}/records/topic-answer")
+    ResponseEntity<ApiResponse<PersonalReadingTopicAnswerResponse>> getMyTopicAnswer(
+            @Parameter(description = "개인 책장 ID (personal_book 테이블 PK)", required = true, example = "10")
+            @PathVariable Long personalBookId
     );
 }
