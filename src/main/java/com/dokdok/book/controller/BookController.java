@@ -77,8 +77,13 @@ public class BookController implements BookApi {
     @GetMapping("/reading")
     public ResponseEntity<ApiResponse<PageResponse<PersonalBookListResponse>>> getMyReadingBooks(Pageable pageable) {
         Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookList(BookReadingStatus.READING, null, pageable);
-//        Page<PersonalBookListResponse> personalBookList = personalBookService.getPersonalBookReadingList( pageable);
         PageResponse<PersonalBookListResponse> response = PageResponse.from(personalBookList);
         return ApiResponse.success(response, "읽고 있는 책 리스트 조회 성공");
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<PersonalBookDetailResponse>> updateReadingBook(Long bookId, Long personalBookId) {
+        PersonalBookDetailResponse personalBook = personalBookService.updateReadingStatus(personalBookId);
+        return ApiResponse.success(personalBook, "읽는 상태 업데이트 성공");
     }
 }

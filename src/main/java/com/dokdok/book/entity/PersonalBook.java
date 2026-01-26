@@ -71,4 +71,13 @@ public class PersonalBook {
                 .addedAt(LocalDateTime.now())
                 .build();
     }
+
+    public void updateReadingStatus() {
+
+        if (readingStatus == BookReadingStatus.READING) {
+            readingStatus = BookReadingStatus.COMPLETED;
+        } else  if (readingStatus == BookReadingStatus.COMPLETED) {
+            readingStatus = BookReadingStatus.READING;
+        }
+    }
 }
