@@ -23,7 +23,7 @@ import org.springframework.http.ResponseEntity;
 public interface MeetingApi {
 
     @Operation(
-            summary = "약속 상세 조회",
+            summary = "약속 상세 조회 (developer: 김윤영)",
             description = """
             약속 상세 정보를 조회합니다.
             - 약속 이름, 책 이름, 약속 일시, 주제 타입 확인
@@ -40,7 +40,56 @@ public interface MeetingApi {
                     responseCode = "200",
                     description = "약속 상세 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingDetailResponse.class))
+                            schema = @Schema(implementation = MeetingDetailResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "약속 상세 조회에 성공했습니다.",
+                                      "data": {
+                                        "meetingId": 1,
+                                        "meetingName": "1월 독서 모임",
+                                        "meetingStatus": "CONFIRMED",
+                                        "gathering": {
+                                          "gatheringId": 1,
+                                          "gatheringName": "독서 모임"
+                                        },
+                                        "book": {
+                                          "bookId": 1,
+                                          "bookName": "클린 코드",
+                                          "thumbnail": "https://example.com/thumb.jpg"
+                                        },
+                                        "schedule": {
+                                          "startDateTime": "2025-02-01T14:00:00",
+                                          "endDateTime": "2025-02-01T16:00:00",
+                                          "displayDate": "2025.02.01(토) 14:00 ~ 2025.02.01(토) 16:00"
+                                        },
+                                        "place": "강남역 스타벅스",
+                                        "participants": {
+                                          "currentCount": 2,
+                                          "maxCount": 10,
+                                          "members": [
+                                            {
+                                              "userId": 1,
+                                              "nickname": "독서왕",
+                                              "profileImageUrl": "https://example.com/profile.jpg",
+                                              "role": "LEADER"
+                                            },
+                                            {
+                                              "userId": 2,
+                                              "nickname": "모임원A",
+                                              "profileImageUrl": "https://example.com/profile2.jpg",
+                                              "role": "MEMBER"
+                                            }
+                                          ]
+                                        },
+                                        "actionState": {
+                                          "type": "CAN_EDIT",
+                                          "buttonLabel": "수정하기",
+                                          "enabled": true
+                                        }
+                                      }
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -63,7 +112,7 @@ public interface MeetingApi {
     );
 
     @Operation(
-            summary = "약속 생성 신청",
+            summary = "약속 생성 신청 (developer: 김윤영)",
             description = """
             모임 구성원이 약속 생성을 신청합니다.
             - 입력: 약속 제목(미입력 시 책 제목), 책 제목*, 약속 일시*, 최대 인원 수(null 허용), 장소(null 허용)
@@ -75,7 +124,44 @@ public interface MeetingApi {
                     responseCode = "201",
                     description = "약속 생성 요청 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingResponse.class))
+                            schema = @Schema(implementation = MeetingResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "CREATED",
+                                      "message": "약속 생성 요청에 성공했습니다.",
+                                      "data": {
+                                        "meetingId": 1,
+                                        "meetingName": "1월 독서 모임",
+                                        "meetingStatus": "PENDING",
+                                        "gathering": {
+                                          "gatheringId": 1,
+                                          "gatheringName": "독서 모임"
+                                        },
+                                        "book": {
+                                          "bookId": 1,
+                                          "bookName": "클린 코드"
+                                        },
+                                        "schedule": {
+                                          "date": "2025-02-01",
+                                          "time": "14:00:00",
+                                          "startDateTime": "2025-02-01T14:00:00",
+                                          "endDateTime": "2025-02-01T16:00:00"
+                                        },
+                                        "place": "강남역 스타벅스",
+                                        "participants": {
+                                          "currentCount": 1,
+                                          "maxCount": 10,
+                                          "members": [
+                                            {
+                                              "userId": 1,
+                                              "nickname": "독서왕",
+                                              "profileImageUrl": "https://example.com/profile.jpg"
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -98,7 +184,7 @@ public interface MeetingApi {
     );
 
     @Operation(
-            summary = "약속 확정",
+            summary = "약속 확정 (developer: 김윤영)",
             description = """
             신청된 약속을 확정합니다.
             - 상태: PENDING(신청), CONFIRMED(모임장 확정), REJECTED(거절), DONE(종료)
@@ -118,7 +204,18 @@ public interface MeetingApi {
                     responseCode = "200",
                     description = "약속 확정 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingStatusResponse.class))
+                            schema = @Schema(implementation = MeetingStatusResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "UPDATED",
+                                      "message": "약속 확정에 성공했습니다.",
+                                      "data": {
+                                        "meetingId": 1,
+                                        "meetingStatus": "CONFIRMED",
+                                        "confirmedAt": "2025-01-25T10:30:00"
+                                      }
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -141,7 +238,7 @@ public interface MeetingApi {
     );
 
     @Operation(
-            summary = "약속 거절",
+            summary = "약속 거절 (developer: 김윤영)",
             description = """
             신청된 약속을 거절합니다.
             - 상태: PENDING(신청), CONFIRMED(모임장 확정), REJECTED(거절), DONE(종료)
@@ -156,7 +253,18 @@ public interface MeetingApi {
                     responseCode = "200",
                     description = "약속 거절 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingStatusResponse.class))
+                            schema = @Schema(implementation = MeetingStatusResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "UPDATED",
+                                      "message": "약속 거절에 성공했습니다.",
+                                      "data": {
+                                        "meetingId": 1,
+                                        "meetingStatus": "REJECTED",
+                                        "confirmedAt": null
+                                      }
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -179,7 +287,7 @@ public interface MeetingApi {
     );
 
     @Operation(
-            summary = "약속 참가 신청",
+            summary = "약속 참가 신청 (developer: 김윤영)",
             description = """
             약속에 참가 신청합니다.
             - 권한: 모임원 전원
@@ -194,7 +302,14 @@ public interface MeetingApi {
                     responseCode = "200",
                     description = "약속 참가 신청 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = Long.class))
+                            schema = @Schema(implementation = Long.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "약속 참가 신청에 성공했습니다.",
+                                      "data": 1
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -227,7 +342,7 @@ public interface MeetingApi {
     );
 
     @Operation(
-            summary = "약속 참가 취소",
+            summary = "약속 참가 취소 (developer: 김윤영)",
             description = """
             약속 참가 신청을 취소합니다.
             - 권한: 약속에 참여한 모임원
@@ -243,7 +358,14 @@ public interface MeetingApi {
                     responseCode = "200",
                     description = "약속 참가 취소 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = Long.class))
+                            schema = @Schema(implementation = Long.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "약속 참가 취소에 성공했습니다.",
+                                      "data": 1
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -276,7 +398,7 @@ public interface MeetingApi {
     );
 
     @Operation(
-            summary = "약속 수정",
+            summary = "약속 수정 (developer: 김윤영)",
             description = """
             약속 정보를 수정합니다.
             - 권한: 약속장
@@ -290,7 +412,21 @@ public interface MeetingApi {
                     responseCode = "200",
                     description = "약속 수정 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingUpdateResponse.class))
+                            schema = @Schema(implementation = MeetingUpdateResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "UPDATED",
+                                      "message": "약속 수정에 성공했습니다.",
+                                      "data": {
+                                        "meetingId": 1,
+                                        "meetingName": "1월 독서 모임 (수정)",
+                                        "startDate": "2025-02-01T14:00:00",
+                                        "endDate": "2025-02-01T16:00:00",
+                                        "place": "강남역 스타벅스",
+                                        "maxParticipants": 10
+                                      }
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -325,7 +461,7 @@ public interface MeetingApi {
     );
 
     @Operation(
-            summary = "약속 삭제",
+            summary = "약속 삭제 (developer: 김윤영)",
             description = """
             약속을 삭제합니다.
             - 권한: 모임장
@@ -338,7 +474,15 @@ public interface MeetingApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "약속 삭제 성공",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = Void.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "DELETED",
+                                      "message": "약속 삭제에 성공했습니다.",
+                                      "data": null
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -367,7 +511,7 @@ public interface MeetingApi {
     );
 
     @Operation(
-            summary = "약속 탭 카운트 조회",
+            summary = "약속 탭 카운트 조회 (developer: 김윤영)",
             description = """
             모임의 약속 탭별 카운트를 조회합니다.
             - 전체: 확정된 약속
@@ -384,7 +528,19 @@ public interface MeetingApi {
                     responseCode = "200",
                     description = "약속 탭 카운트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingTabCountsResponse.class))
+                            schema = @Schema(implementation = MeetingTabCountsResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "약속 탭 카운트 조회에 성공했습니다.",
+                                      "data": {
+                                        "all": 10,
+                                        "upcoming": 2,
+                                        "done": 5,
+                                        "joined": 3
+                                      }
+                                    }
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
