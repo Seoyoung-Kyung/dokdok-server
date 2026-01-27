@@ -21,7 +21,7 @@ public record PersonalRetrospectiveFormResponse(
     public record PreOpinions(
         @Schema(description = "주제 ID", example = "1")
         Long topicId,
-        @Schema(description = "주제 제목", example = "1장 깨끗한 코드")
+        @Schema(description = "주제 제목", example = "깨끗한 코드")
         String topicName,
         @Schema(description = "사전 의견 내용", example = "사전 의견 내용을 작성합니다.")
         String content

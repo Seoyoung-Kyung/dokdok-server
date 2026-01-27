@@ -34,6 +34,7 @@ import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.user.entity.User;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -91,7 +92,7 @@ public class PersonalRetrospectiveService {
         retrospectiveValidator.validateRetrospective(meetingId, userId);
 
         List<Topic> topics = topicValidator.getConfirmedTopics(meetingId);
-        List<TopicAnswer> topicAnswers =  topicAnswerRepository.findByMeetingIdUserId(meetingId, userId);
+        List<TopicAnswer> topicAnswers = topicAnswerRepository.findByMeetingIdUserId(meetingId, userId);
         List<MeetingMember> meetingMembers = meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId);
 
         return assembler.assembleCreate(
@@ -148,7 +149,7 @@ public class PersonalRetrospectiveService {
 
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
-
+        retrospectiveValidator.validateRetrospective(retrospectiveId);
         PersonalMeetingRetrospective retrospective
                 = retrospectiveValidator.getRetrospective(retrospectiveId, userId);
 
@@ -259,7 +260,8 @@ public class PersonalRetrospectiveService {
 
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
-        retrospectiveValidator.validateRetrospective(retrospectiveId, userId);
+        retrospectiveValidator.validateRetrospective(retrospectiveId);
+        retrospectiveValidator.validateRetrospectiveByUser(retrospectiveId, userId);
 
         List<RetrospectiveChangedThought> changedThoughts
                 = changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId);
@@ -270,16 +272,17 @@ public class PersonalRetrospectiveService {
         List<RetrospectiveFreeText> freeTexts =
                 freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId);
 
-        Map<Long, String> memberProfileImageMap =
-                othersPerspectives.stream()
-                        .map(RetrospectiveOthersPerspective::getMeetingMember)
-                        .distinct()
-                        .collect(Collectors.toMap(
-                                MeetingMember::getId,
-                                mm -> storageService.getPresignedProfileImage(
-                                        mm.getUser().getProfileImageUrl()
-                                )
-                        ));
+        Map<Long, String> memberProfileImageMap = new HashMap<>();
+        othersPerspectives.stream()
+                .map(RetrospectiveOthersPerspective::getMeetingMember)
+                .distinct()
+                .forEach(mm -> {
+                    String profileImageUrl = mm.getUser().getProfileImageUrl();
+                    String presignedUrl = profileImageUrl != null
+                            ? storageService.getPresignedProfileImage(profileImageUrl)
+                            : null;
+                    memberProfileImageMap.put(mm.getId(), presignedUrl);
+                });
 
         return assembler.assembleView(
                 retrospectiveId,

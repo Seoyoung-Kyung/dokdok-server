@@ -41,6 +41,7 @@ public interface TopicAnswerRepository extends JpaRepository<TopicAnswer, Long> 
                     JOIN FETCH ta.topic t
                     WHERE t.meeting.id = :meetingId
                     AND ta.user.id = :userId
+                    ORDER BY t.id
             """)
     List<TopicAnswer> findByMeetingIdUserId(Long meetingId, Long userId);
 

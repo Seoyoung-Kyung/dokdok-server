@@ -152,7 +152,7 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PersonalRetrospectiveFormResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code": "SUCCESS", "message": "개인 회고 입력 폼 조회를 성공했습니다.", "data": {"meetingId": 1, "preOpinions": [], "topics": [], "meetingMembers": []}}
+                                    {"code": "SUCCESS", "message": "개인 회고 입력 폼 조회를 성공했습니다.", "data": {"meetingId": 1, "preOpinions": [{"topicId": 1, "topicName": "깨끗한 코드", "content": "사전 의견 내용을 작성합니다."}], "topics": [{"topicId": 1, "topicName": "깨끗한 코드", "confirmOrder": 1}], "meetingMembers": [{"meetingMemberId": 10, "nickname": "독서왕", "profileImage": "https://example.com/profile.jpg"}]}}
                                     """)
                     )
             ),
@@ -229,8 +229,8 @@ public interface PersonalRetrospectiveApi {
             - 권한: 약속 멤버
 
             **응답 구조**
-            - changedThoughts: 기존 생각의 변화 목록
-            - othersPerspectives: 기존 인상 깊은 의견 목록
+            - changedThoughts: 기존 생각의 변화 목록 (confirmOrder 순)
+            - othersPerspectives: 기존 인상 깊은 의견 목록 (confirmOrder 순)
             - freeTexts: 기존 자유 기록 목록
             - topics: 확정된 주제 목록 (confirmOrder 순)
             - meetingMembers: 본인 제외 약속 멤버 목록
@@ -247,7 +247,7 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PersonalRetrospectiveEditResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code": "SUCCESS", "message": "개인 회고 수정 폼 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [], "othersPerspectives": [], "freeTexts": []}, "topics": [], "meetingMembers": []}}
+                                    {"code": "SUCCESS", "message": "개인 회고 수정 폼 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [{"topicId": 1, "keyIssue": "요약된 핵심 쟁점", "preOpinion": "토론 전 나의 생각", "postOpinion": "토론 후 바뀐 생각"}], "othersPerspectives": [{"topicId": 1, "meetingMemberId": 10, "opinionContent": "상대 의견이 인상적이었습니다.", "impressiveReason": "새로운 관점을 제공했기 때문입니다."}], "freeTexts": [{"title": "오늘의 한 줄", "content": "회고 내용을 작성합니다."}]}, "topics": [{"topicId": 1, "topicName": "깨끗한 코드", "confirmOrder": 1}], "meetingMembers": [{"meetingMemberId": 10, "nickname": "독서왕", "profileImage": "https://example.com/profile.jpg"}]}}
                                     """)
                     )
             ),
@@ -324,8 +324,8 @@ public interface PersonalRetrospectiveApi {
             - 권한: 약속 멤버
 
             **응답 구조**
-            - changedThoughts: 생각의 변화 목록 (주제별 사전/사후 의견)
-            - othersPerspectives: 인상 깊은 의견 목록 (멤버 프로필 이미지 포함)
+            - changedThoughts: 생각의 변화 목록 (confirmOrder 순, 주제별 사전/사후 의견)
+            - othersPerspectives: 인상 깊은 의견 목록 (confirmOrder 순, 멤버 프로필 이미지 포함)
             - freeTexts: 자유 기록 목록
             """,
             parameters = {
@@ -340,7 +340,7 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PersonalRetrospectiveDetailResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code": "SUCCESS", "message": "개인 회고 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [{"topicId": 1, "topicTitle": "1장 깨끗한 코드", "keyIssue": "요약된 핵심 쟁점", "preOpinion": "토론 전 나의 생각", "postOpinion": "토론 후 바뀐 생각"}], "othersPerspectives": [{"topicId": 1, "meetingMemberId": 10, "profileImage": "https://example.com/profile.jpg", "nickname": "독서왕", "opinionContent": "상대 의견이 인상적이었습니다.", "impressiveReason": "새로운 관점을 제공했기 때문입니다."}], "freeTexts": [{"title": "오늘의 한 줄", "content": "회고 내용을 작성합니다."}]}}}
+                                    {"code": "SUCCESS", "message": "개인 회고 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [{"topicId": 1, "topicTitle": "깨끗한 코드", "keyIssue": "요약된 핵심 쟁점", "preOpinion": "토론 전 나의 생각", "postOpinion": "토론 후 바뀐 생각"}], "othersPerspectives": [{"topicId": 1, "meetingMemberId": 10, "profileImage": "https://example.com/profile.jpg", "nickname": "독서왕", "opinionContent": "상대 의견이 인상적이었습니다.", "impressiveReason": "새로운 관점을 제공했기 때문입니다."}], "freeTexts": [{"title": "오늘의 한 줄", "content": "회고 내용을 작성합니다."}]}}}
                                     """)
                     )
             ),
