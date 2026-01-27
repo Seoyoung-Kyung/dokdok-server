@@ -453,6 +453,7 @@ public interface PersonalBookRecordApi {
                                                       "page": 23,
                                                       "excerpt": "이 문장이 좋았다."
                                                     },
+                                                    "createdAt": "2026-01-25T22:39:57.899858",
                                                     "bookId": 10
                                                   }
                                                 ],
