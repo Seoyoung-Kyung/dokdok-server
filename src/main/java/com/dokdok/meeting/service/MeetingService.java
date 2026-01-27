@@ -668,6 +668,9 @@ public class MeetingService {
             items.add(MeetingListItemResponse.builder()
                     .meetingId(meeting.getId())
                     .meetingName(meeting.getMeetingName())
+                    .meetingLeaderName(meeting.getMeetingLeader() != null
+                            ? meeting.getMeetingLeader().getNickname()
+                            : null)
                     .bookName(meeting.getBook().getBookName())
                     .startDateTime(meeting.getMeetingStartDate())
                     .endDateTime(meeting.getMeetingEndDate())
