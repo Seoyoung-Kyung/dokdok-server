@@ -54,7 +54,10 @@ public interface BookRecordApi {
                     responseCode = "200",
                     description = "개인 회고 목록 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorResponse.class))
+                            schema = @Schema(implementation = CursorResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"code":"SUCCESS","message":"해당 책의 개인 회고 목록 조회를 성공했습니다.","data":{"items":[],"pageSize":10,"hasNext":false,"nextCursor":null}}
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",

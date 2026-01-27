@@ -44,7 +44,7 @@ public interface PersonalRetrospectiveApi {
                     responseCode = "201",
                     description = "개인 회고 저장 완료",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalRetrospectiveResponse.class),
                             examples = @ExampleObject(value = """
                                     {"code": "CREATED", "message": "개인 회고 저장 완료했습니다.", "data": {"personalMeetingRetrospectiveId": 1, "meetingId": 1, "userId": 1}}
                                     """)
@@ -150,7 +150,7 @@ public interface PersonalRetrospectiveApi {
                     responseCode = "200",
                     description = "개인 회고 입력 폼 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalRetrospectiveFormResponse.class),
                             examples = @ExampleObject(value = """
                                     {"code": "SUCCESS", "message": "개인 회고 입력 폼 조회를 성공했습니다.", "data": {"meetingId": 1, "preOpinions": [], "topics": [], "meetingMembers": []}}
                                     """)
@@ -245,9 +245,9 @@ public interface PersonalRetrospectiveApi {
                     responseCode = "200",
                     description = "개인 회고 수정 폼 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalRetrospectiveEditResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code": "SUCCESS", "message": "개인 회고 수정폼 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [], "othersPerspectives": [], "freeTexts": []}, "topics": [], "meetingMembers": []}}
+                                    {"code": "SUCCESS", "message": "개인 회고 수정 폼 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [], "othersPerspectives": [], "freeTexts": []}, "topics": [], "meetingMembers": []}}
                                     """)
                     )
             ),
@@ -338,7 +338,7 @@ public interface PersonalRetrospectiveApi {
                     responseCode = "200",
                     description = "개인 회고 상세 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalRetrospectiveDetailResponse.class),
                             examples = @ExampleObject(value = """
                                     {"code": "SUCCESS", "message": "개인 회고 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [], "othersPerspectives": [], "freeTexts": []}}}
                                     """)
@@ -428,7 +428,7 @@ public interface PersonalRetrospectiveApi {
                     responseCode = "200",
                     description = "개인 회고 수정 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ApiResponse.class),
+                            schema = @Schema(implementation = PersonalRetrospectiveResponse.class),
                             examples = @ExampleObject(value = """
                                     {"code": "SUCCESS", "message": "개인 회고 수정을 성공했습니다.", "data": {"personalMeetingRetrospectiveId": 1, "meetingId": 1, "userId": 1}}
                                     """)
@@ -533,7 +533,7 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"개인 회고가 삭제되었습니다.\"}"
+                                    value = "{\"code\":\"DELETED\",\"message\":\"개인 회고 삭제를 성공했습니다.\",\"data\":null}"
                             )
                     )
             ),

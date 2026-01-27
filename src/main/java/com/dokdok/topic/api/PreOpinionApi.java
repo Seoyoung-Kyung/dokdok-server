@@ -42,7 +42,10 @@ public interface PreOpinionApi {
                     responseCode = "200",
                     description = "사전 의견 목록 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PreOpinionResponse.class))
+                            schema = @Schema(implementation = PreOpinionResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"code":"SUCCESS","message":"약속의 사전 의견 목록 조회를 성공했습니다.","data":{"topicInfos":[],"memberPreOpinions":[]}}
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
