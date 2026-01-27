@@ -507,8 +507,8 @@ class PersonalRetrospectiveServiceTest {
                 meetingId,
                 List.of(new PersonalRetrospectiveFormResponse.PreOpinions(10L, "주제1", "사전 의견1")),
                 List.of(
-                        new TopicInfo(10L, "주제1"),
-                        new TopicInfo(20L, "주제2")
+                        new TopicInfo(10L, "주제1", 1),
+                        new TopicInfo(20L, "주제2", 2)
                 ),
                 List.of(
                         new MemberInfo(1L, "사용자1", "url"),
@@ -565,7 +565,7 @@ class PersonalRetrospectiveServiceTest {
         PersonalRetrospectiveFormResponse expectedResponse = PersonalRetrospectiveFormResponse.of(
                 meetingId,
                 List.of(), // 빈 사전 의견
-                List.of(new TopicInfo(10L, "주제1")),
+                List.of(new TopicInfo(10L, "주제1", 1)),
                 List.of(new MemberInfo(1L, "사용자1", "url"))
         );
 
