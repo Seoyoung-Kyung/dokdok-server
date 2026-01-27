@@ -345,7 +345,7 @@ public interface TopicApi {
     );
 
     @Operation(
-            summary = "주제 삭제 (developer: 양재웅)",
+            summary = "주제 삭제 (developer: 경서영)",
             description = """
                     제안된 주제를 삭제합니다.
                     - 권한: 주제 작성자 또는 약속장
