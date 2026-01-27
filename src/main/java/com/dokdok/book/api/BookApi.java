@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
@@ -213,6 +214,7 @@ public interface BookApi {
                     내 책장에 등록된 책을 커서 기반으로 조회합니다.
                     - 로그인한 사용자 기준으로 조회합니다.
                     - cursorAddedAt/cursorBookId/size 파라미터로 다음 페이지를 조회합니다.
+                    - 독서 상태 필터 (ENUM: READING/COMPLETED/PENDING)
                     """
     )
     @ApiResponses({
@@ -341,6 +343,7 @@ public interface BookApi {
                                                 "title": "예제 도서명",
                                                 "publisher": "예제 출판사",
                                                 "authors": "저자A, 저자B",
+                                                "thumbnail": "https://kakaoapi.com/afd123sdfs",
                                                 "bookReadingStatus": "READING"
                                               }
                                             }
@@ -624,5 +627,114 @@ public interface BookApi {
                     sort = "addedAt",
                     direction = Sort.Direction.DESC
             ) Pageable pageable
+    );
+
+    @Operation(
+            summary = "내 책장 읽기 상태 토글 (developer: 권우희)",
+            description = """
+                    내 책장의 읽기 상태를 토글합니다.
+                    - READING ↔ COMPLETED 상태가 전환됩니다.
+                    - 로그인한 사용자 소유의 책만 변경됩니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "읽는 상태 업데이트 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = PersonalBookDetailResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "SUCCESS",
+                                              "message": "읽는 상태 업데이트 성공",
+                                              "data": {
+                                                "personalBookId": 100,
+                                                "bookId": 1,
+                                                "title": "예제 도서명",
+                                                "publisher": "예제 출판사",
+                                                "authors": "저자A, 저자B",
+                                                "thumbnail": "https://kakaoapi.com/afd123sdfs",
+                                                "bookReadingStatus": "COMPLETED"
+                                              }
+                                            }
+                                            """
+                            ))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "G002",
+                                              "message": "입력값이 올바르지 않습니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "G102",
+                                              "message": "인증이 필요합니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "책을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "B003",
+                                              "message": "책장에 해당 책이 존재하지 않습니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "E000",
+                                              "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    @PatchMapping("/{bookId}/isReading")
+    ResponseEntity<ApiResponse<PersonalBookDetailResponse>> updateReadingBook(
+            @Parameter(description = "상태 변경 대상 책 ID (book 테이블 PK)", required = true, example = "10")
+            @PathVariable Long bookId,
+            @Parameter(description = "내 책장 항목 ID (personal_book PK)", required = true, example = "100")
+            @RequestParam Long personalBookId
     );
 }

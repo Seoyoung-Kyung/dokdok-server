@@ -48,6 +48,7 @@ public class BookValidator {
                 .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));
     }
 
+    // 책장에 해당 책이 존재 여부 확인하는 메서드입니다.
     public PersonalBook validatePersonalBook(Long userId, Long personalBookId) {
         return personalBookRepository.findByIdAndUserId(personalBookId, userId)
                 .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_IN_SHELF));

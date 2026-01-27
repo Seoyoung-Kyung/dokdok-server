@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +46,17 @@ public class PersonalBookService {
     @Transactional
     public PersonalBookCreateResponse createBook(BookCreateRequest bookCreateRequest) {
         return createBook(bookCreateRequest, null);
+    }
+
+    @Transactional
+    public PersonalBookDetailResponse updateReadingStatus(Long personalBookId) {
+        // 사용자 유효성 검증
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+        PersonalBook entity = bookValidator.validatePersonalBook(userEntity.getId(), personalBookId);
+
+        entity.updateReadingStatus();
+
+        return PersonalBookDetailResponse.from(entity);
     }
 
     @Transactional
