@@ -28,14 +28,18 @@ public record PreOpinionResponse(
             String topicDescription,
 
             @Schema(description = "주제 타입", example = "토론")
-            String topicType
+            String topicType,
+
+            @Schema(description = "주제 순서", example = "1")
+            Integer confirmOrder
     ) {
         public static TopicInfo from(Topic topic) {
             return new TopicInfo(
                     topic.getId(),
                     topic.getTitle(),
                     topic.getDescription(),
-                    topic.getTopicType().getDisplayName()
+                    topic.getTopicType().getDisplayName(),
+                    topic.getConfirmOrder()
             );
         }
     }
@@ -50,7 +54,8 @@ public record PreOpinionResponse(
 
             @Schema(description = "주제별 의견 목록")
             List<TopicOpinion> topicOpinions
-    ) { }
+    ) {
+    }
 
     @Schema(description = "멤버 정보")
     public record MemberInfo(
