@@ -247,7 +247,7 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code": "SUCCESS", "message": "개인 회고 수정폼 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [], "othersPerspectives": [], "freeTexts": []}, "topics": [], "meetingMembers": []}}
+                                    {"code": "SUCCESS", "message": "개인 회고 수정 폼 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [], "othersPerspectives": [], "freeTexts": []}, "topics": [], "meetingMembers": []}}
                                     """)
                     )
             ),
@@ -533,7 +533,7 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             examples = @ExampleObject(
-                                    value = "{\"code\":\"SUCCESS\",\"message\":\"개인 회고가 삭제되었습니다.\"}"
+                                    value = "{\"code\":\"DELETED\",\"message\":\"개인 회고 삭제를 성공했습니다.\",\"data\":null}"
                             )
                     )
             ),
