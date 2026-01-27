@@ -1,7 +1,11 @@
 package com.dokdok.gathering.service;
 
+import com.dokdok.book.entity.Book;
+import com.dokdok.book.repository.BookReviewRepository;
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
+import com.dokdok.gathering.dto.response.BookRatingAverage;
+import com.dokdok.gathering.dto.response.GatheringBookListResponse;
 import com.dokdok.gathering.dto.response.GatheringCreateResponse;
 import com.dokdok.gathering.dto.response.GatheringDetailResponse;
 import com.dokdok.gathering.dto.response.GatheringJoinResponse;
@@ -11,6 +15,8 @@ import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.response.GatheringUpdateResponse;
 import com.dokdok.gathering.dto.response.FavoriteGatheringListResponse;
 import com.dokdok.gathering.entity.Gathering;
+import com.dokdok.gathering.entity.GatheringBook;
+import com.dokdok.gathering.entity.GatheringBookRepository;
 import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.entity.GatheringMemberStatus;
 import com.dokdok.gathering.entity.GatheringStatus;
@@ -20,9 +26,14 @@ import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.gathering.util.InvitationCodeGenerator;
 import com.dokdok.global.response.CursorResponse;
+import com.dokdok.global.response.PageResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +81,15 @@ class GatheringServiceTest {
 
 	@Mock
 	private MeetingRepository meetingRepository;
+
+	@Mock
+	private GatheringBookRepository gatheringBookRepository;
+
+	@Mock
+	private BookReviewRepository bookReviewRepository;
+
+	@Mock
+	private MeetingMemberRepository meetingMemberRepository;
 
 	private MockedStatic<SecurityUtil> securityUtilMock;
 
@@ -1222,5 +1242,206 @@ class GatheringServiceTest {
 		securityUtilMock.verify(SecurityUtil::getCurrentUserEntity, times(1));
 		verify(gatheringValidator, times(1)).validateLeader(gatheringId, leader.getId());
 		verify(gatheringMemberRepository, times(0)).findByGatheringIdAndUserId(any(), any());
+	}
+
+	// ==================== getGatheringBooks 테스트 ====================
+
+	@Test
+	@DisplayName("모임 책장 조회 성공 - 책 목록과 평점 정상 반환")
+	void getGatheringBooks_Success() {
+		// given
+		Long gatheringId = 1L;
+		Long userId = 1L;
+		int page = 0;
+		int size = 10;
+
+		Book book1 = Book.builder()
+				.id(1L)
+				.bookName("클린 코드")
+				.author("Robert C. Martin")
+				.thumbnail("clean-code.jpg")
+				.isbn("978-0132350884")
+				.build();
+
+		Book book2 = Book.builder()
+				.id(2L)
+				.bookName("리팩터링")
+				.author("Martin Fowler")
+				.thumbnail("refactoring.jpg")
+				.isbn("978-0134757599")
+				.build();
+
+		GatheringBook gatheringBook1 = GatheringBook.builder()
+				.id(1L)
+				.gathering(gathering1)
+				.book(book1)
+				.build();
+
+		GatheringBook gatheringBook2 = GatheringBook.builder()
+				.id(2L)
+				.gathering(gathering1)
+				.book(book2)
+				.build();
+
+		List<GatheringBook> gatheringBooks = List.of(gatheringBook1, gatheringBook2);
+		Page<GatheringBook> gatheringBookPage = new PageImpl<>(gatheringBooks, PageRequest.of(page, size), 2);
+
+		List<Long> meetingMemberIds = List.of(1L, 2L, 3L);
+		List<BookRatingAverage> ratingAverages = List.of(
+				new BookRatingAverage(1L, 4.5),
+				new BookRatingAverage(2L, 3.8)
+		);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+		given(gatheringBookRepository.findGatheringBooks(eq(gatheringId), any(Pageable.class)))
+				.willReturn(gatheringBookPage);
+		given(meetingMemberRepository.findByGatheringId(gatheringId)).willReturn(meetingMemberIds);
+		given(bookReviewRepository.findMeetingBookReviews(List.of(1L, 2L), meetingMemberIds))
+				.willReturn(ratingAverages);
+
+		// when
+		PageResponse<GatheringBookListResponse> result = gatheringService.getGatheringBooks(gatheringId, page, size);
+
+		// then
+		assertThat(result).isNotNull();
+		assertThat(result.items()).hasSize(2);
+		assertThat(result.totalCount()).isEqualTo(2);
+		assertThat(result.currentPage()).isEqualTo(page);
+		assertThat(result.pageSize()).isEqualTo(size);
+
+		GatheringBookListResponse response1 = result.items().get(0);
+		assertThat(response1.bookId()).isEqualTo(1L);
+		assertThat(response1.bookName()).isEqualTo("클린 코드");
+		assertThat(response1.author()).isEqualTo("Robert C. Martin");
+		assertThat(response1.ratingAverage()).isEqualTo(4.5);
+
+		GatheringBookListResponse response2 = result.items().get(1);
+		assertThat(response2.bookId()).isEqualTo(2L);
+		assertThat(response2.bookName()).isEqualTo("리팩터링");
+		assertThat(response2.ratingAverage()).isEqualTo(3.8);
+
+		verify(gatheringValidator).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator).validateMembership(gatheringId, userId);
+	}
+
+	@Test
+	@DisplayName("모임 책장 조회 성공 - 빈 페이지 반환")
+	void getGatheringBooks_Success_EmptyPage() {
+		// given
+		Long gatheringId = 1L;
+		Long userId = 1L;
+		int page = 0;
+		int size = 10;
+
+		Page<GatheringBook> emptyPage = new PageImpl<>(List.of(), PageRequest.of(page, size), 0);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+		given(gatheringBookRepository.findGatheringBooks(eq(gatheringId), any(Pageable.class)))
+				.willReturn(emptyPage);
+
+		// when
+		PageResponse<GatheringBookListResponse> result = gatheringService.getGatheringBooks(gatheringId, page, size);
+
+		// then
+		assertThat(result).isNotNull();
+		assertThat(result.items()).isEmpty();
+		assertThat(result.totalCount()).isEqualTo(0);
+		assertThat(result.currentPage()).isEqualTo(page);
+		assertThat(result.pageSize()).isEqualTo(size);
+
+		verify(gatheringValidator).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator).validateMembership(gatheringId, userId);
+		verify(meetingMemberRepository, times(0)).findByGatheringId(any());
+		verify(bookReviewRepository, times(0)).findMeetingBookReviews(any(), any());
+	}
+
+	@Test
+	@DisplayName("모임 책장 조회 성공 - 약속 멤버가 없어서 평점이 null")
+	void getGatheringBooks_Success_NoMeetingMembers_NullRatings() {
+		// given
+		Long gatheringId = 1L;
+		Long userId = 1L;
+		int page = 0;
+		int size = 10;
+
+		Book book1 = Book.builder()
+				.id(1L)
+				.bookName("클린 코드")
+				.author("Robert C. Martin")
+				.thumbnail("clean-code.jpg")
+				.isbn("978-0132350884")
+				.build();
+
+		GatheringBook gatheringBook1 = GatheringBook.builder()
+				.id(1L)
+				.gathering(gathering1)
+				.book(book1)
+				.build();
+
+		List<GatheringBook> gatheringBooks = List.of(gatheringBook1);
+		Page<GatheringBook> gatheringBookPage = new PageImpl<>(gatheringBooks, PageRequest.of(page, size), 1);
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+		given(gatheringBookRepository.findGatheringBooks(eq(gatheringId), any(Pageable.class)))
+				.willReturn(gatheringBookPage);
+		given(meetingMemberRepository.findByGatheringId(gatheringId)).willReturn(List.of());
+
+		// when
+		PageResponse<GatheringBookListResponse> result = gatheringService.getGatheringBooks(gatheringId, page, size);
+
+		// then
+		assertThat(result).isNotNull();
+		assertThat(result.items()).hasSize(1);
+
+		GatheringBookListResponse response = result.items().get(0);
+		assertThat(response.bookId()).isEqualTo(1L);
+		assertThat(response.ratingAverage()).isNull();
+
+		verify(bookReviewRepository, times(0)).findMeetingBookReviews(any(), any());
+	}
+
+	@Test
+	@DisplayName("모임 책장 조회 실패 - 모임을 찾을 수 없음")
+	void getGatheringBooks_Fail_GatheringNotFound() {
+		// given
+		Long gatheringId = 999L;
+		Long userId = 1L;
+		int page = 0;
+		int size = 10;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+		doThrow(new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND))
+				.when(gatheringValidator).validateAndGetGathering(gatheringId);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.getGatheringBooks(gatheringId, page, size))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.GATHERING_NOT_FOUND.getMessage());
+
+		verify(gatheringValidator).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator, times(0)).validateMembership(any(), any());
+	}
+
+	@Test
+	@DisplayName("모임 책장 조회 실패 - 모임 멤버가 아님")
+	void getGatheringBooks_Fail_NotMember() {
+		// given
+		Long gatheringId = 1L;
+		Long userId = 999L;
+		int page = 0;
+		int size = 10;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+		doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
+				.when(gatheringValidator).validateMembership(gatheringId, userId);
+
+		// when & then
+		assertThatThrownBy(() -> gatheringService.getGatheringBooks(gatheringId, page, size))
+				.isInstanceOf(GatheringException.class)
+				.hasMessage(GatheringErrorCode.NOT_GATHERING_MEMBER.getMessage());
+
+		verify(gatheringValidator).validateAndGetGathering(gatheringId);
+		verify(gatheringValidator).validateMembership(gatheringId, userId);
+		verify(gatheringBookRepository, times(0)).findGatheringBooks(any(), any());
 	}
 }

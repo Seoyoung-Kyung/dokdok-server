@@ -81,6 +81,7 @@ public class PersonalRetrospectiveController implements PersonalRetrospectiveApi
         return ApiResponse.deleted("개인 회고 삭제를 성공했습니다.");
     }
 
+    @Override
     @GetMapping("/{retrospectiveId}")
     public ResponseEntity<ApiResponse<PersonalRetrospectiveDetailResponse>> getPersonalRetrospective(
             @PathVariable Long meetingId,
