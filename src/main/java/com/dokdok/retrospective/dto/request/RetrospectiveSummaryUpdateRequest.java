@@ -29,7 +29,20 @@ public record RetrospectiveSummaryUpdateRequest(
             String summary,
 
             @Schema(description = "주요 포인트", example = "수정된 주요 포인트...")
-            @NotBlank(message = "주요 포인트는 필수입니다.")
-            String keyPoint
+            @NotEmpty(message = "주요 포인트는 필수입니다.")
+            @Valid
+            List<KeyPointUpdateRequest> keyPoints
     ){}
+
+    @Schema(description = "주요 포인트 수정 요청")
+    @Builder
+    public record KeyPointUpdateRequest(
+            @Schema(description = "포인트 제목", example = "사회가 만든 욕망의 구조")
+            @NotBlank(message = "포인트 제목은 필수입니다.")
+            String title,
+
+            @Schema(description = "포인트 내용 목록")
+            @NotEmpty(message = "포인트 내용은 필수입니다.")
+            List<@NotBlank(message = "포인트 내용은 비어있을 수 없습니다.") String> details
+    ) {}
 }

@@ -181,7 +181,10 @@ class MeetingRetrospectiveServiceTest {
 				.id(1L)
 				.topic(topic)
 				.summary("요약1")
-				.keyPoint("핵심 포인트")
+				.keyPoints(List.of(new TopicRetrospectiveSummary.KeyPoint(
+						"핵심 포인트",
+						List.of("포인트 상세")
+				)))
 				.build();
 
 		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -198,7 +201,8 @@ class MeetingRetrospectiveServiceTest {
 
 			assertThat(response.topics()).hasSize(1);
 			assertThat(response.topics().get(0).summary()).isEqualTo("요약1");
-			assertThat(response.topics().get(0).keyPoint()).isEqualTo("핵심 포인트");
+			assertThat(response.topics().get(0).keyPoints()).hasSize(1);
+			assertThat(response.topics().get(0).keyPoints().get(0).title()).isEqualTo("핵심 포인트");
 			assertThat(response.topics().get(0).comments()).isEmpty();
 		}
 	}

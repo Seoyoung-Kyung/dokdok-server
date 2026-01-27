@@ -29,6 +29,9 @@ public record RetrospectiveSummaryResponse(
             @Schema(description = "토픽 ID", example = "1")
             Long topicId,
 
+            @Schema(description = "주제 순번", example = "1")
+            Integer confirmOrder,
+
             @Schema(description = "토픽 제목", example = "가짜 욕망, 유사 욕망")
             String topicTitle,
 
@@ -38,16 +41,38 @@ public record RetrospectiveSummaryResponse(
             @Schema(description = "핵심 요약", example = "참여자들은 『데미안』 속 싱클레어가...")
             String summary,
 
-            @Schema(description = "주요 포인트", example = "1) 사회가 만든 욕망의 구조...")
-            String keyPoint
+            @Schema(description = "주요 포인트 목록")
+            List<KeyPointResponse> keyPoints
     ) {
         public static TopicSummaryResponse from(Topic topic, TopicRetrospectiveSummary summary) {
             return TopicSummaryResponse.builder()
                     .topicId(topic.getId())
+                    .confirmOrder(topic.getConfirmOrder())
                     .topicTitle(topic.getTitle())
                     .topicDescription(topic.getDescription())
                     .summary(summary != null ? summary.getSummary() : null)
-                    .keyPoint(summary != null ? summary.getKeyPoint() : null)
+                    .keyPoints(summary != null && summary.getKeyPoints() != null
+                            ? summary.getKeyPoints().stream()
+                            .map(KeyPointResponse::from)
+                            .toList()
+                            : null)
+                    .build();
+        }
+    }
+
+    @Schema(description = "주요 포인트")
+    @Builder
+    public record KeyPointResponse(
+            @Schema(description = "포인트 제목", example = "사회가 만든 욕망의 구조")
+            String title,
+
+            @Schema(description = "포인트 내용 목록")
+            List<String> details
+    ) {
+        public static KeyPointResponse from(TopicRetrospectiveSummary.KeyPoint keyPoint) {
+            return KeyPointResponse.builder()
+                    .title(keyPoint.getTitle())
+                    .details(keyPoint.getDetails())
                     .build();
         }
     }
