@@ -86,7 +86,12 @@ public class RetrospectiveSummaryService {
                     .findByTopicId(topicRequest.topicId())
                     .orElseThrow(() -> new RetrospectiveException(RetrospectiveErrorCode.SUMMARY_NOT_FOUND));
 
-            summary.update(topicRequest.summary(), topicRequest.keyPoint());
+            // KeyPointUpdateRequest -> KeyPoint 변환
+            List<TopicRetrospectiveSummary.KeyPoint> keyPoints = topicRequest.keyPoints().stream()
+                    .map(kp -> new TopicRetrospectiveSummary.KeyPoint(kp.title(), kp.details()))
+                    .toList();
+
+            summary.update(topicRequest.summary(), keyPoints);
         }
 
         // 수정된 결과 반환
