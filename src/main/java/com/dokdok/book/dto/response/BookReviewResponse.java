@@ -1,6 +1,7 @@
 package com.dokdok.book.dto.response;
 
 import com.dokdok.book.entity.BookReview;
+import com.dokdok.book.entity.KeywordType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -24,7 +25,8 @@ public record BookReviewResponse(
         List<KeywordInfo> keywordInfos = review.getKeywords().stream()
                 .map(reviewKeyword -> new KeywordInfo(
                         reviewKeyword.getKeyword().getId(),
-                        reviewKeyword.getKeyword().getKeywordName()
+                        reviewKeyword.getKeyword().getKeywordName(),
+                        reviewKeyword.getKeyword().getKeywordType()
                 ))
                 .collect(Collectors.toList());
 
@@ -41,8 +43,10 @@ public record BookReviewResponse(
     public record KeywordInfo(
             @Schema(description = "키워드 ID", example = "3")
             Long id,
-            @Schema(description = "키워드 이름", example = "인상적")
-            String name
+            @Schema(description = "키워드 이름", example = "판타지")
+            String name,
+            @Schema(description = "키워드 타입", example = "BOOK")
+            KeywordType type
     ) {
     }
 }

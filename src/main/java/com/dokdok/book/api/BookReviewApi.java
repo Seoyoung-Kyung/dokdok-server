@@ -43,14 +43,18 @@ public interface BookReviewApi {
                             schema = @Schema(implementation = BookReviewResponse.class),
                             examples = @ExampleObject(value = """
                                     {
-                                      "reviewId": 101,
-                                      "bookId": 12,
-                                      "userId": 5,
-                                      "rating": 4.5,
-                                      "keywords": [
-                                        { "id": 3, "name": "감동" },
-                                        { "id": 7, "name": "몰입" }
-                                      ]
+                                      "code": "CREATED",
+                                      "message": "책 리뷰가 저장되었습니다.",
+                                      "data": {
+                                        "reviewId": 101,
+                                        "bookId": 12,
+                                        "userId": 5,
+                                        "rating": 4.5,
+                                        "keywords": [
+                                          { "id": 3, "name": "판타지", "type": "BOOK" },
+                                          { "id": 7, "name": "몰입", "type": "IMPRESSION" }
+                                        ]
+                                      }
                                     }
                                     """))
             ),
@@ -121,14 +125,18 @@ public interface BookReviewApi {
                             schema = @Schema(implementation = BookReviewResponse.class),
                             examples = @ExampleObject(value = """
                                     {
-                                      "reviewId": 101,
-                                      "bookId": 12,
-                                      "userId": 5,
-                                      "rating": 4.5,
-                                      "keywords": [
-                                        { "id": 3, "name": "감동" },
-                                        { "id": 7, "name": "몰입" }
-                                      ]
+                                      "code": "SUCCESS",
+                                      "message": "책 리뷰 조회가 완료되었습니다.",
+                                      "data": {
+                                        "reviewId": 101,
+                                        "bookId": 12,
+                                        "userId": 5,
+                                        "rating": 4.5,
+                                        "keywords": [
+                                          { "id": 3, "name": "감동", "type": "BOOK" },
+                                          { "id": 7, "name": "몰입", "type": "IMPRESSION" }
+                                        ]
+                                      }
                                     }
                                     """))
             ),
@@ -167,14 +175,18 @@ public interface BookReviewApi {
                             schema = @Schema(implementation = BookReviewResponse.class),
                             examples = @ExampleObject(value = """
                                     {
-                                      "reviewId": 101,
-                                      "bookId": 12,
-                                      "userId": 5,
-                                      "rating": 3.5,
-                                      "keywords": [
-                                        { "id": 5, "name": "희망" },
-                                        { "id": 8, "name": "위로" }
-                                      ]
+                                      "code": "SUCCESS",
+                                      "message": "책 리뷰가 수정되었습니다.",
+                                      "data": {
+                                        "reviewId": 101,
+                                        "bookId": 12,
+                                        "userId": 5,
+                                        "rating": 3.5,
+                                        "keywords": [
+                                          { "id": 5, "name": "희망", "type": "BOOK" },
+                                          { "id": 8, "name": "위로", "type": "IMPRESSION" }
+                                        ]
+                                      }
                                     }
                                     """))
             ),
