@@ -340,7 +340,7 @@ public interface PersonalRetrospectiveApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PersonalRetrospectiveDetailResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code": "SUCCESS", "message": "개인 회고 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [], "othersPerspectives": [], "freeTexts": []}}}
+                                    {"code": "SUCCESS", "message": "개인 회고 조회를 성공했습니다.", "data": {"retrospectiveId": 1, "retrospective": {"changedThoughts": [{"topicId": 1, "topicTitle": "1장 깨끗한 코드", "keyIssue": "요약된 핵심 쟁점", "preOpinion": "토론 전 나의 생각", "postOpinion": "토론 후 바뀐 생각"}], "othersPerspectives": [{"topicId": 1, "meetingMemberId": 10, "profileImage": "https://example.com/profile.jpg", "nickname": "독서왕", "opinionContent": "상대 의견이 인상적이었습니다.", "impressiveReason": "새로운 관점을 제공했기 때문입니다."}], "freeTexts": [{"title": "오늘의 한 줄", "content": "회고 내용을 작성합니다."}]}}}
                                     """)
                     )
             ),
