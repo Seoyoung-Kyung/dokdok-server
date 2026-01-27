@@ -6,9 +6,9 @@ import com.dokdok.retrospective.entity.PersonalMeetingRetrospective;
 import java.util.List;
 
 /**
- * 개인 회고 목록 페이지네이션 응답을 위한 헬퍼 클래스
+ * 개인 회고 목록 페이지네이션 응답을 위한 헬퍼 레코드
  */
-public class RetrospectiveRecordsPageResponse {
+public record RetrospectiveRecordsPageResponse() {
 
     public static CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor> from(
             List<RetrospectiveRecordResponse> items,

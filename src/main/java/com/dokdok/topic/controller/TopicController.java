@@ -1,15 +1,13 @@
 package com.dokdok.topic.controller;
 
 import com.dokdok.global.response.ApiResponse;
-import com.dokdok.global.response.CursorResponse;
 import com.dokdok.topic.api.TopicApi;
 import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
-import com.dokdok.topic.dto.response.TopicsCursor;
-import com.dokdok.topic.dto.response.TopicsResponse;
+import com.dokdok.topic.dto.response.TopicsWithActionsResponse;
 import com.dokdok.topic.entity.TopicMessage;
 import com.dokdok.topic.service.TopicService;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +36,7 @@ public class TopicController implements TopicApi {
 
     @Override
     @GetMapping
-    public ResponseEntity<ApiResponse<CursorResponse<TopicsResponse.TopicDto, TopicsCursor>>> getTopics(
+    public ResponseEntity<ApiResponse<TopicsWithActionsResponse>> getTopics(
             Long gatheringId,
             Long meetingId,
             @RequestParam(defaultValue = "10") Integer pageSize,
@@ -46,7 +44,7 @@ public class TopicController implements TopicApi {
             @RequestParam(required = false) Long cursorTopicId
     ) {
 
-        CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
+        TopicsWithActionsResponse response = topicService.getTopics(
                 gatheringId, meetingId, pageSize, cursorLikeCount, cursorTopicId
         );
 

@@ -1,19 +1,37 @@
 package com.dokdok.topic.dto.response;
 
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
-import com.dokdok.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.util.List;
+import java.util.Set;
 
-@Schema(description = "주제 목록 응답")
-public record TopicsResponse(
-        @Schema(description = "주제 목록")
-        List<TopicDto> topicDtos
+@Builder
+@Schema(description = "주제 목록 및 권한 정보 응답")
+public record TopicsWithActionsResponse(
+        @Schema(description = "주제 목록 페이지 정보")
+        CursorResponse<TopicDto, TopicsCursor> page,
+
+        @Schema(description = "사용자 권한 정보")
+        Actions actions
 ) {
+
+    @Schema(description = "사용자 권한 정보")
+    public record Actions(
+            @Schema(description = "주제 확정 가능 여부", example = "true")
+            Boolean canConfirm,
+
+            @Schema(description = "주제 제안 가능 여부", example = "true")
+            Boolean canSuggest
+    ) {
+        public static Actions of(Boolean canConfirm, Boolean canSuggest) {
+            return new Actions(canConfirm, canSuggest);
+        }
+    }
 
     @Builder
     @Schema(description = "주제 정보")
@@ -70,7 +88,29 @@ public record TopicsResponse(
         }
     }
 
-    public static TopicsResponse from(List<TopicsResponse.TopicDto> topicDtos) {
-        return new TopicsResponse(topicDtos);
+    public static TopicsWithActionsResponse from(
+            List<Topic> topics,
+            int pageSize,
+            boolean hasNext,
+            Set<Long> deletableTopicIds,
+            Actions actions
+    ) {
+        List<TopicDto> topicDtos = topics.stream()
+                .map(topic -> TopicDto.from(
+                        topic,
+                        deletableTopicIds.contains(topic.getId())
+                ))
+                .toList();
+
+        TopicsCursor cursor = null;
+        if (hasNext && !topics.isEmpty()) {
+            Topic lastTopic = topics.get(topics.size() - 1);
+            cursor = TopicsCursor.from(lastTopic);
+        }
+
+        CursorResponse<TopicDto, TopicsCursor> page =
+                CursorResponse.of(topicDtos, pageSize, hasNext, cursor);
+
+        return new TopicsWithActionsResponse(page, actions);
     }
 }

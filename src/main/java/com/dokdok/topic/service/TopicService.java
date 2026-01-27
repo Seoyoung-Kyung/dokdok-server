@@ -1,10 +1,10 @@
 package com.dokdok.topic.service;
 
 import com.dokdok.gathering.service.GatheringValidator;
-import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
+import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
@@ -12,9 +12,7 @@ import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.ConfirmedTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
-import com.dokdok.topic.dto.response.TopicsCursor;
-import com.dokdok.topic.dto.response.TopicsPageResponse;
-import com.dokdok.topic.dto.response.TopicsResponse;
+import com.dokdok.topic.dto.response.TopicsWithActionsResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicLike;
 import com.dokdok.topic.entity.TopicMessage;
@@ -30,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -78,7 +77,7 @@ public class TopicService {
     }
 
     @Transactional(readOnly = true)
-    public CursorResponse<TopicsResponse.TopicDto, TopicsCursor> getTopics(
+    public TopicsWithActionsResponse getTopics(
             Long gatheringId,
             Long meetingId,
             int pageSize,
@@ -89,6 +88,11 @@ public class TopicService {
 
         gatheringValidator.validateGathering(gatheringId);
         meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
+
+        boolean canConfirm = topicRepository.canConfirmTopic(meetingId, userId);
+        boolean canSuggest = topicRepository.canSuggestTopic(meetingId, userId);
+
+        TopicsWithActionsResponse.Actions actions = TopicsWithActionsResponse.Actions.of(canConfirm, canSuggest);
 
         // pageSize + 1개를 조회하여 다음 페이지 존재 여부 판단
         PageRequest pageable = PageRequest.of(0, pageSize + 1);
@@ -117,7 +121,7 @@ public class TopicService {
             deletableTopicIds = topicRepository.findDeletableTopicIds(topicIds, userId);
         }
 
-        return TopicsPageResponse.from(topics, pageSize, hasNext, deletableTopicIds);
+        return TopicsWithActionsResponse.from(topics, pageSize, hasNext, deletableTopicIds, actions);
     }
 
     @Transactional

@@ -5,7 +5,6 @@ import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
-import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
@@ -18,8 +17,7 @@ import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
 import com.dokdok.topic.dto.response.ConfirmedTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
-import com.dokdok.topic.dto.response.TopicsCursor;
-import com.dokdok.topic.dto.response.TopicsResponse;
+import com.dokdok.topic.dto.response.TopicsWithActionsResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicLike;
@@ -539,24 +537,24 @@ class TopicServiceTest {
                 given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
                         .willReturn(Set.of(1L));
 
-                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
+                TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.items()).hasSize(2);
-                assertThat(response.pageSize()).isEqualTo(10);
-                assertThat(response.hasNext()).isFalse();
-                assertThat(response.nextCursor()).isNull();
+                assertThat(response.page().items()).hasSize(2);
+                assertThat(response.page().pageSize()).isEqualTo(10);
+                assertThat(response.page().hasNext()).isFalse();
+                assertThat(response.page().nextCursor()).isNull();
 
-                assertThat(response.items().get(0).title()).isEqualTo("의미 있는 이름 짓기");
-                assertThat(response.items().get(0).likeCount()).isEqualTo(5);
-                assertThat(response.items().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
-                assertThat(response.items().get(0).canDelete()).isTrue();
+                assertThat(response.page().items().get(0).title()).isEqualTo("의미 있는 이름 짓기");
+                assertThat(response.page().items().get(0).likeCount()).isEqualTo(5);
+                assertThat(response.page().items().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+                assertThat(response.page().items().get(0).canDelete()).isTrue();
 
-                assertThat(response.items().get(1).title()).isEqualTo("함수 작성 원칙");
-                assertThat(response.items().get(1).likeCount()).isEqualTo(3);
-                assertThat(response.items().get(1).canDelete()).isFalse();
+                assertThat(response.page().items().get(1).title()).isEqualTo("함수 작성 원칙");
+                assertThat(response.page().items().get(1).likeCount()).isEqualTo(3);
+                assertThat(response.page().items().get(1).canDelete()).isFalse();
 
                 verify(gatheringValidator).validateGathering(gatheringId);
                 verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
@@ -604,13 +602,13 @@ class TopicServiceTest {
                 given(topicRepository.findTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(topics);
 
-                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
+                TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.items()).hasSize(1);
-                assertThat(response.items().get(0).canDelete()).isFalse();
+                assertThat(response.page().items()).hasSize(1);
+                assertThat(response.page().items().get(0).canDelete()).isFalse();
 
                 verify(topicRepository, never()).findDeletableTopicIds(any(), any());
             }
@@ -637,15 +635,15 @@ class TopicServiceTest {
                 given(topicRepository.findTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(List.of());
 
-                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
+                TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.items()).isEmpty();
-                assertThat(response.pageSize()).isEqualTo(10);
-                assertThat(response.hasNext()).isFalse();
-                assertThat(response.nextCursor()).isNull();
+                assertThat(response.page().items()).isEmpty();
+                assertThat(response.page().pageSize()).isEqualTo(10);
+                assertThat(response.page().hasNext()).isFalse();
+                assertThat(response.page().nextCursor()).isNull();
 
                 verify(gatheringValidator).validateGathering(gatheringId);
                 verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
@@ -709,16 +707,16 @@ class TopicServiceTest {
                 given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
                         .willReturn(Set.of());
 
-                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
+                TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.items()).hasSize(2);
-                assertThat(response.hasNext()).isTrue();
-                assertThat(response.nextCursor()).isNotNull();
-                assertThat(response.nextCursor().likeCount()).isEqualTo(5);
-                assertThat(response.nextCursor().topicId()).isEqualTo(2L);
+                assertThat(response.page().items()).hasSize(2);
+                assertThat(response.page().hasNext()).isTrue();
+                assertThat(response.page().nextCursor()).isNotNull();
+                assertThat(response.page().nextCursor().likeCount()).isEqualTo(5);
+                assertThat(response.page().nextCursor().topicId()).isEqualTo(2L);
 
                 verify(topicRepository).findTopicsFirstPage(eq(meetingId), any(Pageable.class));
             }
@@ -763,14 +761,14 @@ class TopicServiceTest {
                 given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
                         .willReturn(Set.of());
 
-                CursorResponse<TopicsResponse.TopicDto, TopicsCursor> response = topicService.getTopics(
+                TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, cursorLikeCount, cursorTopicId
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.items()).hasSize(1);
-                assertThat(response.hasNext()).isFalse();
-                assertThat(response.nextCursor()).isNull();
+                assertThat(response.page().items()).hasSize(1);
+                assertThat(response.page().hasNext()).isFalse();
+                assertThat(response.page().nextCursor()).isNull();
 
                 verify(topicRepository).findTopicsAfterCursor(
                         eq(meetingId), eq(cursorLikeCount), eq(cursorTopicId), any(Pageable.class)
