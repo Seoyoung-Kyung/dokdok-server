@@ -60,7 +60,7 @@ public class GatheringService {
         Gathering gathering = Gathering.of(request.gatheringName(), request.gatheringDescription(), invitationLink, user);
         Gathering savedGathering = gatheringRepository.save(gathering);
 
-        saveGatheringMember(savedGathering, user, GatheringRole.LEADER, GatheringMemberStatus.ACTIVE);
+        saveGatheringMember(savedGathering, user, GatheringRole.LEADER, GatheringMemberStatus.ACTIVE, LocalDateTime.now());
 
         return GatheringCreateResponse.from(
                 savedGathering,
@@ -93,7 +93,7 @@ public class GatheringService {
         Gathering gathering = gatheringValidator.validateInvitationLink(invitationLink);
         gatheringValidator.validateJoinedGathering(gathering.getId(), user.getId());
 
-        GatheringMember member = saveGatheringMember(gathering, user, GatheringRole.MEMBER, GatheringMemberStatus.PENDING);
+        GatheringMember member = saveGatheringMember(gathering, user, GatheringRole.MEMBER, GatheringMemberStatus.PENDING, null);
 
         return GatheringJoinResponse.from(member);
     }
@@ -328,9 +328,10 @@ public class GatheringService {
      * 공통 메서드
      * 모임 멤버를 추가합니다.
      */
-    private GatheringMember saveGatheringMember(Gathering gathering, User user, GatheringRole role, GatheringMemberStatus status) {
 
-        GatheringMember gatheringMember = GatheringMember.of(gathering, user, role, status);
+    private GatheringMember saveGatheringMember(Gathering gathering, User user, GatheringRole role, GatheringMemberStatus status, LocalDateTime joinedAt) {
+
+        GatheringMember gatheringMember = GatheringMember.of(gathering, user, role, status, joinedAt);
         return gatheringMemberRepository.save(gatheringMember);
     }
 
