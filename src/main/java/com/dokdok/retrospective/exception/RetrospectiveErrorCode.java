@@ -13,7 +13,8 @@ public enum RetrospectiveErrorCode implements BaseErrorCode {
     RETROSPECTIVE_NOT_FOUND("R102", "회고를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     MEETING_RETROSPECTIVE_NOT_FOUND("R103", "공동 회고 내용을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     RETROSPECTIVE_ALREADY_DELETED("R104", "이미 삭제된 개인 회고입니다.", HttpStatus.NOT_FOUND),
-    NO_ACCESS_RETROSPECTIVE("R105", "회고에 접근할 권한이 없습니다.", HttpStatus.FORBIDDEN);
+    NO_ACCESS_RETROSPECTIVE("R105", "회고에 접근할 권한이 없습니다.", HttpStatus.FORBIDDEN),
+    SUMMARY_NOT_FOUND("R106", "AI 요약을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
 
     private final String code;
     private final String message;

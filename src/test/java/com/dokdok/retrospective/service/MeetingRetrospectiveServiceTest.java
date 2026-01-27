@@ -43,9 +43,6 @@ import static org.mockito.Mockito.*;
 class MeetingRetrospectiveServiceTest {
 
 	@Mock
-	private MeetingRepository meetingRepository;
-
-	@Mock
 	private TopicRepository topicRepository;
 
 	@Mock
@@ -183,7 +180,8 @@ class MeetingRetrospectiveServiceTest {
 		TopicRetrospectiveSummary summary = TopicRetrospectiveSummary.builder()
 				.id(1L)
 				.topic(topic)
-				.summarizedOpinions(List.of("요약1"))
+				.summary("요약1")
+				.keyPoint("핵심 포인트")
 				.build();
 
 		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -199,7 +197,8 @@ class MeetingRetrospectiveServiceTest {
 			MeetingRetrospectiveResponse response = meetingRetrospectiveService.getMeetingRetrospective(meetingId);
 
 			assertThat(response.topics()).hasSize(1);
-			assertThat(response.topics().get(0).summarizedOpinions()).containsExactly("요약1");
+			assertThat(response.topics().get(0).summary()).isEqualTo("요약1");
+			assertThat(response.topics().get(0).keyPoint()).isEqualTo("핵심 포인트");
 			assertThat(response.topics().get(0).comments()).isEmpty();
 		}
 	}

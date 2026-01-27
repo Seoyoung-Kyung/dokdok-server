@@ -89,4 +89,22 @@ public class RetrospectiveValidator {
 
         return retrospectives;
     }
+
+    public void validateSummaryUpdatePermission(Long gatheringId, Long meetingId, Long userId) {
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
+
+        // 약속장인지 확인
+        boolean isMeetingLeader = meetingValidator.isMeetingLeader(meetingId, userId);
+        if (isMeetingLeader) {
+            return;
+        }
+
+        // 모임장인지 확인
+        GatheringMember member = gatheringMemberRepository.findByGatheringIdAndUserId(gatheringId, userId)
+                .orElseThrow(() -> new RetrospectiveException(RetrospectiveErrorCode.NO_ACCESS_RETROSPECTIVE));
+
+        if (member.getRole() != GatheringRole.LEADER) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.NO_ACCESS_RETROSPECTIVE);
+        }
+    }
 }
