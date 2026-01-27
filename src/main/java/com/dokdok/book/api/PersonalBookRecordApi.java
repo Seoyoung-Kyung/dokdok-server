@@ -262,7 +262,7 @@ public interface PersonalBookRecordApi {
     );
 
     @Operation(
-            summary = "사전 의견 조회",
+            summary = "사전 의견 조회 (developer: 양재웅)",
             description = """
                     독서 기록의 사전 의견 정보를 조회합니다.
                     - 경로의 personalBookId로 책을 지정합니다.
