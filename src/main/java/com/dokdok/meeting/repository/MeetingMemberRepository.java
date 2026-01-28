@@ -81,6 +81,45 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
             @Param("meetingStatus") MeetingStatus meetingStatus
     );
 
+    @Query("""
+            SELECT count(mm) FROM MeetingMember mm
+            JOIN mm.meeting m
+            WHERE mm.user.id = :userId
+            AND mm.canceledAt IS NULL
+            AND m.meetingStatus IN :meetingStatuses
+            """)
+    int countMyMeetingsByStatuses(
+            @Param("userId") Long userId,
+            @Param("meetingStatuses") List<MeetingStatus> meetingStatuses
+    );
+
+    @Query("""
+            SELECT count(mm) FROM MeetingMember mm
+            JOIN mm.meeting m
+            WHERE mm.user.id = :userId
+            AND mm.canceledAt IS NULL
+            AND m.meetingStatus = :meetingStatus
+            """)
+    int countMyMeetingsByStatus(
+            @Param("userId") Long userId,
+            @Param("meetingStatus") MeetingStatus meetingStatus
+    );
+
+    @Query("""
+            SELECT count(mm) FROM MeetingMember mm
+            JOIN mm.meeting m
+            WHERE mm.user.id = :userId
+            AND mm.canceledAt IS NULL
+            AND m.meetingStatus = :meetingStatus
+            AND m.meetingStartDate BETWEEN :startDate AND :endDate
+            """)
+    int countMyUpcomingMeetings(
+            @Param("userId") Long userId,
+            @Param("meetingStatus") MeetingStatus meetingStatus,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
     @Query(
             value = """
                     SELECT m FROM MeetingMember mm
@@ -126,6 +165,78 @@ public interface MeetingMemberRepository extends JpaRepository<MeetingMember, Lo
             @Param("userId") Long userId,
             @Param("gatheringId") Long gatheringId,
             @Param("meetingStatus") MeetingStatus meetingStatus,
+            @Param("cursorStartDateTime") LocalDateTime cursorStartDateTime,
+            @Param("cursorMeetingId") Long cursorMeetingId,
+            Pageable pageable
+    );
+
+    @Query(
+            value = """
+                    SELECT m FROM MeetingMember mm
+                    JOIN mm.meeting m
+                    JOIN FETCH m.book
+                    JOIN FETCH m.gathering
+                    WHERE mm.user.id = :userId
+                    AND mm.canceledAt IS NULL
+                    AND m.meetingStatus IN :meetingStatuses
+                    AND (CAST(:cursorStartDateTime AS timestamp) IS NULL
+                        OR m.meetingStartDate > :cursorStartDateTime
+                        OR (m.meetingStartDate = :cursorStartDateTime AND m.id > :cursorMeetingId))
+                    ORDER BY m.meetingStartDate ASC, m.id ASC
+                    """
+    )
+    List<Meeting> findMyMeetingsByStatusesAfterCursor(
+            @Param("userId") Long userId,
+            @Param("meetingStatuses") List<MeetingStatus> meetingStatuses,
+            @Param("cursorStartDateTime") LocalDateTime cursorStartDateTime,
+            @Param("cursorMeetingId") Long cursorMeetingId,
+            Pageable pageable
+    );
+
+    @Query(
+            value = """
+                    SELECT m FROM MeetingMember mm
+                    JOIN mm.meeting m
+                    JOIN FETCH m.book
+                    JOIN FETCH m.gathering
+                    WHERE mm.user.id = :userId
+                    AND mm.canceledAt IS NULL
+                    AND m.meetingStatus = :meetingStatus
+                    AND (CAST(:cursorStartDateTime AS timestamp) IS NULL
+                        OR m.meetingStartDate > :cursorStartDateTime
+                        OR (m.meetingStartDate = :cursorStartDateTime AND m.id > :cursorMeetingId))
+                    ORDER BY m.meetingStartDate ASC, m.id ASC
+                    """
+    )
+    List<Meeting> findMyMeetingsByStatusAfterCursor(
+            @Param("userId") Long userId,
+            @Param("meetingStatus") MeetingStatus meetingStatus,
+            @Param("cursorStartDateTime") LocalDateTime cursorStartDateTime,
+            @Param("cursorMeetingId") Long cursorMeetingId,
+            Pageable pageable
+    );
+
+    @Query(
+            value = """
+                    SELECT m FROM MeetingMember mm
+                    JOIN mm.meeting m
+                    JOIN FETCH m.book
+                    JOIN FETCH m.gathering
+                    WHERE mm.user.id = :userId
+                    AND mm.canceledAt IS NULL
+                    AND m.meetingStatus = :meetingStatus
+                    AND m.meetingStartDate BETWEEN :startDate AND :endDate
+                    AND (CAST(:cursorStartDateTime AS timestamp) IS NULL
+                        OR m.meetingStartDate > :cursorStartDateTime
+                        OR (m.meetingStartDate = :cursorStartDateTime AND m.id > :cursorMeetingId))
+                    ORDER BY m.meetingStartDate ASC, m.id ASC
+                    """
+    )
+    List<Meeting> findMyUpcomingMeetingsAfterCursor(
+            @Param("userId") Long userId,
+            @Param("meetingStatus") MeetingStatus meetingStatus,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
             @Param("cursorStartDateTime") LocalDateTime cursorStartDateTime,
             @Param("cursorMeetingId") Long cursorMeetingId,
             Pageable pageable
