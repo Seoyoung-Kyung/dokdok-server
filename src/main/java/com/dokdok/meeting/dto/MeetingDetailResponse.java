@@ -36,8 +36,8 @@ public record MeetingDetailResponse(
         @Schema(description = "일정 정보")
         ScheduleInfo schedule,
 
-        @Schema(description = "장소", example = "강남역 스타벅스")
-        String place,
+        @Schema(description = "장소 정보")
+        MeetingLocationDto location,
 
         @Schema(description = "참가자 정보")
         ParticipantsInfo participants,
@@ -73,7 +73,7 @@ public record MeetingDetailResponse(
                 GatheringInfo.from(meeting.getGathering()),
                 BookInfo.from(meeting.getBook()),
                 ScheduleInfo.from(meeting.getMeetingStartDate(), meeting.getMeetingEndDate()),
-                meeting.getPlace(),
+                MeetingLocationDto.from(meeting.getLocation()),
                 participantsInfo,
                 actionState
         );

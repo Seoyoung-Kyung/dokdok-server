@@ -1,5 +1,6 @@
 package com.dokdok.meeting.dto;
 
+import com.dokdok.meeting.entity.MeetingLocation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
@@ -28,7 +29,13 @@ public record MeetingCreateRequest(
         @Schema(description = "최대 참가 인원 (null 허용)", example = "10")
         Integer maxParticipants,
 
-        @Schema(description = "장소 (null 허용)", example = "강남역 스타벅스")
-        String place
+        @Schema(description = "장소 정보 (null 허용)")
+        MeetingLocationDto location
 ) {
+    public MeetingLocation toLocationEntity() {
+        if (location == null) {
+            return null;
+        }
+        return location.toEntity();
+    }
 }
