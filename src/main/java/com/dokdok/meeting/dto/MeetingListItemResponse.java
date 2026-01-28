@@ -17,6 +17,9 @@ public record MeetingListItemResponse(
         @Schema(description = "약속 이름", example = "1월 독서 모임")
         String meetingName,
 
+        @Schema(description = "약속장 이름", example = "독서왕")
+        String meetingLeaderName,
+
         @Schema(description = "책 이름", example = "클린 코드")
         String bookName,
 
