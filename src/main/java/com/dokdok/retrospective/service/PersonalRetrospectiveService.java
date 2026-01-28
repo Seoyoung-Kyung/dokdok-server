@@ -13,7 +13,6 @@ import com.dokdok.retrospective.repository.ChangedThoughtRepository;
 import com.dokdok.retrospective.repository.FreeTextRepository;
 import com.dokdok.retrospective.repository.OthersPerspectiveRepository;
 import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
-import com.dokdok.storage.service.StorageService;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
@@ -34,11 +33,9 @@ import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.user.entity.User;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 
@@ -62,7 +59,6 @@ public class PersonalRetrospectiveService {
     private final TopicValidator topicValidator;
     private final BookValidator bookValidator;
     private final PersonalRetrospectiveAssembler assembler;
-    private final StorageService storageService;
 
     @Transactional
     public PersonalRetrospectiveResponse createPersonalRetrospective(Long meetingId, PersonalRetrospectiveRequest request) {
@@ -166,14 +162,14 @@ public class PersonalRetrospectiveService {
 
     @Transactional(readOnly = true)
     public CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor> getRetrospectiveRecords(
-            Long bookId,
+            Long personalBookId,
             int pageSize,
             LocalDateTime cursorCreatedAt,
             Long cursorRetrospectiveId
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
-        bookValidator.validateBook(bookId);
+        bookValidator.validateBook(personalBookId);
 
         int fetchSize = pageSize + 1;
         PageRequest pageable = PageRequest.of(0, fetchSize);
@@ -181,11 +177,11 @@ public class PersonalRetrospectiveService {
         List<PersonalMeetingRetrospective> retrospectives;
         if (cursorCreatedAt == null || cursorRetrospectiveId == null) {
             retrospectives = personalRetrospectiveRepository.findRetrospectivesFirstPage(
-                    bookId, userId, pageable
+                    personalBookId, userId, pageable
             );
         } else {
             retrospectives = personalRetrospectiveRepository.findRetrospectivesAfterCursor(
-                    bookId, userId, cursorCreatedAt, cursorRetrospectiveId, pageable
+                    personalBookId, userId, cursorCreatedAt, cursorRetrospectiveId, pageable
             );
         }
 
@@ -217,20 +213,12 @@ public class PersonalRetrospectiveService {
                         .stream()
                         .collect(groupingBy(FreeTextProjection::retrospectiveId));
 
-        List<RetrospectiveRecordResponse> items = retrospectives.stream()
-                .map(retrospective -> RetrospectiveRecordResponse.of(
-                        retrospective.getId(),
-                        retrospective.getMeeting().getGathering().getGatheringName(),
-                        "개인 회고",
-                        retrospective.getCreatedAt(),
-                        changedThoughtsMap.getOrDefault(retrospective.getId(), List.of())
-                                .stream().map(RetrospectiveRecordResponse.ChangedThought::from).toList(),
-                        othersPerspectivesMap.getOrDefault(retrospective.getId(), List.of())
-                                .stream().map(RetrospectiveRecordResponse.OthersPerspective::from).toList(),
-                        freeTextsMap.getOrDefault(retrospective.getId(), List.of())
-                                .stream().map(RetrospectiveRecordResponse.FreeText::from).toList()
-                ))
-                .toList();
+        List<RetrospectiveRecordResponse> items = assembler.assembleRecords(
+                retrospectives,
+                changedThoughtsMap,
+                othersPerspectivesMap,
+                freeTextsMap
+        );
 
         PersonalMeetingRetrospective lastRetrospective = retrospectives.get(retrospectives.size() - 1);
 
@@ -255,7 +243,6 @@ public class PersonalRetrospectiveService {
             Long meetingId,
             Long retrospectiveId
     ) {
-
         Long userId = SecurityUtil.getCurrentUserId();
 
         meetingValidator.validateMeeting(meetingId);
@@ -272,24 +259,11 @@ public class PersonalRetrospectiveService {
         List<RetrospectiveFreeText> freeTexts =
                 freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId);
 
-        Map<Long, String> memberProfileImageMap = new HashMap<>();
-        othersPerspectives.stream()
-                .map(RetrospectiveOthersPerspective::getMeetingMember)
-                .distinct()
-                .forEach(mm -> {
-                    String profileImageUrl = mm.getUser().getProfileImageUrl();
-                    String presignedUrl = profileImageUrl != null
-                            ? storageService.getPresignedProfileImage(profileImageUrl)
-                            : null;
-                    memberProfileImageMap.put(mm.getId(), presignedUrl);
-                });
-
         return assembler.assembleView(
                 retrospectiveId,
                 changedThoughts,
                 othersPerspectives,
-                freeTexts,
-                memberProfileImageMap
+                freeTexts
         );
     }
 
@@ -353,4 +327,5 @@ public class PersonalRetrospectiveService {
             }
         }
     }
+
 }

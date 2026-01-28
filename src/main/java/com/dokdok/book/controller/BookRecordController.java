@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/book/{bookId}")
+@RequestMapping("/api/book/{personalBookId}/records")
 public class BookRecordController implements BookRecordApi {
 
     private final PersonalRetrospectiveService retrospectiveService;
@@ -28,13 +28,13 @@ public class BookRecordController implements BookRecordApi {
     @Override
     @GetMapping(value = "/retrospectives", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor>>> getRetrospectiveRecords(
-            @PathVariable Long bookId,
+            @PathVariable Long personalBookId,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorCreatedAt,
             @RequestParam(required = false) Long cursorRetrospectiveId
     ) {
         CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor> response =
-                retrospectiveService.getRetrospectiveRecords(bookId, pageSize, cursorCreatedAt, cursorRetrospectiveId);
+                retrospectiveService.getRetrospectiveRecords(personalBookId, pageSize, cursorCreatedAt, cursorRetrospectiveId);
 
         return ApiResponse.success(response, "해당 책의 개인 회고 목록 조회를 성공했습니다.");
     }

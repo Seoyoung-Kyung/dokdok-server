@@ -62,8 +62,12 @@ public record PersonalRetrospectiveEditResponse(
             String impressiveReason
     ) {
         public static OthersPerspective from(RetrospectiveOthersPerspective othersPerspective) {
+            Long topicId = othersPerspective.getTopic() != null
+                    ? othersPerspective.getTopic().getId()
+                    : null;
+
             return new OthersPerspective(
-                    othersPerspective.getTopic().getId(),
+                    topicId,
                     othersPerspective.getMeetingMember().getId(),
                     othersPerspective.getOpinionContent(),
                     othersPerspective.getImpressiveReason()
