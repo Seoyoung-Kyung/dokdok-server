@@ -230,7 +230,7 @@ public interface PersonalRetrospectiveApi {
 
             **응답 구조**
             - changedThoughts: 기존 생각의 변화 목록 (confirmOrder 순)
-            - othersPerspectives: 기존 인상 깊은 의견 목록 (confirmOrder 순)
+            - othersPerspectives: 기존 인상 깊은 의견 목록 (배열 순서 = 표시 순서)
             - freeTexts: 기존 자유 기록 목록
             - topics: 확정된 주제 목록 (confirmOrder 순)
             - meetingMembers: 본인 제외 약속 멤버 목록
@@ -325,7 +325,7 @@ public interface PersonalRetrospectiveApi {
 
             **응답 구조**
             - changedThoughts: 생각의 변화 목록 (confirmOrder 순, 주제별 사전/사후 의견)
-            - othersPerspectives: 인상 깊은 의견 목록 (confirmOrder 순, 멤버 프로필 이미지 포함)
+            - othersPerspectives: 인상 깊은 의견 목록 (confirmOrder 순 -> 같은 주제가 있을 경우 작성된 순서, 멤버 프로필 이미지 포함)
             - freeTexts: 자유 기록 목록
             """,
             parameters = {

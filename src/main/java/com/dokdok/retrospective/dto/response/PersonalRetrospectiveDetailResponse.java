@@ -69,9 +69,12 @@ public record PersonalRetrospectiveDetailResponse(
                 RetrospectiveOthersPerspective othersPerspective,
                 String profileImage
         ) {
+            Long topicId = othersPerspective.getTopic() != null
+                    ? othersPerspective.getTopic().getId()
+                    : null;
 
             return new OthersPerspective(
-                    othersPerspective.getTopic().getId(),
+                    topicId,
                     othersPerspective.getMeetingMember().getId(),
                     profileImage,
                     othersPerspective.getMeetingMember().getUser().getNickname(),

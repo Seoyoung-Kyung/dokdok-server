@@ -109,12 +109,10 @@ public class PersonalRetrospectiveAssembler {
 
         List<PersonalRetrospectiveDetailResponse.OthersPerspective> othersPerspectiveList =
                 othersPerspectives.stream()
-                        .map(op ->
-                                PersonalRetrospectiveDetailResponse.OthersPerspective.from(
-                                        op,
-                                        memberProfileImageMap.get(op.getMeetingMember().getId())
-                                )
-                        )
+                        .map(op -> PersonalRetrospectiveDetailResponse.OthersPerspective.from(
+                                op,
+                                memberProfileImageMap.get(op.getMeetingMember().getId())
+                        ))
                         .toList();
 
         List<PersonalRetrospectiveDetailResponse.FreeText> freeTextList =

@@ -34,7 +34,10 @@ import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.user.entity.User;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -166,14 +169,14 @@ public class PersonalRetrospectiveService {
 
     @Transactional(readOnly = true)
     public CursorResponse<RetrospectiveRecordResponse, RetrospectiveRecordsCursor> getRetrospectiveRecords(
-            Long bookId,
+            Long personalBookId,
             int pageSize,
             LocalDateTime cursorCreatedAt,
             Long cursorRetrospectiveId
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
-        bookValidator.validateBook(bookId);
+        bookValidator.validateBook(personalBookId);
 
         int fetchSize = pageSize + 1;
         PageRequest pageable = PageRequest.of(0, fetchSize);
@@ -181,11 +184,11 @@ public class PersonalRetrospectiveService {
         List<PersonalMeetingRetrospective> retrospectives;
         if (cursorCreatedAt == null || cursorRetrospectiveId == null) {
             retrospectives = personalRetrospectiveRepository.findRetrospectivesFirstPage(
-                    bookId, userId, pageable
+                    personalBookId, userId, pageable
             );
         } else {
             retrospectives = personalRetrospectiveRepository.findRetrospectivesAfterCursor(
-                    bookId, userId, cursorCreatedAt, cursorRetrospectiveId, pageable
+                    personalBookId, userId, cursorCreatedAt, cursorRetrospectiveId, pageable
             );
         }
 
@@ -218,18 +221,26 @@ public class PersonalRetrospectiveService {
                         .collect(groupingBy(FreeTextProjection::retrospectiveId));
 
         List<RetrospectiveRecordResponse> items = retrospectives.stream()
-                .map(retrospective -> RetrospectiveRecordResponse.of(
-                        retrospective.getId(),
-                        retrospective.getMeeting().getGathering().getGatheringName(),
-                        "개인 회고",
-                        retrospective.getCreatedAt(),
-                        changedThoughtsMap.getOrDefault(retrospective.getId(), List.of())
-                                .stream().map(RetrospectiveRecordResponse.ChangedThought::from).toList(),
-                        othersPerspectivesMap.getOrDefault(retrospective.getId(), List.of())
-                                .stream().map(RetrospectiveRecordResponse.OthersPerspective::from).toList(),
-                        freeTextsMap.getOrDefault(retrospective.getId(), List.of())
-                                .stream().map(RetrospectiveRecordResponse.FreeText::from).toList()
-                ))
+                .map(retrospective -> {
+                    Long retroId = retrospective.getId();
+                    List<ChangedThoughtProjection> changedThoughts =
+                            changedThoughtsMap.getOrDefault(retroId, List.of());
+                    List<OtherPerspectiveProjection> othersPerspectives =
+                            othersPerspectivesMap.getOrDefault(retroId, List.of());
+
+                    List<RetrospectiveRecordResponse.TopicGroup> topicGroups =
+                            buildTopicGroups(changedThoughts, othersPerspectives);
+
+                    return RetrospectiveRecordResponse.of(
+                            retroId,
+                            retrospective.getMeeting().getGathering().getGatheringName(),
+                            "개인 회고",
+                            retrospective.getCreatedAt(),
+                            topicGroups,
+                            freeTextsMap.getOrDefault(retroId, List.of())
+                                    .stream().map(RetrospectiveRecordResponse.FreeText::from).toList()
+                    );
+                })
                 .toList();
 
         PersonalMeetingRetrospective lastRetrospective = retrospectives.get(retrospectives.size() - 1);
@@ -352,5 +363,82 @@ public class PersonalRetrospectiveService {
                 retrospective.addFreeText(text);
             }
         }
+    }
+
+    private List<RetrospectiveRecordResponse.TopicGroup> buildTopicGroups(
+            List<ChangedThoughtProjection> changedThoughts,
+            List<OtherPerspectiveProjection> othersPerspectives
+    ) {
+        // Collect all unique topicIds with their confirmOrder
+        Map<Long, Integer> topicIdToConfirmOrder = new LinkedHashMap<>();
+
+        changedThoughts.forEach(ct -> {
+            if (ct.topicId() != null) {
+                topicIdToConfirmOrder.putIfAbsent(ct.topicId(), ct.confirmOrder());
+            }
+        });
+
+        othersPerspectives.forEach(op -> {
+            if (op.topicId() != null) {
+                topicIdToConfirmOrder.putIfAbsent(op.topicId(), op.confirmOrder());
+            }
+        });
+
+        boolean hasNullTopic = othersPerspectives.stream()
+                .anyMatch(op -> op.topicId() == null);
+
+        Map<Long, List<ChangedThoughtProjection>> changedThoughtsByTopic = changedThoughts.stream()
+                .filter(ct -> ct.topicId() != null)
+                .collect(groupingBy(ChangedThoughtProjection::topicId));
+
+        Map<Long, List<OtherPerspectiveProjection>> othersPerspectivesByTopic = othersPerspectives.stream()
+                .filter(op -> op.topicId() != null)
+                .collect(groupingBy(OtherPerspectiveProjection::topicId));
+
+        List<RetrospectiveRecordResponse.TopicGroup> topicGroups = topicIdToConfirmOrder.entrySet().stream()
+                .sorted(Comparator.comparing(
+                        Map.Entry::getValue,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ))
+                .map(entry -> {
+                    Long topicId = entry.getKey();
+                    Integer confirmOrder = entry.getValue();
+
+                    List<RetrospectiveRecordResponse.ChangedThought> thoughts =
+                            changedThoughtsByTopic.getOrDefault(topicId, List.of()).stream()
+                                    .map(RetrospectiveRecordResponse.ChangedThought::from)
+                                    .toList();
+
+                    List<RetrospectiveRecordResponse.OthersPerspective> perspectives =
+                            othersPerspectivesByTopic.getOrDefault(topicId, List.of()).stream()
+                                    .map(RetrospectiveRecordResponse.OthersPerspective::from)
+                                    .toList();
+
+                    return new RetrospectiveRecordResponse.TopicGroup(
+                            topicId,
+                            confirmOrder,
+                            thoughts,
+                            perspectives
+                    );
+                })
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        // Add null topic group at the end if exists
+        if (hasNullTopic) {
+            List<RetrospectiveRecordResponse.OthersPerspective> nullTopicPerspectives =
+                    othersPerspectives.stream()
+                            .filter(op -> op.topicId() == null)
+                            .map(RetrospectiveRecordResponse.OthersPerspective::from)
+                            .toList();
+
+            topicGroups.add(new RetrospectiveRecordResponse.TopicGroup(
+                    null,
+                    null,
+                    List.of(),
+                    nullTopicPerspectives
+            ));
+        }
+
+        return topicGroups;
     }
 }
