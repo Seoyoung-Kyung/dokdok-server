@@ -35,6 +35,14 @@ public class RetrospectiveValidator {
         }
     }
 
+    public void validateRetrospectiveByUser(Long retrospectiveId, Long userId) {
+        boolean exists = personalRetrospectiveRepository.existsByIdAndUserId(retrospectiveId, userId);
+
+        if (exists) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.NOT_AUTHOR_OF_RETROSPECTIVE);
+        }
+    }
+
     public void validateMeetingRetrospectiveAccess(Long gatheringId, Long meetingId, Long userId) {
         meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
 

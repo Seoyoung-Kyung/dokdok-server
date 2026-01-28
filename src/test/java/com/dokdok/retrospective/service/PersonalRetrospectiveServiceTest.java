@@ -507,8 +507,8 @@ class PersonalRetrospectiveServiceTest {
                 meetingId,
                 List.of(new PersonalRetrospectiveFormResponse.PreOpinions(10L, "주제1", "사전 의견1")),
                 List.of(
-                        new TopicInfo(10L, "주제1"),
-                        new TopicInfo(20L, "주제2")
+                        new TopicInfo(10L, "주제1", 1),
+                        new TopicInfo(20L, "주제2", 2)
                 ),
                 List.of(
                         new MemberInfo(1L, "사용자1", "url"),
@@ -565,7 +565,7 @@ class PersonalRetrospectiveServiceTest {
         PersonalRetrospectiveFormResponse expectedResponse = PersonalRetrospectiveFormResponse.of(
                 meetingId,
                 List.of(), // 빈 사전 의견
-                List.of(new TopicInfo(10L, "주제1")),
+                List.of(new TopicInfo(10L, "주제1", 1)),
                 List.of(new MemberInfo(1L, "사용자1", "url"))
         );
 
@@ -1598,7 +1598,8 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId, userId);
+            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            doNothing().when(retrospectiveValidator).validateRetrospectiveByUser(retrospectiveId, userId);
             when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
                     .thenReturn(changedThoughts);
             when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))
@@ -1621,7 +1622,8 @@ class PersonalRetrospectiveServiceTest {
 
             verify(meetingValidator).validateMeeting(meetingId);
             verify(meetingValidator).validateMeetingMember(meetingId, userId);
-            verify(retrospectiveValidator).validateRetrospective(retrospectiveId, userId);
+            verify(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            verify(retrospectiveValidator).validateRetrospectiveByUser(retrospectiveId, userId);
             verify(changedThoughtRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(othersPerspectiveRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(freeTextRepository).findByPersonalMeetingRetrospective_Id(retrospectiveId);
@@ -1654,7 +1656,8 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId, userId);
+            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            doNothing().when(retrospectiveValidator).validateRetrospectiveByUser(retrospectiveId, userId);
             when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
                     .thenReturn(changedThoughts);
             when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))
@@ -1740,7 +1743,7 @@ class PersonalRetrospectiveServiceTest {
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
             doThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND))
-                    .when(retrospectiveValidator).validateRetrospective(retrospectiveId, userId);
+                    .when(retrospectiveValidator).validateRetrospective(retrospectiveId);
 
             // when & then
             assertThatThrownBy(() ->
@@ -1822,7 +1825,8 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId, userId);
+            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            doNothing().when(retrospectiveValidator).validateRetrospectiveByUser(retrospectiveId, userId);
             when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
                     .thenReturn(changedThoughts);
             when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))

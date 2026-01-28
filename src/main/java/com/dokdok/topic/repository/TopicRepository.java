@@ -30,6 +30,7 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
                     FROM Topic t
                     WHERE t.meeting.id = :meetingId
                     AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+                    ORDER BY t.confirmOrder
             """)
     List<Topic> findConfirmedTopics(Long meetingId);
 
@@ -176,6 +177,7 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             FROM Topic t
             WHERE t.meeting.id = :meetingId
             AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+            ORDER BY t.confirmOrder
             """)
     List<Topic> findTopicsInfoByMeetingId(
             @Param("meetingId") Long meetingId

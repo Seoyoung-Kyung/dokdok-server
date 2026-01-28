@@ -154,6 +154,7 @@
 | R104 | RETROSPECTIVE_ALREADY_DELETED | 이미 삭제된 개인 회고입니다. | 404 |
 | R105 | NO_ACCESS_RETROSPECTIVE | 회고에 접근할 권한이 없습니다. | 403 |
 | R106 | SUMMARY_NOT_FOUND | AI 요약을 찾을 수 없습니다. | 404 |
+| R107 | NOT_AUTHOR_OF_RETROSPECTIVE | 사용자가 작성한 회고가 아닙니다. | 403 |
 
 ---
 

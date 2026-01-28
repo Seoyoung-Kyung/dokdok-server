@@ -73,7 +73,10 @@ class RetrospectiveSummaryServiceTest {
                 .id(100L)
                 .topic(topic)
                 .summary("기존 요약")
-                .keyPoint("기존 포인트")
+                .keyPoints(List.of(new TopicRetrospectiveSummary.KeyPoint(
+                        "기존 포인트",
+                        List.of("포인트 상세")
+                )))
                 .build();
     }
 
@@ -97,7 +100,8 @@ class RetrospectiveSummaryServiceTest {
             assertThat(response.topics()).hasSize(1);
             assertThat(response.topics().get(0).topicId()).isEqualTo(topic.getId());
             assertThat(response.topics().get(0).summary()).isEqualTo("기존 요약");
-            assertThat(response.topics().get(0).keyPoint()).isEqualTo("기존 포인트");
+            assertThat(response.topics().get(0).keyPoints()).hasSize(1);
+            assertThat(response.topics().get(0).keyPoints().get(0).title()).isEqualTo("기존 포인트");
         }
     }
 
@@ -108,7 +112,10 @@ class RetrospectiveSummaryServiceTest {
                 .topics(List.of(RetrospectiveSummaryUpdateRequest.TopicSummaryUpdateRequest.builder()
                         .topicId(topic.getId())
                         .summary("수정 요약")
-                        .keyPoint("수정 포인트")
+                        .keyPoints(List.of(RetrospectiveSummaryUpdateRequest.KeyPointUpdateRequest.builder()
+                                .title("수정 포인트")
+                                .details(List.of("수정 상세"))
+                                .build()))
                         .build()))
                 .build();
 
@@ -129,9 +136,11 @@ class RetrospectiveSummaryServiceTest {
                     retrospectiveSummaryService.updateRetrospectiveSummary(meetingId, request);
 
             assertThat(summary.getSummary()).isEqualTo("수정 요약");
-            assertThat(summary.getKeyPoint()).isEqualTo("수정 포인트");
+            assertThat(summary.getKeyPoints()).hasSize(1);
+            assertThat(summary.getKeyPoints().get(0).getTitle()).isEqualTo("수정 포인트");
             assertThat(response.topics().get(0).summary()).isEqualTo("수정 요약");
-            assertThat(response.topics().get(0).keyPoint()).isEqualTo("수정 포인트");
+            assertThat(response.topics().get(0).keyPoints()).hasSize(1);
+            assertThat(response.topics().get(0).keyPoints().get(0).title()).isEqualTo("수정 포인트");
             verify(retrospectiveValidator).validateSummaryUpdatePermission(gatheringId, meetingId, userId);
         }
     }

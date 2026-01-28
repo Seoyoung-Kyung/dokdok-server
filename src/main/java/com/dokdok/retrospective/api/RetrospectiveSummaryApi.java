@@ -48,21 +48,45 @@ public interface RetrospectiveSummaryApi {
                                           "topics": [
                                             {
                                               "topicId": 1,
+                                              "confirmOrder": 1,
                                               "topicTitle": "가짜 욕망, 유사 욕망",
                                               "topicDescription": "가짜욕망, 유사욕망에 대해 이야기해봅시다.",
                                               "summary": "참여자들은 『데미안』 속 싱클레어가 느꼈던 혼란을 자신들의 경험과 연결하며...",
-                                              "keyPoint": "1) 사회가 만든 욕망의 구조..."
+                                              "keyPoints": [
+                                                {
+                                                  "title": "사회가 만든 욕망의 구조",
+                                                  "details": [                                                                                                                     
+                                                    "안정적인 직업, 성과, 인정 욕구가 개인의 욕망처럼 내면화된 경험 공유",                                                         
+                                                    "\\"원해서 선택했다\\"기보다 \\"선택하지 않으면 불안해서 택했다\\"는 표현이 반복됨"                                            
+                                                  ]                                                                                                                                
+                                                },                                                                                                                                 
+                                                {                                                                                                                                  
+                                                  "title": "유사 욕망과 진짜 욕망의 차이",                                                                                         
+                                                  "details": [                                                                                                                     
+                                                    "유사 욕망은 비교와 평가 속에서 강화되며, 타인의 반응에 민감함",                                                               
+                                                    "진짜 욕망은 오히려 혼자 있을 때 더 선명해지고, 남에게 말할수록 흐려지는 경우가 많다는 의견"                                   
+                                                  ]                                                                                                                                
+                                                }                                                                                                                                  
+                                              ]
                                             },
                                             {
                                               "topicId": 2,
+                                              "confirmOrder": 2,
                                               "topicTitle": "선과 악",
                                               "topicDescription": "인간의 세계에서 선과 악 어느 것이 힘이 더 셀까",
                                               "summary": "선과 악 중 어느 쪽이 더 강한지를 묻기보다...",
-                                              "keyPoint": "악이 더 강해보이는 이유"
-                                            }
-                                          ]
-                                        }
-                                      }
+                                              "keyPoints": [
+                                                {
+                                                  "title": "악이 더 강해 보이는 이유",                                                                                             
+                                                  "details": [                                                                                                                     
+                                                    "결과가 빠르고 명확하게 드러나며, 책임을 외부로 돌리기 쉬움"                                                                   
+                                                  ]                                                                                                                                
+                                                }                                                                                                                                  
+                                              ]                                                                                                                                    
+                                            }                                                                                                                                      
+                                          ]                                                                                                                                        
+                                        }                                                                                                                                          
+                                      }                                                                                                                                            
                                       """)
                     )
             ),
@@ -113,10 +137,19 @@ public interface RetrospectiveSummaryApi {
                                           "topics": [                                                                                                                              
                                             {                                                                                                                                      
                                               "topicId": 1,                                                                                                                        
+                                              "confirmOrder": 1,                                                                                                                   
                                               "topicTitle": "가짜 욕망, 유사 욕망",                                                                                                
                                               "topicDescription": "가짜욕망, 유사욕망에 대해 이야기해봅시다.",                                                                     
                                               "summary": "수정된 핵심 요약...",                                                                                                    
-                                              "keyPoint": "수정된 주요 포인트..."                                                                                                  
+                                              "keyPoints": [                                                                                                                       
+                                                {                                                                                                                                  
+                                                  "title": "수정된 포인트 제목",                                                                                                   
+                                                  "details": [                                                                                                                     
+                                                    "수정된 내용 1",                                                                                                               
+                                                    "수정된 내용 2"                                                                                                                
+                                                  ]                                                                                                                                
+                                                }                                                                                                                                  
+                                              ]                                                                                                                                    
                                             }                                                                                                                                      
                                           ]                                                                                                                                        
                                         }                                                                                                                                          
