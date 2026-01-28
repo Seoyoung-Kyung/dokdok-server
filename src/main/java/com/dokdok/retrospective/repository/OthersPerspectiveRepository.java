@@ -26,6 +26,7 @@ public interface OthersPerspectiveRepository extends JpaRepository<Retrospective
             SELECT new com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection(
                         op.personalMeetingRetrospective.id,
                         t.id,
+                        t.confirmOrder,
                         mm.id,
                         u.nickname,
                         op.opinionContent,
@@ -36,7 +37,7 @@ public interface OthersPerspectiveRepository extends JpaRepository<Retrospective
             JOIN op.meetingMember mm
             JOIN mm.user u
             WHERE op.personalMeetingRetrospective.id IN :retrospectiveIds
-            ORDER BY t.confirmOrder
+            ORDER BY t.confirmOrder NULLS LAST, op.id
             """)
     List<OtherPerspectiveProjection> findByRetrospectiveIds(List<Long> retrospectiveIds);
 }
