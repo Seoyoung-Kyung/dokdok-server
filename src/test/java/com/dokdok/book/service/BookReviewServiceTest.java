@@ -24,6 +24,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -268,9 +269,9 @@ class BookReviewServiceTest {
                 .book(book)
                 .user(user)
                 .rating(new BigDecimal("4.5"))
-                .keywords(List.of(
+                .keywords(new ArrayList<>(List.of(
                         BookReviewKeyword.builder().keyword(keyword).build()
-                ))
+                )))
                 .build();
         BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), List.of(5L, 8L));
 
@@ -321,9 +322,9 @@ class BookReviewServiceTest {
                 .book(book)
                 .user(user)
                 .rating(new BigDecimal("4.5"))
-                .keywords(List.of(
+                .keywords(new ArrayList<>(List.of(
                         BookReviewKeyword.builder().keyword(keyword).build()
-                ))
+                )))
                 .build();
         BookReviewRequest request = new BookReviewRequest(new BigDecimal("3.5"), List.of(5L));
 
@@ -388,9 +389,9 @@ class BookReviewServiceTest {
                 .book(book)
                 .user(user)
                 .rating(new BigDecimal("4.5"))
-                .keywords(List.of(
+                .keywords(new ArrayList<>(List.of(
                         BookReviewKeyword.builder().keyword(keyword).build()
-                ))
+                )))
                 .build();
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
