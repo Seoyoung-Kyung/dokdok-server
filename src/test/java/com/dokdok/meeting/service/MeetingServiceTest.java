@@ -273,7 +273,6 @@ class MeetingServiceTest {
                 .meetingStartDate(startDate)
                 .meetingEndDate(null)
                 .maxParticipants(null)
-                .place(null)
                 .build();
 
         User user = User.builder()
@@ -828,7 +827,12 @@ class MeetingServiceTest {
         LocalDateTime now = LocalDateTime.now();
         MeetingUpdateRequest request = MeetingUpdateRequest.builder()
                 .meetingName("약속명 변경")
-                .place("장소 변경")
+                .location(new MeetingLocationDto(
+                        "장소 변경",
+                        "서울 어딘가",
+                        37.0,
+                        127.0
+                ))
                 .endDate(now)
                 .build();
 

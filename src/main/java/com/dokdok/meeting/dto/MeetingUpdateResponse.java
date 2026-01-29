@@ -21,8 +21,8 @@ public record MeetingUpdateResponse(
         @Schema(description = "종료 일시", example = "2025-02-01T16:00:00")
         LocalDateTime endDate,
 
-        @Schema(description = "장소", example = "강남역 스타벅스")
-        String place,
+        @Schema(description = "장소 정보")
+        MeetingLocationDto location,
 
         @Schema(description = "최대 참가 인원", example = "10")
         Integer maxParticipants
@@ -33,7 +33,7 @@ public record MeetingUpdateResponse(
                 .meetingName(meeting.getMeetingName())
                 .startDate(meeting.getMeetingStartDate())
                 .endDate(meeting.getMeetingEndDate())
-                .place(meeting.getPlace())
+                .location(MeetingLocationDto.from(meeting.getLocation()))
                 .maxParticipants(meeting.getMaxParticipants())
                 .build();
     }

@@ -63,7 +63,12 @@ public interface MeetingApi {
                                           "endDateTime": "2025-02-01T16:00:00",
                                           "displayDate": "2025.02.01(토) 14:00 ~ 2025.02.01(토) 16:00"
                                         },
-                                        "place": "강남역 스타벅스",
+                                        "location": {
+                                          "name": "강남 스터디룸 A",
+                                          "address": "서울 강남구 ...",
+                                          "latitude": 37.4979,
+                                          "longitude": 127.0276
+                                        },
                                         "participants": {
                                           "currentCount": 2,
                                           "maxCount": 10,
@@ -115,7 +120,7 @@ public interface MeetingApi {
             summary = "약속 생성 신청 (developer: 김윤영)",
             description = """
             모임 구성원이 약속 생성을 신청합니다.
-            - 입력: 약속 제목(미입력 시 책 제목), 책 제목*, 약속 일시*, 최대 인원 수(null 허용), 장소(null 허용)
+            - 입력: 약속 제목(미입력 시 책 제목), 책 제목*, 약속 일시*, 최대 인원 수(null 허용), 장소 정보(null 허용)
             - 권한: 해당 모임의 구성원
             """
     )
@@ -147,7 +152,12 @@ public interface MeetingApi {
                                           "startDateTime": "2025-02-01T14:00:00",
                                           "endDateTime": "2025-02-01T16:00:00"
                                         },
-                                        "place": "강남역 스타벅스",
+                                        "location": {
+                                          "name": "강남 스터디룸 A",
+                                          "address": "서울 강남구 ...",
+                                          "latitude": 37.4979,
+                                          "longitude": 127.0276
+                                        },
                                         "participants": {
                                           "currentCount": 1,
                                           "maxCount": 10,
@@ -422,7 +432,12 @@ public interface MeetingApi {
                                         "meetingName": "1월 독서 모임 (수정)",
                                         "startDate": "2025-02-01T14:00:00",
                                         "endDate": "2025-02-01T16:00:00",
-                                        "place": "강남역 스타벅스",
+                                        "location": {
+                                          "name": "강남 스터디룸 A",
+                                          "address": "서울 강남구 ...",
+                                          "latitude": 37.4979,
+                                          "longitude": 127.0276
+                                        },
                                         "maxParticipants": 10
                                       }
                                     }
