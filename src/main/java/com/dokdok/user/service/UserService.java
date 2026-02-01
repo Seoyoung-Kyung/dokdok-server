@@ -82,6 +82,7 @@ public class UserService {
         User user = getUserById(currentUserId);
         user.updateInfo(request);
 
+        SecurityUtil.updateCurrentUserInContext(user);
         return UserDetailResponse.from(user);
     }
 
