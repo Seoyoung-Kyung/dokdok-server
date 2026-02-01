@@ -8,6 +8,8 @@ import lombok.Builder;
 @Schema(description = "모임 생성 응답")
 @Builder
 public record GatheringCreateResponse(
+        @Schema(description = "모임 식별지", example = "1")
+        Long gatheringId,
         @Schema(description = "모임 이름", example = "독서 모임")
         String gatheringName,
         @Schema(description = "모임 설명", example = "매주 함께 책을 읽는 모임입니다.")
@@ -24,6 +26,7 @@ public record GatheringCreateResponse(
 ) {
     public static GatheringCreateResponse from(Gathering gathering, int activeMembers, int totalMeetings) {
         return GatheringCreateResponse.builder()
+                .gatheringId(gathering.getId())
                 .gatheringName(gathering.getGatheringName())
                 .gatheringDescription(gathering.getDescription())
                 .totalMembers(activeMembers)
