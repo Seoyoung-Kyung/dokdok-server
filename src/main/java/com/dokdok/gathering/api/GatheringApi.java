@@ -44,7 +44,7 @@ public interface GatheringApi {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = GatheringCreateResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code": "CREATED", "message": "모임 생성에 성공하였습니다.", "data": {"gatheringName": "독서 모임", "totalMembers": 1, "daysFromCreation": 10, "totalMeetings": 0, "invitationLink": "ABC123XYZ"}}
+                                    {"code": "CREATED", "message": "모임 생성에 성공하였습니다.", "data": {"gatheringId": 1 , "gatheringName": "독서 모임", "totalMembers": 1, "daysFromCreation": 10, "totalMeetings": 0, "invitationLink": "ABC123XYZ"}}
                                     """)
                     )
             ),
