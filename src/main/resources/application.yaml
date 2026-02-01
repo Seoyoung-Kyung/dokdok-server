@@ -15,8 +15,10 @@ app:
     allowed-origins:
       - http://localhost:5173
       - localhost:5173
-      - https://yourdomain.com
-      - https://dev.yourdomain.com
+      - dokdok.site
+      - https://dokdok.site
+      - https://www.dokdok.site
+      - https://dev.dokdok.site
 ai:
   api:
     base-url: ${AI_API_BASE_URL:http://localhost:8000}
