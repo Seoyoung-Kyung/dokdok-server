@@ -73,6 +73,7 @@ public class UserService {
     /**
      * 사용자의 정보를 변경합니다.
      */
+    @Transactional
     public UserDetailResponse updateUserInfo(UpdateUserInfoRequest request) {
 
         validateNickname(request.nickname());

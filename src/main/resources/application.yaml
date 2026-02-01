@@ -1,6 +1,10 @@
 spring:
   application:
     name: dokdok
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
   datasource:
     hikari:
       maximum-pool-size: 20  # 최대 커넥션 수
