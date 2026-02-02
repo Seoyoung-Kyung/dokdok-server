@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.service;
 
+import com.dokdok.book.entity.ReflectionRecordType;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
@@ -1320,7 +1321,7 @@ class PersonalRetrospectiveServiceTest {
                     .thenReturn(List.of());
 
             RetrospectiveRecordResponse recordResponse = RetrospectiveRecordResponse.of(
-                    retrospectiveId, "테스트 모임", "개인 회고", null, List.of(), List.of()
+                    retrospectiveId, "테스트 모임", ReflectionRecordType.PERSONAL_RETROSPECTIVE, null, List.of(), List.of()
             );
             when(assembler.assembleRecords(any(), any(), any(), any()))
                     .thenReturn(List.of(recordResponse));
