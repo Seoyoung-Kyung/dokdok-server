@@ -143,6 +143,10 @@ public class PersonalReadingRecordService {
                     )
                     .getContent();
         }
+        long totalCount = personalReadingRecordRepository.countByPersonalBook_IdAndUserId(
+                personalBookEntity.getId(),
+                userEntity.getId()
+        );
 
         boolean hasNext = entities.size() > pageSize;
         List<PersonalReadingRecord> pageEntities = hasNext ? entities.subList(0, pageSize) : entities;
@@ -156,7 +160,7 @@ public class PersonalReadingRecordService {
             nextCursor = ReadingRecordCursor.from(last.getCreatedAt(), last.getId());
         }
 
-        return CursorPageResponse.of(items, pageSize, hasNext, nextCursor);
+        return CursorPageResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
     }
 
     public PersonalReadingTopicAnswerResponse getTopicAnswers(Long personalBookId) {

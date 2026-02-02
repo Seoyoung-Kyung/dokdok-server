@@ -60,7 +60,8 @@ public interface BookApi {
                                                 "hasNext": true,
                                                 "nextCursor": {
                                                   "page": 2
-                                                }
+                                                },
+                                                "totalCount": 25
                                               }
                                             }
                                             """
@@ -245,7 +246,8 @@ public interface BookApi {
                                                 "nextCursor": {
                                                   "addedAt": "2026-01-22T10:25:40Z",
                                                   "bookId": 127
-                                                }
+                                                },
+                                                "totalCount": 25
                                               }
                                             }
                                             """

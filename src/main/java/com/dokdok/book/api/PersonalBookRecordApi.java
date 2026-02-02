@@ -464,7 +464,8 @@ public interface PersonalBookRecordApi {
                                                 "nextCursor": {
                                                   "createdAt": "2026-01-22T10:25:40Z",
                                                   "recordId": 5
-                                                }
+                                                },
+                                                "totalCount": 25
                                               }
                                             }
                                             """
