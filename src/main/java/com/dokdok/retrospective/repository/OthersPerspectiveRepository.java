@@ -26,6 +26,7 @@ public interface OthersPerspectiveRepository extends JpaRepository<Retrospective
             SELECT new com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection(
                         op.personalMeetingRetrospective.id,
                         t.id,
+                        t.title,
                         t.confirmOrder,
                         mm.id,
                         u.nickname,

@@ -58,7 +58,7 @@ public interface BookRecordApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = CursorResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code":"SUCCESS","message":"해당 책의 개인 회고 목록 조회를 성공했습니다.","data":{"items":[{"retrospectiveId":1,"gatheringName":"독서 모임","recordType":"개인 회고","createdAt":"2025-02-01T16:30:00","topicGroups":[{"topicId":1,"confirmOrder":1,"changedThoughts":[{"keyIssue":"요약된 핵심 쟁점","postOpinion":"토론 후 바뀐 생각"}],"othersPerspectives":[{"meetingMemberId":10,"memberNickname":"독서왕","opinionContent":"상대 의견이 인상적이었습니다.","impressiveReason":"새로운 관점을 제공했기 때문입니다."}]}],"freeTexts":[{"title":"오늘의 한 줄","content":"회고 내용을 작성합니다."}]}],"pageSize":10,"hasNext":false,"nextCursor":null}}
+                                    {"code":"SUCCESS","message":"해당 책의 개인 회고 목록 조회를 성공했습니다.","data":{"items":[{"retrospectiveId":1,"gatheringName":"독서 모임","recordType":"개인 회고","createdAt":"2025-02-01T16:30:00","topicGroups":[{"topicId":1,"topicTitle":"이 책의 핵심 메시지는 무엇인가?","confirmOrder":1,"changedThoughts":{"keyIssue":"요약된 핵심 쟁점","postOpinion":"토론 후 바뀐 생각"},"othersPerspectives":[{"meetingMemberId":10,"memberNickname":"독서왕","opinionContent":"상대 의견이 인상적이었습니다.","impressiveReason":"새로운 관점을 제공했기 때문입니다."}]}],"freeTexts":[{"title":"오늘의 한 줄","content":"회고 내용을 작성합니다."}]}],"pageSize":10,"hasNext":false,"nextCursor":null}}
                                     """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

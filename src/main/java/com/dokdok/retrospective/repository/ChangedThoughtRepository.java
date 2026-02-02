@@ -24,6 +24,7 @@ public interface ChangedThoughtRepository extends JpaRepository<RetrospectiveCha
             SELECT new com.dokdok.retrospective.dto.projection.ChangedThoughtProjection(
                         pmr.id,
                         t.id,
+                        t.title,
                         t.confirmOrder,
                         ct.keyIssue,
                         ct.postOpinion

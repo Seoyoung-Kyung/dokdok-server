@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.dto.response;
 
+import com.dokdok.book.entity.ReflectionRecordType;
 import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
 import com.dokdok.retrospective.dto.projection.FreeTextProjection;
 import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
@@ -15,7 +16,7 @@ public record RetrospectiveRecordResponse(
         @Schema(description = "모임 이름", example = "독서 모임")
         String gatheringName,
         @Schema(description = "기록 유형", example = "개인 회고")
-        String recordType,
+        ReflectionRecordType recordType,
         @Schema(description = "작성 일시", example = "2025-02-01T16:30:00")
         LocalDateTime createdAt,
         @Schema(description = "주제별 그룹 목록")
@@ -27,10 +28,12 @@ public record RetrospectiveRecordResponse(
     public record TopicGroup(
             @Schema(description = "주제 ID", example = "1")
             Long topicId,
+            @Schema(description = "주제명", example = "1")
+            String topicTitle,
             @Schema(description = "주제 확정 순서", example = "1")
             Integer confirmOrder,
             @Schema(description = "생각 변화 목록")
-            List<ChangedThought> changedThoughts,
+            ChangedThought changedThought,
             @Schema(description = "타인의 관점 목록")
             List<OthersPerspective> othersPerspectives
     ) {}
@@ -89,7 +92,7 @@ public record RetrospectiveRecordResponse(
     public static RetrospectiveRecordResponse of(
             Long retrospectiveId,
             String gatheringName,
-            String recordType,
+            ReflectionRecordType recordType,
             LocalDateTime createdAt,
             List<TopicGroup> topicGroups,
             List<FreeText> freeTexts

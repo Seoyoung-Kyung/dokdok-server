@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dokdok.book.entity.ReflectionRecordType.PERSONAL_RETROSPECTIVE;
 import static java.util.stream.Collectors.groupingBy;
 
 @Component
@@ -160,7 +161,7 @@ public class PersonalRetrospectiveAssembler {
                     return RetrospectiveRecordResponse.of(
                             retroId,
                             retrospective.getMeeting().getGathering().getGatheringName(),
-                            "개인 회고",
+                            PERSONAL_RETROSPECTIVE,
                             retrospective.getCreatedAt(),
                             topicGroups,
                             freeTexts
@@ -213,17 +214,20 @@ public class PersonalRetrospectiveAssembler {
             List<ChangedThoughtProjection> changedThoughts,
             List<OtherPerspectiveProjection> othersPerspectives
     ) {
-        Map<Long, Integer> topicIdToConfirmOrder = new LinkedHashMap<>();
+        // topicId -> (title, confirmOrder)
+        Map<Long, TopicInfoHolder> topicIdToInfo = new LinkedHashMap<>();
 
         changedThoughts.forEach(ct -> {
             if (ct.topicId() != null) {
-                topicIdToConfirmOrder.putIfAbsent(ct.topicId(), ct.confirmOrder());
+                topicIdToInfo.putIfAbsent(ct.topicId(),
+                        new TopicInfoHolder(ct.topicTitle(), ct.confirmOrder()));
             }
         });
 
         othersPerspectives.forEach(op -> {
             if (op.topicId() != null) {
-                topicIdToConfirmOrder.putIfAbsent(op.topicId(), op.confirmOrder());
+                topicIdToInfo.putIfAbsent(op.topicId(),
+                        new TopicInfoHolder(op.topicTitle(), op.confirmOrder()));
             }
         });
 
@@ -238,19 +242,20 @@ public class PersonalRetrospectiveAssembler {
                 .filter(op -> op.topicId() != null)
                 .collect(groupingBy(OtherPerspectiveProjection::topicId));
 
-        List<RetrospectiveRecordResponse.TopicGroup> topicGroups = topicIdToConfirmOrder.entrySet().stream()
+        List<RetrospectiveRecordResponse.TopicGroup> topicGroups = topicIdToInfo.entrySet().stream()
                 .sorted(Comparator.comparing(
-                        Map.Entry::getValue,
+                        e -> e.getValue().confirmOrder(),
                         Comparator.nullsLast(Comparator.naturalOrder())
                 ))
                 .map(entry -> {
                     Long topicId = entry.getKey();
-                    Integer confirmOrder = entry.getValue();
+                    TopicInfoHolder info = entry.getValue();
 
-                    List<RetrospectiveRecordResponse.ChangedThought> thoughts =
+                    RetrospectiveRecordResponse.ChangedThought thought =
                             changedThoughtsByTopic.getOrDefault(topicId, List.of()).stream()
+                                    .findFirst()
                                     .map(RetrospectiveRecordResponse.ChangedThought::from)
-                                    .toList();
+                                    .orElse(null);
 
                     List<RetrospectiveRecordResponse.OthersPerspective> perspectives =
                             othersPerspectivesByTopic.getOrDefault(topicId, List.of()).stream()
@@ -259,8 +264,9 @@ public class PersonalRetrospectiveAssembler {
 
                     return new RetrospectiveRecordResponse.TopicGroup(
                             topicId,
-                            confirmOrder,
-                            thoughts,
+                            info.title(),
+                            info.confirmOrder(),
+                            thought,
                             perspectives
                     );
                 })
@@ -276,11 +282,14 @@ public class PersonalRetrospectiveAssembler {
             topicGroups.add(new RetrospectiveRecordResponse.TopicGroup(
                     null,
                     null,
-                    List.of(),
+                    null,
+                    null,
                     nullTopicPerspectives
             ));
         }
 
         return topicGroups;
     }
+
+    private record TopicInfoHolder(String title, Integer confirmOrder) {}
 }
