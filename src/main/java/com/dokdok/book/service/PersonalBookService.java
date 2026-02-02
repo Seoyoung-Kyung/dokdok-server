@@ -120,6 +120,11 @@ public class PersonalBookService {
                         cursorBookId,
                         PageRequest.of(0, pageSize + 1)
                 );
+        long totalCount = personalBookRepository.countPersonalBooksByUserIdReadingStatusAndGatheringId(
+                userEntity.getId(),
+                gatheringId,
+                readingStatus
+        );
 
         boolean hasNext = results.size() > pageSize;
         List<PersonalBookListProjection> pageResults = hasNext ? results.subList(0, pageSize) : results;
@@ -133,7 +138,7 @@ public class PersonalBookService {
             nextCursor = BookListCursor.from(last.getAddedAt(), last.getBookId());
         }
 
-        return CursorPageResponse.of(items, pageSize, hasNext, nextCursor);
+        return CursorPageResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
     }
 
     public PersonalBookDetailResponse getPersonalBook(Long bookId) {

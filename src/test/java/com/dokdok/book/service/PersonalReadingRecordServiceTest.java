@@ -171,7 +171,7 @@ class PersonalReadingRecordServiceTest {
         assertThat(response.recordType()).isEqualTo(RecordType.QUOTE);
         assertThat(response.recordContent()).isEqualTo(request.recordContent());
         assertThat(response.meta()).isNotNull();
-        assertThat(response.meta().get("page")).isEqualTo(12);
+        assertThat(response.meta().get("page")).isEqualTo("12");
         assertThat(response.meta().get("excerpt")).isEqualTo("인용 내용");
         assertThat(response.bookId()).isEqualTo(bookId);
 
@@ -181,7 +181,7 @@ class PersonalReadingRecordServiceTest {
 
         com.dokdok.book.entity.PersonalReadingRecord savedRecord = recordCaptor.getValue();
         assertThat(savedRecord.getMeta()).isNotNull();
-        assertThat(savedRecord.getMeta().get("page")).isEqualTo(12);
+        assertThat(savedRecord.getMeta().get("page")).isEqualTo("12");
         assertThat(savedRecord.getMeta().get("excerpt")).isEqualTo("인용 내용");
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
@@ -284,12 +284,12 @@ class PersonalReadingRecordServiceTest {
         assertThat(response.recordContent()).isEqualTo(request.recordContent());
         assertThat(response.recordType()).isEqualTo(RecordType.QUOTE);
         assertThat(response.meta()).isNotNull();
-        assertThat(response.meta().get("page")).isEqualTo(30);
+        assertThat(response.meta().get("page")).isEqualTo("30");
         assertThat(response.meta().get("excerpt")).isEqualTo("수정된 인용문");
 
         assertThat(record.getRecordContent()).isEqualTo(request.recordContent());
         assertThat(record.getRecordType()).isEqualTo(RecordType.QUOTE);
-        assertThat(record.getMeta().get("page")).isEqualTo(30);
+        assertThat(record.getMeta().get("page")).isEqualTo("30");
 
         verify(personalReadingRecordRepository, times(1))
                 .findByIdAndPersonalBook_IdAndUserId(recordId, personalBookId, userId);
