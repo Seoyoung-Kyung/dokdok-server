@@ -29,6 +29,7 @@ public interface PersonalBookRecordApi {
                     내 책장에 있는 책의 독서 기록을 등록합니다.
                     - 경로의 personalBookId로 책을 지정합니다.
                     - 요청 본문: recordType(ENUM: MEMO/QUOTE/RETROSPECTIVE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
+                    - recordType이 QUOTE일 경우 meta의 page/excerpt는 문자열로 정규화되어 저장됩니다.
                     - recordType이 MEMO이면 meta는 null로 저장됩니다.
                     - 로그인한 사용자 기준으로 본인 책에만 기록을 남길 수 있습니다.
                     """
@@ -49,7 +50,7 @@ public interface PersonalBookRecordApi {
                                                 "recordType": "QUOTE",
                                                 "recordContent": "오늘 기억하고 싶은 문장을 기록합니다.",
                                                 "meta": {
-                                                  "page": 23,
+                                                  "page": "23 ~ 25",
                                                   "excerpt": "이 문장이 좋았다."
                                                 },
                                                 "bookId": 10
@@ -155,7 +156,7 @@ public interface PersonalBookRecordApi {
                                               "recordType": "QUOTE",
                                               "recordContent": "오늘 기억하고 싶은 문장을 기록합니다.",
                                               "meta": {
-                                                "page": 23,
+                                                "page": "23 ~ 25",
                                                 "excerpt": "이 문장이 좋았다."
                                               }
                                             }
@@ -172,6 +173,7 @@ public interface PersonalBookRecordApi {
                     내 책장에 있는 책의 독서 기록을 수정합니다.
                     - 경로의 personalBookId와 recordId로 대상을 지정합니다.
                     - 요청 본문: recordType (ENUM: MEMO/QUOTE/RETROSPECTIVE), recordContent, recordType이 QUOTE일 경우 meta에 page, excerpt 필수.
+                    - recordType이 QUOTE일 경우 meta의 page/excerpt는 문자열로 정규화되어 저장됩니다.
                     - recordType이 MEMO 이면 meta는 null로 저장됩니다.
                     - 로그인한 사용자 기준으로 본인 기록만 수정할 수 있습니다.
                     """
@@ -192,7 +194,7 @@ public interface PersonalBookRecordApi {
                                                 "recordType": "QUOTE",
                                                 "recordContent": "문장을 다시 손봤습니다.",
                                                 "meta": {
-                                                  "page": 30,
+                                                  "page": "30",
                                                   "excerpt": "수정된 인용문"
                                                 },
                                                 "bookId": 10
@@ -313,7 +315,7 @@ public interface PersonalBookRecordApi {
                                               "recordType": "QUOTE",
                                               "recordContent": "문장을 다시 손봤습니다.",
                                               "meta": {
-                                                "page": 30,
+                                                "page": "30 ~ 31",
                                                 "excerpt": "수정된 인용문"
                                               }
                                             }
@@ -450,9 +452,10 @@ public interface PersonalBookRecordApi {
                                                     "recordType": "QUOTE",
                                                     "recordContent": "오늘 기억하고 싶은 문장을 기록합니다.",
                                                     "meta": {
-                                                      "page": 23,
+                                                      "page": "23 ~ 25",
                                                       "excerpt": "이 문장이 좋았다."
                                                     },
+                                                    "createdAt": "2026-01-25T22:39:57.899858",
                                                     "bookId": 10
                                                   }
                                                 ],
@@ -461,7 +464,8 @@ public interface PersonalBookRecordApi {
                                                 "nextCursor": {
                                                   "createdAt": "2026-01-22T10:25:40Z",
                                                   "recordId": 5
-                                                }
+                                                },
+                                                "totalCount": 25
                                               }
                                             }
                                             """

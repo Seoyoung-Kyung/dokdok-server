@@ -4,6 +4,8 @@ import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.response.PageResponse;
 import com.dokdok.meeting.dto.MeetingListFilter;
+import com.dokdok.meeting.dto.MeetingListItemCursorResponse;
+import com.dokdok.meeting.dto.MeetingListItemPageResponse;
 import com.dokdok.meeting.dto.MeetingListItemResponse;
 import com.dokdok.meeting.dto.MeetingListCursor;
 import com.dokdok.meeting.dto.MeetingListCursorRequest;
@@ -49,7 +51,7 @@ public interface MeetingListApi {
                     responseCode = "200",
                     description = "약속 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorResponse.class),
+                            schema = @Schema(implementation = MeetingListItemCursorResponse.class),
                             examples = @ExampleObject(value = """
                                     {
                                       "code": "SUCCESS",
@@ -59,6 +61,7 @@ public interface MeetingListApi {
                                           {
                                             "meetingId": 1,
                                             "meetingName": "1월 독서 모임",
+                                            "meetingLeaderName": "독서왕",
                                             "bookName": "클린 코드",
                                             "startDateTime": "2025-02-01T14:00:00",
                                             "endDateTime": "2025-02-01T16:00:00",
@@ -123,7 +126,7 @@ public interface MeetingListApi {
                     responseCode = "200",
                     description = "약속 승인 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = PageResponse.class),
+                            schema = @Schema(implementation = MeetingListItemPageResponse.class),
                             examples = @ExampleObject(value = """
                                     {
                                       "code": "SUCCESS",
@@ -133,6 +136,7 @@ public interface MeetingListApi {
                                           {
                                             "meetingId": 1,
                                             "meetingName": "1월 독서 모임",
+                                            "meetingLeaderName": "독서왕",
                                             "bookName": "클린 코드",
                                             "startDateTime": "2025-02-01T14:00:00",
                                             "endDateTime": "2025-02-01T16:00:00",

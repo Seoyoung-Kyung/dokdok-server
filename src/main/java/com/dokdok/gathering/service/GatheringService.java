@@ -1,5 +1,7 @@
 package com.dokdok.gathering.service;
 
+import com.dokdok.book.entity.Book;
+import com.dokdok.book.repository.BookReviewRepository;
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
@@ -10,19 +12,27 @@ import com.dokdok.gathering.exception.GatheringException;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.global.response.CursorResponse;
+import com.dokdok.global.response.PageResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.gathering.util.InvitationCodeGenerator;
+import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,9 +40,12 @@ import java.util.List;
 public class GatheringService {
 
     private final GatheringRepository gatheringRepository;
-	private final GatheringMemberRepository gatheringMemberRepository;
-	private final GatheringValidator gatheringValidator;
-	private final MeetingRepository meetingRepository;
+    private final GatheringMemberRepository gatheringMemberRepository;
+    private final GatheringValidator gatheringValidator;
+    private final MeetingRepository meetingRepository;
+    private final GatheringBookRepository gatheringBookRepository;
+    private final BookReviewRepository bookReviewRepository;
+    private final MeetingMemberRepository meetingMemberRepository;
 
     /**
      * 모임을 생성합니다.
@@ -109,171 +122,213 @@ public class GatheringService {
         gatheringMember.handleJoinRequest(approveType);
     }
 
-	/**
-	 * 즐겨찾기 한 모임들을 조회합니다.
-	 */
-	public FavoriteGatheringListResponse getFavoriteGatherings() {
-		Long userId = SecurityUtil.getCurrentUserId();
+    /**
+     * 즐겨찾기 한 모임들을 조회합니다.
+     */
+    public FavoriteGatheringListResponse getFavoriteGatherings() {
+        Long userId = SecurityUtil.getCurrentUserId();
 
-		List<GatheringMember> favoriteMembers = gatheringMemberRepository.findFavoriteGatheringsByUserId(userId);
+        List<GatheringMember> favoriteMembers = gatheringMemberRepository.findFavoriteGatheringsByUserId(userId);
 
-		List<GatheringListItemResponse> gatheringResponses = favoriteMembers.stream()
-				.map(gatheringMember -> {
-					Gathering gathering = gatheringMember.getGathering();
-					int totalMembers = getActiveMemberCount(gathering.getId());
-					int totalMeetings = getMeetingCount(gathering.getId());
-					return GatheringListItemResponse.from(gatheringMember, totalMembers, totalMeetings, gatheringMember.getRole());
-				})
-				.toList();
+        List<GatheringListItemResponse> gatheringResponses = favoriteMembers.stream()
+                .map(gatheringMember -> {
+                    Gathering gathering = gatheringMember.getGathering();
+                    int totalMembers = getActiveMemberCount(gathering.getId());
+                    int totalMeetings = getMeetingCount(gathering.getId());
+                    return GatheringListItemResponse.from(gatheringMember, totalMembers, totalMeetings, gatheringMember.getRole());
+                })
+                .toList();
 
-		return FavoriteGatheringListResponse.from(gatheringResponses);
-	}
+        return FavoriteGatheringListResponse.from(gatheringResponses);
+    }
 
-	/**
-	 * 내 모임 전체 목록을 조회합니다. (페이지네이션)
-	 */
-	public CursorResponse<GatheringListItemResponse, MyGatheringCursor> getMyGatherings(int pageSize, LocalDateTime cursorJoinedAt, Long cursorId){
-		Long userId = SecurityUtil.getCurrentUserId();
+    /**
+     * 내 모임 전체 목록을 조회합니다. (페이지네이션)
+     */
+    public CursorResponse<GatheringListItemResponse, MyGatheringCursor> getMyGatherings(int pageSize, LocalDateTime cursorJoinedAt, Long cursorId) {
+        Long userId = SecurityUtil.getCurrentUserId();
 
-		Pageable pageable = PageRequest.of(0, pageSize + 1);
+        Pageable pageable = PageRequest.of(0, pageSize + 1);
 
-		List<GatheringMember> members;
-		if (cursorJoinedAt == null || cursorId == null) {
-			// 첫 페이지
-			members = gatheringMemberRepository.findMyGatheringsFirstPage(userId, pageable);
-		} else {
-			// 다음 페이지
-			members = gatheringMemberRepository.findMyGatheringsAfterCursor(userId, cursorJoinedAt, cursorId, pageable);
-		}
+        List<GatheringMember> members;
+        if (cursorJoinedAt == null || cursorId == null) {
+            // 첫 페이지
+            members = gatheringMemberRepository.findMyGatheringsFirstPage(userId, pageable);
+        } else {
+            // 다음 페이지
+            members = gatheringMemberRepository.findMyGatheringsAfterCursor(userId, cursorJoinedAt, cursorId, pageable);
+        }
 
-		boolean hasNext = members.size() > pageSize;
-		List<GatheringMember> pageMembers = hasNext ? members.subList(0, pageSize) : members;
+        boolean hasNext = members.size() > pageSize;
+        List<GatheringMember> pageMembers = hasNext ? members.subList(0, pageSize) : members;
 
-		List<GatheringListItemResponse> items = pageMembers.stream()
-				.map(gm -> GatheringListItemResponse.from(
-						gm,
-						getActiveMemberCount(gm.getGathering().getId()),
-						getMeetingCount(gm.getGathering().getId()),
-						gm.getRole()))
-				.toList();
+        List<GatheringListItemResponse> items = pageMembers.stream()
+                .map(gm -> GatheringListItemResponse.from(
+                        gm,
+                        getActiveMemberCount(gm.getGathering().getId()),
+                        getMeetingCount(gm.getGathering().getId()),
+                        gm.getRole()))
+                .toList();
 
-		GatheringMember lastMember = pageMembers.isEmpty() ? null : pageMembers.get(pageMembers.size() - 1);
-		MyGatheringCursor nextCursor = hasNext && lastMember != null ? MyGatheringCursor.from(lastMember) : null;
+        GatheringMember lastMember = pageMembers.isEmpty() ? null : pageMembers.get(pageMembers.size() - 1);
+        MyGatheringCursor nextCursor = hasNext && lastMember != null ? MyGatheringCursor.from(lastMember) : null;
 
-		return CursorResponse.of(items, pageSize, hasNext, nextCursor);
-	}
+        return CursorResponse.of(items, pageSize, hasNext, nextCursor);
+    }
 
-	/**
-	 * 모임 상세 정보 조회 - 모임 멤버만 조회 가능
-	 */
-	public GatheringDetailResponse getGatheringDetail(Long gatheringId) {
-		Long userId = SecurityUtil.getCurrentUserId();
+    /**
+     * 모임 상세 정보 조회 - 모임 멤버만 조회 가능
+     */
+    public GatheringDetailResponse getGatheringDetail(Long gatheringId) {
+        Long userId = SecurityUtil.getCurrentUserId();
 
-		// 모임 존재 여부 및 멤버십 검증
-		Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
-		GatheringMember currentMember = gatheringValidator.validateAndGetMember(gatheringId, userId);
+        // 모임 존재 여부 및 멤버십 검증
+        Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
+        GatheringMember currentMember = gatheringValidator.validateAndGetMember(gatheringId, userId);
 
-		// 모임의 모든 멤버 조회
-		List<GatheringMember> allMember = gatheringMemberRepository.findAllMembersByGatheringId(gatheringId);
+        // 모임의 모든 멤버 조회
+        List<GatheringMember> allMember = gatheringMemberRepository.findAllMembersByGatheringId(gatheringId);
 
-		// 총 약속 수
-		int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gathering.getId(),MeetingStatus.DONE);
+        // 총 약속 수
+        int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.DONE);
 
-		return GatheringDetailResponse.from(
-				currentMember,
-				allMember,
-				totalMeetings
-		);
-	}
+        return GatheringDetailResponse.from(
+                currentMember,
+                allMember,
+                totalMeetings
+        );
+    }
 
-	/**
-	 * 모임 정보 수정 - 리더만 가능
-	 */
-	@Transactional
-	public GatheringUpdateResponse updateGathering(Long gatheringId, GatheringUpdateRequest request) {
-		Long currentUserId = SecurityUtil.getCurrentUserId();
+    /**
+     * 모임 정보 수정 - 리더만 가능
+     */
+    @Transactional
+    public GatheringUpdateResponse updateGathering(Long gatheringId, GatheringUpdateRequest request) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
 
-		// 모임 존재 여부 및 리더 권한 검증
-		Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
-		gatheringValidator.validateLeader(gatheringId, currentUserId);
+        // 모임 존재 여부 및 리더 권한 검증
+        Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
+        gatheringValidator.validateLeader(gatheringId, currentUserId);
 
-		// 모임 정보 수정
-		gathering.updateGatheringInfo(request.gatheringName(), request.description());
+        // 모임 정보 수정
+        gathering.updateGatheringInfo(request.gatheringName(), request.description());
 
-		return GatheringUpdateResponse.from(gathering);
-	}
+        return GatheringUpdateResponse.from(gathering);
+    }
 
-	// 모임 삭제 - 리더만 가능
-	@Transactional
-	public void deleteGathering(Long gatheringId) {
-		Long userId = SecurityUtil.getCurrentUserId();
+    // 모임 삭제 - 리더만 가능
+    @Transactional
+    public void deleteGathering(Long gatheringId) {
+        Long userId = SecurityUtil.getCurrentUserId();
 
-		// 모임 존재 여부 & 리더 권한 검증
-		Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
-		gatheringValidator.validateLeader(gatheringId, userId);
+        // 모임 존재 여부 & 리더 권한 검증
+        Gathering gathering = gatheringValidator.validateAndGetGathering(gatheringId);
+        gatheringValidator.validateLeader(gatheringId, userId);
 
-		if (gathering.getGatheringStatus().equals(GatheringStatus.INACTIVE)) {
-			throw new GatheringException(GatheringErrorCode.ALREADY_INACTIVE);
-		}
-		gathering.deleteGathering();
-	}
+        if (gathering.getGatheringStatus().equals(GatheringStatus.INACTIVE)) {
+            throw new GatheringException(GatheringErrorCode.ALREADY_INACTIVE);
+        }
+        gathering.deleteGathering();
+    }
 
-	// 모임원 탈퇴 - 리더만 가능
-	@Transactional
-	public void removeMember(Long gatheringId, Long targetUserId) {
-		Long requestId = SecurityUtil.getCurrentUserId();
+    // 모임원 탈퇴 - 리더만 가능
+    @Transactional
+    public void removeMember(Long gatheringId, Long targetUserId) {
+        Long requestId = SecurityUtil.getCurrentUserId();
 
-		// 모임 존재 여부
-		gatheringValidator.validateAndGetGathering(gatheringId);
+        // 모임 존재 여부
+        gatheringValidator.validateAndGetGathering(gatheringId);
 
-		// 권한이 리더인지 검증
-		gatheringValidator.validateLeader(gatheringId,requestId);
+        // 권한이 리더인지 검증
+        gatheringValidator.validateLeader(gatheringId, requestId);
 
-		// 강퇴 대상 멤버 조회 & 존재여부
-		GatheringMember targetMember = gatheringValidator.validateAndGetMember(gatheringId, targetUserId);
+        // 강퇴 대상 멤버 조회 & 존재여부
+        GatheringMember targetMember = gatheringValidator.validateAndGetMember(gatheringId, targetUserId);
 
-		// 강퇴 대상이 리더인지 확인
-		if (targetMember.getRole() == GatheringRole.LEADER) {
-			throw new GatheringException(GatheringErrorCode.CANNOT_REMOVE_LEADER);
-		}
+        // 강퇴 대상이 리더인지 확인
+        if (targetMember.getRole() == GatheringRole.LEADER) {
+            throw new GatheringException(GatheringErrorCode.CANNOT_REMOVE_LEADER);
+        }
 
-		targetMember.remove();
-	}
+        targetMember.remove();
+    }
 
-	/**
-	 * 중복되지 않는 초대 코드를 생성합니다.
-	 * 최대 10번 재시도하며, 실패 시 예외를 발생시킵니다.
-	 */
-	private String generateUniqueInvitationCode() {
-		int maxRetries = 10;
+    public PageResponse<GatheringBookListResponse> getGatheringBooks(Long gatheringId, int page, int size) {
+        Long userId = SecurityUtil.getCurrentUserId();
 
-		for (int i = 0; i < maxRetries; i++) {
-			String code = InvitationCodeGenerator.generate();
-			if (!gatheringRepository.existsByInvitationLink(code)) {
-				return code;
-			}
-		}
+        gatheringValidator.validateAndGetGathering(gatheringId);
+        gatheringValidator.validateMembership(gatheringId, userId);
 
-		throw new GatheringException(GatheringErrorCode.INVITATION_CODE_GENERATION_FAILED);
-	}
+        Pageable pageable = PageRequest.of(page, size);
+        Page<GatheringBook> gatheringBookPage = gatheringBookRepository.findGatheringBooks(gatheringId, pageable);
 
-	@Transactional
-	public void updateFavorite(Long gatheringId){
-		Long userId = SecurityUtil.getCurrentUserId();
-		GatheringMember member = gatheringValidator.validateAndGetMember(gatheringId, userId);
+        if (gatheringBookPage.isEmpty()) {
+            return PageResponse.of(List.of(), 0, page, size);
+        }
 
-		// 즐겨찾기 추가시 4개 제한 검증
-		if(!member.getIsFavorite()) {
-			gatheringValidator.validateFavoriteLimit(userId);
-		}
+        List<GatheringBook> gatheringBooks = gatheringBookPage.getContent();
+        Map<Long, Double> ratingMap = getBookRatingMap(gatheringId, gatheringBooks);
 
-		member.updateFavorite();
-	}
+        List<GatheringBookListResponse> responses = gatheringBooks.stream()
+                .map(gb -> GatheringBookListResponse.from(gb, ratingMap.get(gb.getBook().getId())))
+                .toList();
+
+        return PageResponse.of(responses, gatheringBookPage.getTotalElements(), page, size);
+    }
+
+    private Map<Long, Double> getBookRatingMap(Long gatheringId, List<GatheringBook> gatheringBooks) {
+        List<Long> meetingMemberIds = meetingMemberRepository.findByGatheringId(gatheringId);
+
+        if (meetingMemberIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> bookIds = gatheringBooks.stream()
+                .map(gb -> gb.getBook().getId())
+                .toList();
+
+        return bookReviewRepository.findMeetingBookReviews(bookIds, meetingMemberIds).stream()
+                .collect(Collectors.toMap(
+                        BookRatingAverage::bookId,
+                        BookRatingAverage::averageRating
+                ));
+    }
+
+    /**
+     * 중복되지 않는 초대 코드를 생성합니다.
+     * 최대 10번 재시도하며, 실패 시 예외를 발생시킵니다.
+     */
+    private String generateUniqueInvitationCode() {
+        int maxRetries = 10;
+
+        for (int i = 0; i < maxRetries; i++) {
+            String code = InvitationCodeGenerator.generate();
+            if (!gatheringRepository.existsByInvitationLink(code)) {
+                return code;
+            }
+        }
+
+        throw new GatheringException(GatheringErrorCode.INVITATION_CODE_GENERATION_FAILED);
+    }
+
+    @Transactional
+    public void updateFavorite(Long gatheringId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        GatheringMember member = gatheringValidator.validateAndGetMember(gatheringId, userId);
+
+        // 즐겨찾기 추가시 4개 제한 검증
+        if (!member.getIsFavorite()) {
+            gatheringValidator.validateFavoriteLimit(userId);
+        }
+
+        member.updateFavorite();
+    }
 
     /**
      * 공통 메서드
      * 모임 멤버를 추가합니다.
      */
+
     private GatheringMember saveGatheringMember(Gathering gathering, User user, GatheringRole role, GatheringMemberStatus status, LocalDateTime joinedAt) {
 
         GatheringMember gatheringMember = GatheringMember.of(gathering, user, role, status, joinedAt);
@@ -295,6 +350,5 @@ public class GatheringService {
     private int getMeetingCount(Long gatheringId) {
         return meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE);
     }
-
 
 }

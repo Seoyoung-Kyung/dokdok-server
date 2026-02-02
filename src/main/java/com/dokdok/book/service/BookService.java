@@ -39,8 +39,9 @@ public class BookService {
                 : List.of();
         boolean hasNext = response != null && response.meta() != null && !response.meta().isEnd();
         BookSearchCursor nextCursor = hasNext ? new BookSearchCursor(page + 1) : null;
+        long totalCount = response != null && response.meta() != null ? response.meta().totalCount() : 0L;
 
-        return CursorPageResponse.of(items, pageSize, hasNext, nextCursor);
+        return CursorPageResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
     }
 
     public BookDetailResponse getBook(String isbn) {

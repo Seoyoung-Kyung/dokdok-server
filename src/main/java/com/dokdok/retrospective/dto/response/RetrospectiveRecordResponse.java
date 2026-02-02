@@ -1,6 +1,6 @@
 package com.dokdok.retrospective.dto.response;
 
-import com.dokdok.book.entity.RecordType;
+import com.dokdok.book.entity.ReflectionRecordType;
 import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
 import com.dokdok.retrospective.dto.projection.FreeTextProjection;
 import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
@@ -16,39 +16,45 @@ public record RetrospectiveRecordResponse(
         @Schema(description = "모임 이름", example = "독서 모임")
         String gatheringName,
         @Schema(description = "기록 유형", example = "개인 회고")
-        String recordType,
+        ReflectionRecordType recordType,
         @Schema(description = "작성 일시", example = "2025-02-01T16:30:00")
         LocalDateTime createdAt,
-        @Schema(description = "생각 변화 목록")
-        List<ChangedThought> changedThoughts,
-        @Schema(description = "타인의 관점 목록")
-        List<OthersPerspective> othersPerspectives,
+        @Schema(description = "주제별 그룹 목록")
+        List<TopicGroup> topicGroups,
         @Schema(description = "자유 서술 목록")
         List<FreeText> freeTexts
 ) {
-    @Schema(description = "생각 변화")
-    public record ChangedThought(
+    @Schema(description = "주제별 그룹")
+    public record TopicGroup(
             @Schema(description = "주제 ID", example = "1")
             Long topicId,
+            @Schema(description = "주제명", example = "1")
+            String topicTitle,
+            @Schema(description = "주제 확정 순서", example = "1")
+            Integer confirmOrder,
+            @Schema(description = "생각 변화 목록")
+            ChangedThought changedThought,
+            @Schema(description = "타인의 관점 목록")
+            List<OthersPerspective> othersPerspectives
+    ) {}
+
+    @Schema(description = "생각 변화")
+    public record ChangedThought(
             @Schema(description = "핵심 쟁점", example = "요약된 핵심 쟁점")
             String keyIssue,
             @Schema(description = "사후 의견", example = "토론 후 바뀐 생각")
             String postOpinion
     ) {
-
-        public static ChangedThought from(ChangedThoughtProjection changedThought) {
+        public static ChangedThought from(ChangedThoughtProjection projection) {
             return new ChangedThought(
-                    changedThought.topicId(),
-                    changedThought.keyIssue(),
-                    changedThought.postOpinion()
+                    projection.keyIssue(),
+                    projection.postOpinion()
             );
         }
     }
 
     @Schema(description = "타인의 관점")
     public record OthersPerspective(
-            @Schema(description = "주제 ID", example = "1")
-            Long topicId,
             @Schema(description = "약속 멤버 ID", example = "10")
             Long meetingMemberId,
             @Schema(description = "멤버 닉네임", example = "독서왕")
@@ -58,13 +64,12 @@ public record RetrospectiveRecordResponse(
             @Schema(description = "인상 깊었던 이유", example = "새로운 관점을 제공했기 때문입니다.")
             String impressiveReason
     ) {
-        public static OthersPerspective from(OtherPerspectiveProjection othersPerspective) {
+        public static OthersPerspective from(OtherPerspectiveProjection projection) {
             return new OthersPerspective(
-                    othersPerspective.topicId(),
-                    othersPerspective.meetingMemberId(),
-                    othersPerspective.memberNickname(),
-                    othersPerspective.opinionContent(),
-                    othersPerspective.impressiveReason()
+                    projection.meetingMemberId(),
+                    projection.memberNickname(),
+                    projection.opinionContent(),
+                    projection.impressiveReason()
             );
         }
     }
@@ -87,19 +92,17 @@ public record RetrospectiveRecordResponse(
     public static RetrospectiveRecordResponse of(
             Long retrospectiveId,
             String gatheringName,
-            String recordType,
+            ReflectionRecordType recordType,
             LocalDateTime createdAt,
-            List<RetrospectiveRecordResponse.ChangedThought> changedThoughts,
-            List<RetrospectiveRecordResponse.OthersPerspective> othersPerspectives,
-            List<RetrospectiveRecordResponse.FreeText> freeTexts
+            List<TopicGroup> topicGroups,
+            List<FreeText> freeTexts
     ) {
         return new RetrospectiveRecordResponse(
                 retrospectiveId,
                 gatheringName,
                 recordType,
                 createdAt,
-                changedThoughts,
-                othersPerspectives,
+                topicGroups,
                 freeTexts
         );
     }

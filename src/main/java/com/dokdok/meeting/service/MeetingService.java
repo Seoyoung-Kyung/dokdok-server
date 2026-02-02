@@ -340,6 +340,9 @@ public class MeetingService {
         meetingRepository.delete(meeting);
     }
 
+    /**
+     * 약속 삭제 가능 상태인지 확인한다.
+     */
     private void validateDeletableStatus(Meeting meeting) {
         if (meeting.getMeetingStatus() == MeetingStatus.DONE) {
             throw new MeetingException(
@@ -349,6 +352,9 @@ public class MeetingService {
         }
     }
 
+    /**
+     * 약속 삭제 가능 시간이 지났는지 확인한다.
+     */
     private void validateDeletableMeetingStartDate(Meeting meeting) {
         LocalDateTime meetingStartDate = meeting.getMeetingStartDate();
         if (meetingStartDate != null
@@ -532,6 +538,84 @@ public class MeetingService {
     }
 
     /**
+     * 메인페이지 내 약속 리스트를 조회한다.
+     * @param filter 필터(ALL, UPCOMING, DONE)
+     * @param size 페이지 크기
+     * @param cursor 커서
+     * @return 약속 리스트
+     */
+    @Transactional(readOnly = true)
+    public CursorResponse<MyMeetingListItemResponse, MeetingListCursor> getMyMeetingList(
+            MyMeetingListFilter filter,
+            int size,
+            MeetingListCursor cursor
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        Pageable pageable = cursorPageable(size);
+        LocalDateTime now = LocalDateTime.now();
+
+        MyMeetingListFilter safeFilter = filter == null ? MyMeetingListFilter.ALL : filter;
+        List<Meeting> meetings = switch (safeFilter) {
+            case UPCOMING -> meetingMemberRepository.findMyUpcomingMeetingsAfterCursor(
+                    userId,
+                    MeetingStatus.CONFIRMED,
+                    now,
+                    now.plusDays(3),
+                    cursorStartDateTime(cursor),
+                    cursorMeetingId(cursor),
+                    pageable
+            );
+            case DONE -> meetingMemberRepository.findMyMeetingsByStatusAfterCursor(
+                    userId,
+                    MeetingStatus.DONE,
+                    cursorStartDateTime(cursor),
+                    cursorMeetingId(cursor),
+                    pageable
+            );
+            case ALL -> meetingMemberRepository.findMyMeetingsByStatusesAfterCursor(
+                    userId,
+                    List.of(MeetingStatus.CONFIRMED, MeetingStatus.DONE),
+                    cursorStartDateTime(cursor),
+                    cursorMeetingId(cursor),
+                    pageable
+            );
+        };
+
+        return buildMyMeetingListResponse(meetings, size, userId);
+    }
+
+    /**
+     * 메인페이지 내 약속 탭 카운트를 조회한다.
+     * @return 탭별 카운트 응답
+     */
+    @Transactional(readOnly = true)
+    public MyMeetingTabCountsResponse getMyMeetingTabCounts() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        LocalDateTime now = LocalDateTime.now();
+
+        int allCount = meetingMemberRepository.countMyMeetingsByStatuses(
+                userId,
+                List.of(MeetingStatus.CONFIRMED, MeetingStatus.DONE)
+        );
+        int upcomingCount = meetingMemberRepository.countMyUpcomingMeetings(
+                userId,
+                MeetingStatus.CONFIRMED,
+                now,
+                now.plusDays(3)
+        );
+        int doneCount = meetingMemberRepository.countMyMeetingsByStatus(
+                userId,
+                MeetingStatus.DONE
+        );
+
+        return MyMeetingTabCountsResponse.builder()
+                .all(allCount)
+                .upcoming(upcomingCount)
+                .done(doneCount)
+                .build();
+    }
+
+    /**
      * 모임의 약속 중 확정된 리스트를 전부 반환한다.
      */
     private CursorResponse<MeetingListItemResponse, MeetingListCursor> getAllMeetings(
@@ -618,6 +702,9 @@ public class MeetingService {
         return buildMeetingListResponse(meetings, size, userId, gatheringId);
     }
 
+    /**
+     * 약속 리스트 커서 응답을 구성한다.
+     */
     private CursorResponse<MeetingListItemResponse, MeetingListCursor> buildMeetingListResponse(
             List<Meeting> meetingCandidates,
             int size,
@@ -641,6 +728,34 @@ public class MeetingService {
         return CursorResponse.of(items, size, hasNext, nextCursor);
     }
 
+    /**
+     * 내 약속 리스트 커서 응답을 구성한다.
+     */
+    private CursorResponse<MyMeetingListItemResponse, MeetingListCursor> buildMyMeetingListResponse(
+            List<Meeting> meetingCandidates,
+            int size,
+            Long userId
+    ) {
+        boolean hasNext = meetingCandidates.size() > size;
+        List<Meeting> meetings = hasNext ? meetingCandidates.subList(0, size) : meetingCandidates;
+        if (meetings.isEmpty()) {
+            return CursorResponse.of(List.of(), size, false, null);
+        }
+
+        List<MyMeetingListItemResponse> items = buildMyMeetingItems(meetings, userId);
+
+        MeetingListCursor nextCursor = null;
+        if (hasNext) {
+            Meeting last = meetings.get(meetings.size() - 1);
+            nextCursor = new MeetingListCursor(last.getMeetingStartDate(), last.getId());
+        }
+
+        return CursorResponse.of(items, size, hasNext, nextCursor);
+    }
+
+    /**
+     * 약속 리스트 아이템을 생성한다.
+     */
     private List<MeetingListItemResponse> buildMeetingItems(
             List<Meeting> meetings,
             Long userId,
@@ -668,6 +783,9 @@ public class MeetingService {
             items.add(MeetingListItemResponse.builder()
                     .meetingId(meeting.getId())
                     .meetingName(meeting.getMeetingName())
+                    .meetingLeaderName(meeting.getMeetingLeader() != null
+                            ? meeting.getMeetingLeader().getNickname()
+                            : null)
                     .bookName(meeting.getBook().getBookName())
                     .startDateTime(meeting.getMeetingStartDate())
                     .endDateTime(meeting.getMeetingEndDate())
@@ -680,10 +798,84 @@ public class MeetingService {
         return items;
     }
 
+    /**
+     * 내 약속 리스트 아이템을 생성한다.
+     */
+    private List<MyMeetingListItemResponse> buildMyMeetingItems(List<Meeting> meetings, Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        List<MyMeetingListItemResponse> items = new ArrayList<>();
+
+        for (Meeting meeting : meetings) {
+            MeetingProgressStatus progressStatus = resolveProgressStatus(
+                    meeting.getMeetingStartDate(),
+                    meeting.getMeetingEndDate(),
+                    now
+            );
+            MeetingMyRole myRole = resolveMyMeetingRole(meeting, userId);
+
+            items.add(new MyMeetingListItemResponse(
+                    meeting.getId(),
+                    meeting.getMeetingName(),
+                    meeting.getGathering().getId(),
+                    meeting.getGathering().getGatheringName(),
+                    meeting.getMeetingLeader() != null ? meeting.getMeetingLeader().getNickname() : null,
+                    meeting.getBook().getBookName(),
+                    meeting.getMeetingStartDate(),
+                    meeting.getMeetingEndDate(),
+                    meeting.getMeetingStatus(),
+                    myRole,
+                    progressStatus
+            ));
+        }
+        return items;
+    }
+
+    /**
+     * 내 역할을 계산한다.
+     */
+    private MeetingMyRole resolveMyMeetingRole(Meeting meeting, Long userId) {
+        User leader = meeting.getMeetingLeader();
+        if (leader != null && leader.getId().equals(userId)) {
+            return MeetingMyRole.LEADER;
+        }
+        User gatheringLeader = meeting.getGathering().getGatheringLeader();
+        if (gatheringLeader != null && gatheringLeader.getId().equals(userId)) {
+            return MeetingMyRole.GATHERING_LEADER;
+        }
+        return MeetingMyRole.MEMBER;
+    }
+
+    /**
+     * 약속 진행 상태를 계산한다.
+     */
+    private MeetingProgressStatus resolveProgressStatus(
+            LocalDateTime meetingStartDate,
+            LocalDateTime meetingEndDate,
+            LocalDateTime now
+    ) {
+        if (meetingStartDate == null || meetingEndDate == null) {
+            return MeetingProgressStatus.UNKNOWN;
+        }
+        if (now.isBefore(meetingStartDate)) {
+            return MeetingProgressStatus.UPCOMING;
+        }
+        if (!now.isAfter(meetingEndDate)) {
+            return MeetingProgressStatus.ONGOING;
+        }
+        return MeetingProgressStatus.DONE;
+    }
+
+    /**
+     * 리스트에서 내 역할을 계산한다.
+     */
     private MeetingMyRole resolveMyRole(Meeting meeting, Long userId, boolean joined) {
         User leader = meeting.getMeetingLeader();
         if (leader != null && leader.getId().equals(userId)) {
             return MeetingMyRole.LEADER;
+        }
+        User gatheringLeader = meeting.getGathering().getGatheringLeader();
+        if (gatheringLeader != null && gatheringLeader.getId().equals(userId)) {
+            return MeetingMyRole.GATHERING_LEADER;
         }
         if (joined) {
             return MeetingMyRole.MEMBER;
@@ -691,14 +883,23 @@ public class MeetingService {
         return MeetingMyRole.NONE;
     }
 
+    /**
+     * 커서 페이지네이션을 위한 Pageable을 생성한다.
+     */
     private Pageable cursorPageable(int size) {
         return PageRequest.of(0, size + 1);
     }
 
+    /**
+     * 커서의 시작 시간을 반환한다.
+     */
     private LocalDateTime cursorStartDateTime(MeetingListCursor cursor) {
         return cursor == null ? null : cursor.startDateTime();
     }
 
+    /**
+     * 커서의 약속 ID를 반환한다.
+     */
     private Long cursorMeetingId(MeetingListCursor cursor) {
         return cursor == null ? null : cursor.meetingId();
     }

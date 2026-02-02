@@ -7,6 +7,7 @@ import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
 import com.dokdok.gathering.dto.response.*;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.response.CursorResponse;
+import com.dokdok.global.response.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -43,7 +44,7 @@ public interface GatheringApi {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = GatheringCreateResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code": "CREATED", "message": "모임 생성에 성공하였습니다.", "data": {"gatheringName": "독서 모임", "totalMembers": 1, "daysFromCreation": 10, "totalMeetings": 0, "invitationLink": "ABC123XYZ"}}
+                                    {"code": "CREATED", "message": "모임 생성에 성공하였습니다.", "data": {"gatheringId": 1 , "gatheringName": "독서 모임", "totalMembers": 1, "daysFromCreation": 10, "totalMeetings": 0, "invitationLink": "ABC123XYZ"}}
                                     """)
                     )
             ),
@@ -874,5 +875,104 @@ public interface GatheringApi {
                     )
             )
             @Valid @RequestBody JoinGatheringMemberRequest request
+    );
+
+    @Operation(
+            summary = "모임 책장 조회 (developer: 경서영)",
+            description = """
+                모임에서 읽은 책 목록을 페이지네이션으로 조회합니다.
+                - 모임 멤버만 조회할 수 있습니다.
+                - 각 책의 평균 평점(모임 멤버들의 평점 평균)이 함께 반환됩니다.
+                - 평점이 없는 책은 ratingAverage가 null로 반환됩니다.
+                """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = GatheringBookListResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "모임 책장 조회를 성공했습니다.",
+                                      "data": {
+                                        "items": [
+                                          {
+                                            "bookId": 1,
+                                            "bookName": "클린 코드",
+                                            "author": "Robert C. Martin",
+                                            "thumbnail": "https://example.com/books/clean-code.jpg",
+                                            "ratingAverage": 4.25
+                                          },
+                                          {
+                                            "bookId": 2,
+                                            "bookName": "이펙티브 자바",
+                                            "author": "Joshua Bloch",
+                                            "thumbnail": "https://example.com/books/effective-java.jpg",
+                                            "ratingAverage": null
+                                          }
+                                        ],
+                                        "totalCount": 12,
+                                        "currentPage": 0,
+                                        "pageSize": 10,
+                                        "totalPages": 2
+                                      }
+                                    }
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 모임 멤버만 조회할 수 있습니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA002", "message": "모임의 멤버가 아닙니다.", "data": null}
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                    """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)
+                    )
+            )
+    })
+    @GetMapping("/{gatheringId}/books")
+    ResponseEntity<ApiResponse<PageResponse<GatheringBookListResponse>>> getGatheringBooks(
+            @Parameter(description = "모임 ID", required = true, example = "1")
+            @PathVariable Long gatheringId,
+
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "페이지 크기", example = "10")
+            @RequestParam(defaultValue = "10") int size
     );
 }

@@ -273,7 +273,6 @@ class MeetingServiceTest {
                 .meetingStartDate(startDate)
                 .meetingEndDate(null)
                 .maxParticipants(null)
-                .place(null)
                 .build();
 
         User user = User.builder()
@@ -828,7 +827,12 @@ class MeetingServiceTest {
         LocalDateTime now = LocalDateTime.now();
         MeetingUpdateRequest request = MeetingUpdateRequest.builder()
                 .meetingName("약속명 변경")
-                .place("장소 변경")
+                .location(new MeetingLocationDto(
+                        "장소 변경",
+                        "서울 어딘가",
+                        37.0,
+                        127.0
+                ))
                 .endDate(now)
                 .build();
 
@@ -1128,6 +1132,121 @@ class MeetingServiceTest {
                     any(LocalDateTime.class),
                     any(LocalDateTime.class)
             );
+        }
+    }
+
+    @DisplayName("내 약속 리스트 조회 시 필터가 null이면 전체 기준으로 조회한다.")
+    @Test
+    void givenNullFilter_whenGetMyMeetingList_thenReturnItems() {
+        // given
+        Long userId = leader.getId();
+        int size = 4;
+        User meetingLeader = User.builder().id(99L).nickname("meetingLeader").build();
+        Meeting myMeeting = Meeting.builder()
+                .id(1L)
+                .meetingName("myMeeting")
+                .meetingStatus(MeetingStatus.CONFIRMED)
+                .meetingStartDate(null)
+                .meetingEndDate(null)
+                .meetingLeader(meetingLeader)
+                .gathering(gathering)
+                .book(Book.builder().id(1L).bookName("book").build())
+                .build();
+
+        given(meetingMemberRepository.findMyMeetingsByStatusesAfterCursor(
+                eq(userId),
+                eq(List.of(MeetingStatus.CONFIRMED, MeetingStatus.DONE)),
+                any(),
+                any(),
+                any()
+        )).willReturn(List.of(myMeeting));
+
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            CursorResponse<MyMeetingListItemResponse, MeetingListCursor> response =
+                    meetingService.getMyMeetingList(null, size, null);
+
+            // then
+            assertThat(response.items()).hasSize(1);
+            MyMeetingListItemResponse item = response.items().get(0);
+            assertThat(item.myRole()).isEqualTo(MeetingMyRole.GATHERING_LEADER);
+            assertThat(item.progressStatus()).isEqualTo(MeetingProgressStatus.UNKNOWN);
+        }
+    }
+
+    @DisplayName("다가오는 내 약속 리스트를 조회하면 UPCOMING 상태를 반환한다.")
+    @Test
+    void givenUpcomingFilter_whenGetMyMeetingList_thenReturnUpcomingItems() {
+        // given
+        Long userId = 55L;
+        int size = 4;
+        LocalDateTime start = LocalDateTime.now().plusHours(1);
+        LocalDateTime end = start.plusHours(2);
+        Meeting upcomingMeeting = Meeting.builder()
+                .id(2L)
+                .meetingName("upcoming")
+                .meetingStatus(MeetingStatus.CONFIRMED)
+                .meetingStartDate(start)
+                .meetingEndDate(end)
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .book(Book.builder().id(2L).bookName("book2").build())
+                .build();
+
+        given(meetingMemberRepository.findMyUpcomingMeetingsAfterCursor(
+                eq(userId),
+                eq(MeetingStatus.CONFIRMED),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+        )).willReturn(List.of(upcomingMeeting));
+
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            CursorResponse<MyMeetingListItemResponse, MeetingListCursor> response =
+                    meetingService.getMyMeetingList(MyMeetingListFilter.UPCOMING, size, null);
+
+            // then
+            assertThat(response.items()).hasSize(1);
+            MyMeetingListItemResponse item = response.items().get(0);
+            assertThat(item.progressStatus()).isEqualTo(MeetingProgressStatus.UPCOMING);
+        }
+    }
+
+    @DisplayName("내 약속 탭 카운트를 조회하면 전체/다가오는/완료 카운트를 반환한다.")
+    @Test
+    void givenUser_whenGetMyMeetingTabCounts_thenReturnCounts() {
+        // given
+        Long userId = 55L;
+        given(meetingMemberRepository.countMyMeetingsByStatuses(
+                userId,
+                List.of(MeetingStatus.CONFIRMED, MeetingStatus.DONE)
+        )).willReturn(5);
+        given(meetingMemberRepository.countMyUpcomingMeetings(
+                eq(userId),
+                eq(MeetingStatus.CONFIRMED),
+                any(),
+                any()
+        )).willReturn(2);
+        given(meetingMemberRepository.countMyMeetingsByStatus(userId, MeetingStatus.DONE))
+                .willReturn(3);
+
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            MyMeetingTabCountsResponse response = meetingService.getMyMeetingTabCounts();
+
+            // then
+            assertThat(response.all()).isEqualTo(5);
+            assertThat(response.upcoming()).isEqualTo(2);
+            assertThat(response.done()).isEqualTo(3);
         }
     }
 

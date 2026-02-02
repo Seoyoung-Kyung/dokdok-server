@@ -8,6 +8,7 @@ import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.service.GatheringService;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.response.CursorResponse;
+import com.dokdok.global.response.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/gatherings")
@@ -122,5 +124,16 @@ public class GatheringController implements GatheringApi {
     ) {
         CursorResponse<GatheringListItemResponse, MyGatheringCursor> response = gatheringService.getMyGatherings(pageSize, cursorJoinedAt, cursorId);
         return ApiResponse.success(response, "내 모임 전체 목록 조회 성공");
+    }
+
+    @Override
+    @GetMapping("/{gatheringId}/books")
+    public ResponseEntity<ApiResponse<PageResponse<GatheringBookListResponse>>> getGatheringBooks(
+            @PathVariable Long gatheringId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        PageResponse<GatheringBookListResponse> response = gatheringService.getGatheringBooks(gatheringId, page, size);
+        return ApiResponse.success(response, "모임 책장 조회를 성공했습니다.");
     }
 }

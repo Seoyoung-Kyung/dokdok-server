@@ -30,7 +30,7 @@ public record PersonalRetrospectiveDetailResponse(
     public record ChangedThought(
             @Schema(description = "주제 ID", example = "1")
             Long topicId,
-            @Schema(description = "주제 제목", example = "1장 깨끗한 코드")
+            @Schema(description = "주제 제목", example = "깨끗한 코드")
             String topicTitle,
             @Schema(description = "핵심 쟁점", example = "요약된 핵심 쟁점")
             String keyIssue,
@@ -69,12 +69,15 @@ public record PersonalRetrospectiveDetailResponse(
                 RetrospectiveOthersPerspective othersPerspective,
                 String profileImage
         ) {
+            Long topicId = othersPerspective.getTopic() != null
+                    ? othersPerspective.getTopic().getId()
+                    : null;
 
             return new OthersPerspective(
-                    othersPerspective.getTopic().getId(),
+                    topicId,
                     othersPerspective.getMeetingMember().getId(),
-                    othersPerspective.getMeetingMember().getUser().getNickname(),
                     profileImage,
+                    othersPerspective.getMeetingMember().getUser().getNickname(),
                     othersPerspective.getOpinionContent(),
                     othersPerspective.getImpressiveReason()
             );

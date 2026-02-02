@@ -1,6 +1,10 @@
 spring:
   application:
     name: dokdok
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
   datasource:
     hikari:
       maximum-pool-size: 20  # 최대 커넥션 수
@@ -11,12 +15,14 @@ spring:
       leak-detection-threshold: 60000  # 커넥션 누수 감지 (1분)
 app:
   frontend:
-    default-url: http://localhost:3000
+    default-url: http://localhost:5173
     allowed-origins:
-      - http://localhost:3000
       - http://localhost:5173
-      - https://yourdomain.com
-      - https://dev.yourdomain.com
+      - localhost:5173
+      - dokdok.site
+      - https://dokdok.site
+      - https://www.dokdok.site
+      - https://dev.dokdok.site
 ai:
   api:
     base-url: ${AI_API_BASE_URL:http://localhost:8000}

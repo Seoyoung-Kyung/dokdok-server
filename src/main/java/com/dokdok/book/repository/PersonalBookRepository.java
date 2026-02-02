@@ -97,4 +97,24 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
             Pageable pageable
     );
 
+    @Query(
+            value = """
+                select count(distinct pb.book_id)
+                from personal_book pb
+                left join gathering g
+                    on pb.gathering_id = g.gathering_id
+                    and g.deleted_at is null
+                where pb.user_id = :userId
+                    and pb.deleted_at is null
+                    and (:gatheringId is null or g.gathering_id = :gatheringId)
+                    and (:readingStatus is null or pb.reading_status = :readingStatus)
+                """,
+            nativeQuery = true
+    )
+    long countPersonalBooksByUserIdReadingStatusAndGatheringId(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId,
+            @Param("readingStatus") String readingStatus
+    );
+
 }

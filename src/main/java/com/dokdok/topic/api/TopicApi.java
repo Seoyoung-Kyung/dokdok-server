@@ -43,7 +43,10 @@ public interface TopicApi {
                     responseCode = "201",
                     description = "주제 제안 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = SuggestTopicResponse.class))
+                            schema = @Schema(implementation = SuggestTopicResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"code":"CREATED","message":"주제 제안이 완료되었습니다.","data":{"topicId":1,"title":"주제 제목","description":"주제 설명","topicType":"FREE"}}
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
@@ -181,7 +184,10 @@ public interface TopicApi {
                     description = "주제 조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorResponse.class)
+                            schema = @Schema(implementation = CursorResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"code":"SUCCESS","message":"제안된 주제 조회를 성공했습니다.","data":{"page":{"items":[{"topicId":1,"meetingId":10,"title":"이 책의 핵심 메시지는 무엇인가?","description":"저자가 전달하고자 하는 핵심 메시지에 대해 토론합니다.","topicType":"DISCUSSION","topicTypeLabel":"토론형","topicStatus":"PROPOSED","likeCount":5,"canDelete":true,"createdByInfo":{"userId":1,"nickname":"독서왕"}}],"pageSize":10,"hasNext":false,"nextCursor":null},"actions":{"canConfirm":false,"canSuggest":true}}}
+                                    """)
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -252,7 +258,10 @@ public interface TopicApi {
                     responseCode = "200",
                     description = "주제 확정 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ConfirmTopicsResponse.class))
+                            schema = @Schema(implementation = ConfirmTopicsResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"code":"SUCCESS","message":"주제가 확정되었습니다.","data":{"confirmedTopicIds":[1,2,3]}}
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
@@ -336,7 +345,7 @@ public interface TopicApi {
     );
 
     @Operation(
-            summary = "주제 삭제 (developer: 양재웅)",
+            summary = "주제 삭제 (developer: 경서영)",
             description = """
                     제안된 주제를 삭제합니다.
                     - 권한: 주제 작성자 또는 약속장
@@ -352,8 +361,12 @@ public interface TopicApi {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "204",
-                    description = "주제 삭제 성공"
+                    responseCode = "200",
+                    description = "주제 삭제 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code":"DELETED","message":"주제가 삭제되었습니다.","data":null}
+                                    """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
@@ -456,7 +469,21 @@ public interface TopicApi {
                     responseCode = "200",
                     description = "좋아요 토글 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = TopicLikeResponse.class))
+                            schema = @Schema(implementation = TopicLikeResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "좋아요 추가",
+                                            value = """
+                                                    {"code":"SUCCESS","message":"주제를 좋아요 했습니다.","data":{"topicId":1,"liked":true,"newCount":5}}
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "좋아요 취소",
+                                            value = """
+                                                    {"code":"SUCCESS","message":"주제 좋아요를 취소했습니다.","data":{"topicId":1,"liked":false,"newCount":4}}
+                                                    """
+                                    )
+                            })
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",

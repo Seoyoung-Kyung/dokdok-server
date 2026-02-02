@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.repository;
 
+import com.querydsl.core.annotations.QueryEmbedded;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -70,5 +71,7 @@ public interface PersonalRetrospectiveRepository extends JpaRepository<PersonalM
             @Param("cursorRetrospectiveId") Long cursorRetrospectiveId,
             Pageable pageable
     );
+
+    boolean existsByIdAndUserId(Long retrospectiveId, Long userId);
 
 }

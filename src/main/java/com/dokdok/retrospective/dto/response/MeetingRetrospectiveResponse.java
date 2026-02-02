@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.dto.response;
 
+import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.retrospective.entity.MeetingRetrospective;
 import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
@@ -22,6 +23,8 @@ public record MeetingRetrospectiveResponse(
         LocalDate meetingDate,
         @Schema(description = "약속 시간", example = "14:00")
         String meetingTime,
+        @Schema(description = "모임 정보")
+        MeetingResponse.GatheringInfo gathering,
         @Schema(description = "주제 목록")
         List<TopicResponse> topics
 ) {
@@ -34,6 +37,7 @@ public record MeetingRetrospectiveResponse(
                 .meetingName(meeting.getMeetingName())
                 .meetingDate(meeting.getMeetingStartDate().toLocalDate())
                 .meetingTime(meeting.getFormattedTime())
+                .gathering(MeetingResponse.GatheringInfo.from(meeting.getGathering()))
                 .topics(topics)
                 .build();
     }
@@ -43,12 +47,16 @@ public record MeetingRetrospectiveResponse(
     public record TopicResponse(
             @Schema(description = "주제 ID", example = "1")
             Long topicId,
-            @Schema(description = "주제 제목", example = "가짜 욕망, 유사 욕망에 대해 이야기해봅시다.")
+            @Schema(description = "주제 순번", example = "1")
+            Integer confirmOrder,
+            @Schema(description = "주제 제목", example = "가짜 욕망, 유사 욕망")
             String topicTitle,
+            @Schema(description = "주제 설명", example = "가짜욕망, 유사욕망에 대해 이야기해봅시다.")
+            String topicDescription,
             @Schema(description = "핵심 요약", example = "참여자들은 『데미안』 속 싱클레어가...")
             String summary,
-            @Schema(description = "주요 포인트", example = "1) 사회가 만든 욕망의 구조...")
-            String keyPoint,
+            @Schema(description = "주요 포인트 목록")
+            List<KeyPointResponse> keyPoints,
             @Schema(description = "코멘트 목록")
             List<CommentResponse> comments
     ){
@@ -59,10 +67,32 @@ public record MeetingRetrospectiveResponse(
         ) {
             return TopicResponse.builder()
                     .topicId(topic.getId())
+                    .confirmOrder(topic.getConfirmOrder())
                     .topicTitle(topic.getTitle())
+                    .topicDescription(topic.getDescription())
                     .summary(summary != null ? summary.getSummary() : null)
-                    .keyPoint(summary != null ? summary.getKeyPoint() : null)
+                    .keyPoints(summary != null && summary.getKeyPoints() != null
+                            ? summary.getKeyPoints().stream()
+                            .map(KeyPointResponse::from)
+                            .toList()
+                            : null)
                     .comments(comments)
+                    .build();
+        }
+    }
+
+    @Schema(description = "주요 포인트")
+    @Builder
+    public record KeyPointResponse(
+            @Schema(description = "포인트 제목", example = "사회가 만든 욕망의 구조")
+            String title,
+            @Schema(description = "포인트 내용 목록")
+            List<String> details
+    ) {
+        public static KeyPointResponse from(TopicRetrospectiveSummary.KeyPoint keyPoint) {
+            return KeyPointResponse.builder()
+                    .title(keyPoint.getTitle())
+                    .details(keyPoint.getDetails())
                     .build();
         }
     }
