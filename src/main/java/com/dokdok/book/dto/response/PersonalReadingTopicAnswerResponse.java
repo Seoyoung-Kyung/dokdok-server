@@ -22,6 +22,8 @@ public record PersonalReadingTopicAnswerResponse(
             String topicTitle,
             @Schema(description = "주제 설명", example = "가짜 욕망, 유사 욕망에 대해 이야기해봅시다.")
             String topicDescription,
+            @Schema(description = "확정 순서", example = "1")
+            Integer confirmOrder,
             @Schema(description = "주제 답변", example = "가짜 욕망과 유사 욕망은 비슷해 보이지만 결이 다르다고 느꼈다.")
             String answer
     ) {

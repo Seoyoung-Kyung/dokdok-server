@@ -566,6 +566,7 @@ public interface PersonalBookRecordApi {
                                           {
                                             "topicTitle": "가짜 욕망, 유사 욕망",
                                             "topicDescription": "가짜 욕망, 유사 욕망에 대해 이야기해봅시다.",
+                                            "confirmOrder": 1,
                                             "answer": "가짜 욕망과 유사 욕망은 비슷해 보이지만 결이 다르다고 느꼈다."
                                           }
                                         ]
