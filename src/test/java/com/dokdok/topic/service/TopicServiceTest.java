@@ -152,6 +152,11 @@ class TopicServiceTest {
 
             assertThat(response.meetingId()).isEqualTo(meetingId);
             assertThat(response.topicStatus()).isEqualTo(TopicStatus.CONFIRMED);
+            assertThat(response.topics()).hasSize(2);
+            assertThat(response.topics().get(0).topicId()).isEqualTo(12L);
+            assertThat(response.topics().get(0).confirmOrder()).isEqualTo(1);
+            assertThat(response.topics().get(1).topicId()).isEqualTo(13L);
+            assertThat(response.topics().get(1).confirmOrder()).isEqualTo(2);
             assertThat(topic1.getTopicStatus()).isEqualTo(TopicStatus.CONFIRMED);
             assertThat(topic2.getTopicStatus()).isEqualTo(TopicStatus.CONFIRMED);
             assertThat(topic1.getConfirmOrder()).isEqualTo(1);
