@@ -11,7 +11,9 @@ import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.stt.dto.SttJobResponse;
 import com.dokdok.stt.entity.SttJob;
 import com.dokdok.stt.entity.SttJobStatus;
+import com.dokdok.stt.entity.SttSummary;
 import com.dokdok.stt.repository.SttJobRepository;
+import com.dokdok.stt.repository.SttSummaryRepository;
 import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,6 +43,7 @@ public class SttJobService {
 
     private final MeetingValidator meetingValidator;
     private final SttJobRepository sttJobRepository;
+    private final SttSummaryRepository sttSummaryRepository;
     private final AiSttClient aiSttClient;
 
     @Value("${stt.temp-dir:}")
@@ -68,14 +72,20 @@ public class SttJobService {
                 .build();
         sttJobRepository.save(job);
 
+        SttSummary summary = null;
         try {
             SttResponse response = aiSttClient.requestStt(
                     new SttRequest(job.getId(), tempFilePath.toString(), "ko-KR")
             );
-            if (response == null || response.text() == null) {
+            if (response == null) {
+                job.markFailed("STT response is empty");
+            } else if ("FAILED".equalsIgnoreCase(response.status())) {
+                job.markFailed(response.errorMessage() == null ? "STT failed" : response.errorMessage());
+            } else if (isEmptyResponse(response)) {
                 job.markFailed("STT response is empty");
             } else {
                 job.markDone(response.text());
+                summary = saveSummary(job, response);
             }
         } catch (WebClientResponseException e) {
             job.markFailed("AI STT error: " + e.getStatusCode());
@@ -87,7 +97,7 @@ public class SttJobService {
             deleteTempFile(tempFilePath);
         }
 
-        return SttJobResponse.from(job);
+        return SttJobResponse.from(job, summary);
     }
 
     @Transactional(readOnly = true)
@@ -99,7 +109,8 @@ public class SttJobService {
         SttJob job = sttJobRepository.findByIdAndMeetingId(jobId, meetingId)
                 .orElseThrow(() -> new GlobalException(GlobalErrorCode.INVALID_INPUT_VALUE));
 
-        return SttJobResponse.from(job);
+        SttSummary summary = sttSummaryRepository.findBySttJobId(jobId).orElse(null);
+        return SttJobResponse.from(job, summary);
     }
 
     private void validateFile(MultipartFile file) {
@@ -159,5 +170,31 @@ public class SttJobService {
         } catch (IOException e) {
             log.warn("Failed to delete temp STT file: {}", path, e);
         }
+    }
+
+    private SttSummary saveSummary(SttJob job, SttResponse response) {
+        List<String> highlights = response.mainPoints() != null ? response.mainPoints() : response.highlights();
+        if (response.summary() == null
+                && (highlights == null || highlights.isEmpty())
+                && (response.keywords() == null || response.keywords().isEmpty())
+                && response.text() == null) {
+            return null;
+        }
+        SttSummary summary = SttSummary.builder()
+                .sttJob(job)
+                .summary(response.summary())
+                .highlights(highlights)
+                .keywords(response.keywords())
+                .build();
+        return sttSummaryRepository.save(summary);
+    }
+
+    private boolean isEmptyResponse(SttResponse response) {
+        boolean noText = response.text() == null || response.text().isBlank();
+        boolean noSummary = response.summary() == null || response.summary().isBlank();
+        boolean noHighlights = (response.mainPoints() == null || response.mainPoints().isEmpty())
+                && (response.highlights() == null || response.highlights().isEmpty());
+        boolean noKeywords = response.keywords() == null || response.keywords().isEmpty();
+        return noText && noSummary && noHighlights && noKeywords;
     }
 }
