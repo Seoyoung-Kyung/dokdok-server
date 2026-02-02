@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.dto.response;
 
+import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.retrospective.entity.MeetingRetrospective;
 import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
@@ -22,6 +23,8 @@ public record MeetingRetrospectiveResponse(
         LocalDate meetingDate,
         @Schema(description = "약속 시간", example = "14:00")
         String meetingTime,
+        @Schema(description = "모임 정보")
+        MeetingResponse.GatheringInfo gathering,
         @Schema(description = "주제 목록")
         List<TopicResponse> topics
 ) {
@@ -34,6 +37,7 @@ public record MeetingRetrospectiveResponse(
                 .meetingName(meeting.getMeetingName())
                 .meetingDate(meeting.getMeetingStartDate().toLocalDate())
                 .meetingTime(meeting.getFormattedTime())
+                .gathering(MeetingResponse.GatheringInfo.from(meeting.getGathering()))
                 .topics(topics)
                 .build();
     }
