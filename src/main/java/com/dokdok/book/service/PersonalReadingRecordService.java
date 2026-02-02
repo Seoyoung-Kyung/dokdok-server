@@ -221,7 +221,7 @@ public class PersonalReadingRecordService {
             if (page == null || excerpt == null) {
                 throw new RecordException(RecordErrorCode.INVALID_RECORD_REQUEST);
             }
-            meta.put("page", Integer.parseInt(String.valueOf(page)));
+            meta.put("page", String.valueOf(page));
             meta.put("excerpt", String.valueOf(excerpt));
         }
         return meta;
