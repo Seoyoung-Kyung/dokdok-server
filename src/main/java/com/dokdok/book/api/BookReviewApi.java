@@ -3,6 +3,9 @@ package com.dokdok.book.api;
 import com.dokdok.book.dto.request.BookReviewRequest;
 import com.dokdok.book.dto.response.BookReviewResponse;
 import com.dokdok.global.response.ApiResponse;
+import com.dokdok.global.response.CursorResponse;
+import com.dokdok.history.dto.BookReviewHistoryCursor;
+import com.dokdok.history.dto.BookReviewHistoryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "책 리뷰", description = "책 리뷰 관련 API")
 public interface BookReviewApi {
@@ -269,5 +273,72 @@ public interface BookReviewApi {
     @DeleteMapping(value = "/{bookId}/reviews/me")
     ResponseEntity<ApiResponse<Void>> deleteMyReview(
             @PathVariable Long bookId
+    );
+
+    @Operation(
+            summary = "책 리뷰 변경 이력 조회 (developer: 조건희)",
+            description = """
+            책 리뷰의 변경 이력을 조회합니다.
+            - 커서 기반 무한스크롤 페이징 (기본 5건)
+            - snapshot의 createdAt 기준 최신순 정렬
+            - 권한: 로그인 사용자 (본인 리뷰만 조회 가능)
+            """,
+            parameters = {
+                    @Parameter(name = "bookId", description = "책 식별자", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "pageSize", description = "페이지 크기 (기본값: 5)", in = ParameterIn.QUERY, required = false),
+                    @Parameter(name = "cursorHistoryId", description = "이전 페이지 마지막 이력 ID (첫 페이지는 미입력)", in = ParameterIn.QUERY, required = false)
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "책 리뷰 이력 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = BookReviewHistoryResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "책 리뷰 이력 조회가 완료되었습니다.",
+                                      "data": {
+                                        "items": [
+                                          {
+                                            "bookReviewHistoryId": 1,
+                                            "createdAt": "25.12.08 작성",
+                                            "rating": 4.0,
+                                            "bookKeywords": [
+                                              { "id": 1, "name": "관계", "type": "BOOK" },
+                                              { "id": 2, "name": "성장", "type": "BOOK" }
+                                            ],
+                                            "impressionKeywords": [
+                                              { "id": 10, "name": "즐거운", "type": "IMPRESSION" },
+                                              { "id": 11, "name": "여운이 남는", "type": "IMPRESSION" }
+                                            ]
+                                          }
+                                        ],
+                                        "pageSize": 5,
+                                        "hasNext": true,
+                                        "nextCursor": {
+                                          "historyId": 10
+                                        }
+                                      }
+                                    }
+                                    """))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "책 리뷰를 찾을 수 없음",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "B004", "message": "책 리뷰를 찾을 수 없습니다.", "data": null}
+                                    """))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                    """)))
+    })
+    @GetMapping(value = "/{bookId}/reviews/history", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ApiResponse<CursorResponse<BookReviewHistoryResponse, BookReviewHistoryCursor>>> getReviewHistory(
+            @PathVariable Long bookId,
+            @RequestParam(defaultValue = "5") int pageSize,
+            @RequestParam(required = false) Long cursorHistoryId
     );
 }
