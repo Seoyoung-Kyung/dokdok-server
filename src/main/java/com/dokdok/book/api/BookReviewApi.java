@@ -281,6 +281,7 @@ public interface BookReviewApi {
             책 리뷰의 변경 이력을 조회합니다.
             - 커서 기반 무한스크롤 페이징 (기본 5건)
             - snapshot의 createdAt 기준 최신순 정렬
+            - totalCount: 첫 페이지 요청 시에만 전체 이력 수 제공 (이후 페이지는 null)
             - 권한: 로그인 사용자 (본인 리뷰만 조회 가능)
             """,
             parameters = {
@@ -303,7 +304,7 @@ public interface BookReviewApi {
                                         "items": [
                                           {
                                             "bookReviewHistoryId": 1,
-                                            "createdAt": "25.12.08 작성",
+                                            "createdAt": "2026-01-13T08:36:03.043",
                                             "rating": 4.0,
                                             "bookKeywords": [
                                               { "id": 1, "name": "관계", "type": "BOOK" },
@@ -315,6 +316,7 @@ public interface BookReviewApi {
                                             ]
                                           }
                                         ],
+                                        "totalCount": 12,
                                         "pageSize": 5,
                                         "hasNext": true,
                                         "nextCursor": {
