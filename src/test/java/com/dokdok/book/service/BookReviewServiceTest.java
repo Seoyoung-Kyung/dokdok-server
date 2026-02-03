@@ -481,6 +481,7 @@ class BookReviewServiceTest {
             assertThat(response.items().get(1).bookReviewHistoryId()).isEqualTo(1L);
             assertThat(response.hasNext()).isFalse();
             assertThat(response.nextCursor()).isNull();
+            assertThat(response.totalCount()).isEqualTo(2);
         }
     }
 
@@ -543,6 +544,7 @@ class BookReviewServiceTest {
             assertThat(firstPage.items().get(4).bookReviewHistoryId()).isEqualTo(3L);
             assertThat(firstPage.hasNext()).isTrue();
             assertThat(firstPage.nextCursor().historyId()).isEqualTo(3L);
+            assertThat(firstPage.totalCount()).isEqualTo(7);
 
             // 두 번째 페이지 (커서 3L 이후: 2, 1)
             CursorResponse<BookReviewHistoryResponse, BookReviewHistoryCursor> secondPage =
@@ -553,6 +555,7 @@ class BookReviewServiceTest {
             assertThat(secondPage.items().get(1).bookReviewHistoryId()).isEqualTo(1L);
             assertThat(secondPage.hasNext()).isFalse();
             assertThat(secondPage.nextCursor()).isNull();
+            assertThat(secondPage.totalCount()).isNull();
         }
     }
 
@@ -648,13 +651,14 @@ class BookReviewServiceTest {
     }
 
     @Test
-    @DisplayName("응답 날짜가 yy.MM.dd 작성 형식으로 포맷된다")
+    @DisplayName("응답 날짜가 LocalDateTime 형식으로 응답된다")
     void getReviewHistory_dateFormatted() {
         BookReview review = BookReview.builder().id(10L).build();
         Keyword keyword = Keyword.builder().id(42L).keywordName("사랑").keywordType(KeywordType.BOOK).build();
 
+        LocalDateTime expectedDateTime = LocalDateTime.of(2025, 12, 8, 15, 30, 0);
         BookReviewHistory history = createHistory(1L, HistoryAction.INSERT, new BigDecimal("4.5"),
-                List.of(42L), LocalDateTime.of(2025, 12, 8, 15, 30, 0));
+                List.of(42L), expectedDateTime);
 
         try (MockedStatic<SecurityUtil> securityUtilMock = org.mockito.Mockito.mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(3L);
@@ -666,7 +670,7 @@ class BookReviewServiceTest {
             CursorResponse<BookReviewHistoryResponse, BookReviewHistoryCursor> response =
                     bookReviewService.getReviewHistory(1L, 5, null);
 
-            assertThat(response.items().get(0).createdAt()).isEqualTo("25.12.08 작성");
+            assertThat(response.items().get(0).createdAt()).isEqualTo(expectedDateTime);
         }
     }
 }

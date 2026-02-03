@@ -105,7 +105,9 @@ public class BookReviewService {
                 ? BookReviewHistoryCursor.from(paged.get(paged.size() - 1))
                 : null;
 
-        return CursorResponse.of(items, pageSize, hasNext, nextCursor);
+        Integer totalCount = (cursorHistoryId == null) ? sorted.size() : null;
+
+        return CursorResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
     }
 
     private List<BookReviewHistory> sortByUpdatedAtDesc(List<BookReviewHistory> histories) {
