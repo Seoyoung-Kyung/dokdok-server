@@ -114,12 +114,12 @@ public record MeetingRetrospectiveResponse(
             LocalDateTime createdAt
     ) {
 
-        public static CommentResponse from(MeetingRetrospective retrospective) {
+        public static CommentResponse from(MeetingRetrospective retrospective, String presignedProfileImageUrl) {
             return CommentResponse.builder()
                     .meetingRetrospectiveId(retrospective.getId())
                     .userId(retrospective.getCreatedBy().getId())
                     .nickname(retrospective.getCreatedBy().getNickname())
-                    .profileImageUrl(retrospective.getCreatedBy().getProfileImageUrl())
+                    .profileImageUrl(presignedProfileImageUrl)
                     .comment(retrospective.getComment())
                     .createdAt(retrospective.getCreatedAt())
                     .build();

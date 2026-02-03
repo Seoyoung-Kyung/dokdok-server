@@ -19,6 +19,7 @@ import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -46,6 +48,7 @@ public class GatheringService {
     private final GatheringBookRepository gatheringBookRepository;
     private final BookReviewRepository bookReviewRepository;
     private final MeetingMemberRepository meetingMemberRepository;
+    private final StorageService storageService;
 
     /**
      * 모임을 생성합니다.
@@ -192,11 +195,29 @@ public class GatheringService {
         // 총 약속 수
         int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.DONE);
 
+        Map<Long, String> profileImageUrlMap = buildProfileImageUrlMap(allMember);
+
         return GatheringDetailResponse.from(
                 currentMember,
                 allMember,
-                totalMeetings
+                totalMeetings,
+                profileImageUrlMap
         );
+    }
+
+    /**
+     * 멤버들의 프로필 이미지 presigned URL Map 생성
+     */
+    private Map<Long, String> buildProfileImageUrlMap(List<GatheringMember> members) {
+        Map<Long, String> profileImageUrlMap = new HashMap<>();
+
+        members.forEach(member -> {
+            String profileImageUrl = member.getUser().getProfileImageUrl();
+            String presignedUrl = storageService.getPresignedProfileImage(profileImageUrl);
+            profileImageUrlMap.put(member.getUser().getId(), presignedUrl);
+        });
+
+        return profileImageUrlMap;
     }
 
     /**
