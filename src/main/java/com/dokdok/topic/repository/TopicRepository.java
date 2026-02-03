@@ -246,4 +246,5 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             """)
     boolean canSuggestTopic(Long meetingId, Long userId);
 
+    long countByMeetingIdAndDeletedAtIsNull(Long meetingId);
 }

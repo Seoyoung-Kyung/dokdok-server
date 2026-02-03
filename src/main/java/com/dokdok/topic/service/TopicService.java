@@ -120,7 +120,12 @@ public class TopicService {
             deletableTopicIds = topicRepository.findDeletableTopicIds(topicIds, userId);
         }
 
-        return TopicsWithActionsResponse.from(topics, pageSize, hasNext, deletableTopicIds, actions);
+        Long totalCount = null;
+        if (!hasCursor) {
+            totalCount = topicRepository.countByMeetingIdAndDeletedAtIsNull(meetingId);
+        }
+
+        return TopicsWithActionsResponse.from(topics, pageSize, hasNext, deletableTopicIds, actions, totalCount);
     }
 
     @Transactional
