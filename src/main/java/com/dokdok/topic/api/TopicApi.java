@@ -260,7 +260,7 @@ public interface TopicApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ConfirmTopicsResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code":"SUCCESS","message":"주제가 확정되었습니다.","data":{"confirmedTopicIds":[1,2,3]}}
+                                    {"code":"SUCCESS","message":"주제가 확정되었습니다.","data":{"meetingId":1,"topicStatus":"CONFIRMED","topics":[{"topicId":1,"confirmOrder":1},{"topicId":2,"confirmOrder":2},{"topicId":3,"confirmOrder":3}]}}
                                     """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
