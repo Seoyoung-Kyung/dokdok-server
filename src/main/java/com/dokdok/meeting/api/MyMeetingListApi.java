@@ -65,6 +65,7 @@ public interface MyMeetingListApi {
                                             "progressStatus": "UPCOMING"
                                           }
                                         ],
+                                        "totalCount": 8,
                                         "pageSize": 4,
                                         "hasNext": true,
                                         "nextCursor": {

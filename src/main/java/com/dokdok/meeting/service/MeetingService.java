@@ -581,7 +581,27 @@ public class MeetingService {
             );
         };
 
-        return buildMyMeetingListResponse(meetings, size, userId);
+        Integer totalCount = null;
+        if (cursor == null) {
+            totalCount = switch (safeFilter) {
+                case UPCOMING -> meetingMemberRepository.countMyUpcomingMeetings(
+                        userId,
+                        MeetingStatus.CONFIRMED,
+                        now,
+                        now.plusDays(3)
+                );
+                case DONE -> meetingMemberRepository.countMyMeetingsByStatus(
+                        userId,
+                        MeetingStatus.DONE
+                );
+                case ALL -> meetingMemberRepository.countMyMeetingsByStatuses(
+                        userId,
+                        List.of(MeetingStatus.CONFIRMED, MeetingStatus.DONE)
+                );
+            };
+        }
+
+        return buildMyMeetingListResponse(meetings, size, userId, totalCount);
     }
 
     /**
@@ -632,7 +652,10 @@ public class MeetingService {
                 cursorMeetingId(cursor),
                 pageable
         );
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        Integer totalCount = cursor == null
+                ? meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.CONFIRMED)
+                : null;
+        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
     }
 
     /**
@@ -658,7 +681,15 @@ public class MeetingService {
                         pageable
                 );
 
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        Integer totalCount = cursor == null
+                ? meetingRepository.countUpcomingMeetings(
+                        gatheringId,
+                        MeetingStatus.CONFIRMED,
+                        now,
+                        now.plusDays(3)
+                )
+                : null;
+        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
     }
 
     /**
@@ -678,7 +709,10 @@ public class MeetingService {
                 cursorMeetingId(cursor),
                 pageable
         );
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        Integer totalCount = cursor == null
+                ? meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE)
+                : null;
+        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
     }
 
     /**
@@ -699,7 +733,14 @@ public class MeetingService {
                 cursorMeetingId(cursor),
                 pageable
         );
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        Integer totalCount = cursor == null
+                ? meetingMemberRepository.countMeetingsByUserIdAndStatus(
+                        userId,
+                        gatheringId,
+                        MeetingStatus.DONE
+                )
+                : null;
+        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
     }
 
     /**
@@ -709,12 +750,13 @@ public class MeetingService {
             List<Meeting> meetingCandidates,
             int size,
             Long userId,
-            Long gatheringId
+            Long gatheringId,
+            Integer totalCount
     ) {
         boolean hasNext = meetingCandidates.size() > size;
         List<Meeting> meetings = hasNext ? meetingCandidates.subList(0, size) : meetingCandidates;
         if (meetings.isEmpty()) {
-            return CursorResponse.of(List.of(), size, false, null);
+            return CursorResponse.of(List.of(), size, false, null, totalCount);
         }
 
         List<MeetingListItemResponse> items = buildMeetingItems(meetings, userId, gatheringId);
@@ -725,7 +767,7 @@ public class MeetingService {
             nextCursor = new MeetingListCursor(last.getMeetingStartDate(), last.getId());
         }
 
-        return CursorResponse.of(items, size, hasNext, nextCursor);
+        return CursorResponse.of(items, size, hasNext, nextCursor, totalCount);
     }
 
     /**
@@ -734,12 +776,13 @@ public class MeetingService {
     private CursorResponse<MyMeetingListItemResponse, MeetingListCursor> buildMyMeetingListResponse(
             List<Meeting> meetingCandidates,
             int size,
-            Long userId
+            Long userId,
+            Integer totalCount
     ) {
         boolean hasNext = meetingCandidates.size() > size;
         List<Meeting> meetings = hasNext ? meetingCandidates.subList(0, size) : meetingCandidates;
         if (meetings.isEmpty()) {
-            return CursorResponse.of(List.of(), size, false, null);
+            return CursorResponse.of(List.of(), size, false, null, totalCount);
         }
 
         List<MyMeetingListItemResponse> items = buildMyMeetingItems(meetings, userId);
@@ -750,7 +793,7 @@ public class MeetingService {
             nextCursor = new MeetingListCursor(last.getMeetingStartDate(), last.getId());
         }
 
-        return CursorResponse.of(items, size, hasNext, nextCursor);
+        return CursorResponse.of(items, size, hasNext, nextCursor, totalCount);
     }
 
     /**

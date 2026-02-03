@@ -68,6 +68,7 @@ public interface MeetingListApi {
                                             "meetingStatus": "CONFIRMED"
                                           }
                                         ],
+                                        "totalCount": 12,
                                         "pageSize": 4,
                                         "hasNext": true,
                                         "nextCursor": {
