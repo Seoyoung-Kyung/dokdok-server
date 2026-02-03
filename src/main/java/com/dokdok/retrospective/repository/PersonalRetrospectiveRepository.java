@@ -72,6 +72,19 @@ public interface PersonalRetrospectiveRepository extends JpaRepository<PersonalM
             Pageable pageable
     );
 
+    @Query("""
+            SELECT count(pmr)
+            FROM PersonalMeetingRetrospective pmr
+            JOIN pmr.meeting m
+            JOIN m.book b
+            WHERE b.id = :bookId
+            AND pmr.user.id = :userId
+            """)
+    int countRetrospectivesByBookAndUser(
+            @Param("bookId") Long bookId,
+            @Param("userId") Long userId
+    );
+
     boolean existsByIdAndUserId(Long retrospectiveId, Long userId);
 
 }

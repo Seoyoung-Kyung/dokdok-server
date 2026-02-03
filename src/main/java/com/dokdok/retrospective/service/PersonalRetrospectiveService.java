@@ -175,9 +175,13 @@ public class PersonalRetrospectiveService {
         PageRequest pageable = PageRequest.of(0, fetchSize);
 
         List<PersonalMeetingRetrospective> retrospectives;
+        Integer totalCount = null;
         if (cursorCreatedAt == null || cursorRetrospectiveId == null) {
             retrospectives = personalRetrospectiveRepository.findRetrospectivesFirstPage(
                     personalBookId, userId, pageable
+            );
+            totalCount = personalRetrospectiveRepository.countRetrospectivesByBookAndUser(
+                    personalBookId, userId
             );
         } else {
             retrospectives = personalRetrospectiveRepository.findRetrospectivesAfterCursor(
@@ -191,7 +195,7 @@ public class PersonalRetrospectiveService {
         }
 
         if (retrospectives.isEmpty()) {
-            return CursorResponse.of(List.of(), pageSize, false, null);
+            return CursorResponse.of(List.of(), pageSize, false, null, totalCount);
         }
 
         List<Long> retrospectiveIds = retrospectives.stream()
@@ -222,7 +226,7 @@ public class PersonalRetrospectiveService {
 
         PersonalMeetingRetrospective lastRetrospective = retrospectives.get(retrospectives.size() - 1);
 
-        return RetrospectiveRecordsPageResponse.from(items, pageSize, hasNext, lastRetrospective);
+        return RetrospectiveRecordsPageResponse.from(items, pageSize, hasNext, lastRetrospective, totalCount);
     }
 
     @Transactional
