@@ -183,6 +183,18 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("meetingId") Long meetingId
     );
 
+    @Query("""
+            SELECT MAX(t.updatedAt)
+            FROM Topic t
+            WHERE t.meeting.id = :meetingId
+            AND t.topicStatus = :status
+            AND t.deletedAt IS NULL
+            """)
+    LocalDateTime findConfirmedTopicDateByMeetingId(
+            @Param("meetingId") Long meetingId,
+            @Param("status") TopicStatus status
+    );
+
     /**
      * 확정된 주제가 없고, 약속장 혹은 모임장일 경우 true
      */
@@ -233,6 +245,5 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
                 THEN true ELSE false END
             """)
     boolean canSuggestTopic(Long meetingId, Long userId);
-
 
 }
