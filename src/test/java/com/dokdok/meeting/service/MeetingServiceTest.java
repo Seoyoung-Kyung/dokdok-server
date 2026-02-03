@@ -24,6 +24,7 @@ import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
@@ -141,6 +142,8 @@ class MeetingServiceTest {
                 .willReturn(meeting);
         given(meetingMemberRepository.findAllByMeetingId(meetingId))
                 .willReturn(java.util.Collections.emptyList());
+        given(topicRepository.findConfirmedTopicDateByMeetingId(meetingId, TopicStatus.CONFIRMED))
+                .willReturn(null);
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
@@ -150,6 +153,90 @@ class MeetingServiceTest {
             // then
             assertThat(findMeeting.meetingName()).isEqualTo(meeting.getMeetingName());
             assertThat(findMeeting.meetingStatus()).isEqualTo(meeting.getMeetingStatus());
+            assertThat(findMeeting.progressStatus()).isEqualTo(MeetingDetailProgressStatus.UNKNOWN);
+            assertThat(findMeeting.confirmedTopic()).isFalse();
+            assertThat(findMeeting.confirmedTopicDate()).isNull();
+        }
+    }
+
+    @DisplayName("약속 상세 응답에 진행 상태가 전/중/후로 내려간다.")
+    @Test
+    void givenMeetingDates_whenFindMeeting_thenProgressStatus() {
+        // given
+        Long userId = 1L;
+        LocalDateTime now = LocalDateTime.now();
+        Meeting upcomingMeeting = Meeting.builder()
+                .id(meetingId)
+                .meetingName("Upcoming")
+                .meetingStatus(MeetingStatus.CONFIRMED)
+                .meetingStartDate(now.plusDays(1))
+                .meetingEndDate(now.plusDays(1).plusHours(1))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+        Meeting ongoingMeeting = Meeting.builder()
+                .id(meetingId)
+                .meetingName("Ongoing")
+                .meetingStatus(MeetingStatus.CONFIRMED)
+                .meetingStartDate(now.minusHours(1))
+                .meetingEndDate(now.plusHours(1))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+        Meeting finishedMeeting = Meeting.builder()
+                .id(meetingId)
+                .meetingName("Finished")
+                .meetingStatus(MeetingStatus.DONE)
+                .meetingStartDate(now.minusDays(1))
+                .meetingEndDate(now.minusDays(1).plusHours(1))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(upcomingMeeting, ongoingMeeting, finishedMeeting);
+        given(meetingMemberRepository.findAllByMeetingId(meetingId))
+                .willReturn(java.util.Collections.emptyList());
+        given(topicRepository.findConfirmedTopicDateByMeetingId(meetingId, TopicStatus.CONFIRMED))
+                .willReturn(null);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            MeetingDetailResponse upcoming = meetingService.findMeeting(meetingId);
+            MeetingDetailResponse ongoing = meetingService.findMeeting(meetingId);
+            MeetingDetailResponse finished = meetingService.findMeeting(meetingId);
+
+            // then
+            assertThat(upcoming.progressStatus()).isEqualTo(MeetingDetailProgressStatus.PRE);
+            assertThat(ongoing.progressStatus()).isEqualTo(MeetingDetailProgressStatus.ONGOING);
+            assertThat(finished.progressStatus()).isEqualTo(MeetingDetailProgressStatus.POST);
+        }
+    }
+
+    @DisplayName("약속 상세 응답에 주제 확정 여부와 날짜가 내려간다.")
+    @Test
+    void givenConfirmedTopicDate_whenFindMeeting_thenConfirmedTopicFields() {
+        // given
+        Long userId = 1L;
+        LocalDateTime confirmedAt = LocalDateTime.now().minusHours(1);
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+        given(meetingMemberRepository.findAllByMeetingId(meetingId))
+                .willReturn(java.util.Collections.emptyList());
+        given(topicRepository.findConfirmedTopicDateByMeetingId(meetingId, TopicStatus.CONFIRMED))
+                .willReturn(confirmedAt);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            MeetingDetailResponse findMeeting = meetingService.findMeeting(meetingId);
+
+            // then
+            assertThat(findMeeting.confirmedTopic()).isTrue();
+            assertThat(findMeeting.confirmedTopicDate()).isEqualTo(confirmedAt);
         }
     }
 
