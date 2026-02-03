@@ -408,7 +408,7 @@ class TopicServiceTest {
     }
 
     @Test
-    @DisplayName("약속 상태가 PENDING인 경우 예외가 발생한다")
+    @DisplayName("약속 상태가 CONFIRMED가 아니면 예외가 발생한다")
     void createTopic_MeetingStatusPending_ThrowsException() {
         Long gatheringId = 1L;
         Long meetingId = 1L;
@@ -424,7 +424,7 @@ class TopicServiceTest {
             doNothing().when(meetingValidator)
                     .validateMeetingInGathering(meetingId, gatheringId);
 
-            doThrow(new MeetingException(MeetingErrorCode.MEETING_ALREADY_CONFIRMED))
+            doThrow(new MeetingException(MeetingErrorCode.MEETING_NOT_CONFIRMED))
                     .when(meetingValidator)
                     .validateMeetingStatus(meetingId);
 
@@ -432,7 +432,7 @@ class TopicServiceTest {
                     topicService.createTopic(gatheringId, meetingId, testRequest))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode",
-                            MeetingErrorCode.MEETING_ALREADY_CONFIRMED);
+                            MeetingErrorCode.MEETING_NOT_CONFIRMED);
 
             verify(meetingValidator, never()).getMeetingMember(any(), any());
             verify(topicRepository, never()).save(any());
