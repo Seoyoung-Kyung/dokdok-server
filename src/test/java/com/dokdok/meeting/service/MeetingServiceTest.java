@@ -701,6 +701,41 @@ class MeetingServiceTest {
         }
     }
 
+    @DisplayName("약속 시작 24시간 이내면 참가 신청에 실패한다.")
+    @Test
+    void givenMeetingWithin24Hours_whenJoinMeeting_thenThrowException() {
+        // given
+        Long meetingId = 3L;
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingStartDate(LocalDateTime.now().plusHours(1))
+                .gathering(Gathering.builder()
+                        .id(1L)
+                        .gatheringName("gathering")
+                        .invitationLink("link")
+                        .build())
+                .book(sampleBook())
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.joinMeeting(meetingId))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.MEETING_JOIN_NOT_ALLOWED);
+            verify(gatheringValidator, never()).validateMembership(any(), any());
+            verify(meetingValidator, never()).validateCapacity(any(), any());
+            verify(userValidator, never()).findUserOrThrow(any());
+            verify(meetingMemberRepository, never()).save(any());
+        }
+    }
+
     @DisplayName("약속 참가 신청을 취소할 수 있다.")
     @Test
     void givenMeetingId_whenMeetingCancel_thenSuccess() {
@@ -922,6 +957,36 @@ class MeetingServiceTest {
                     .isInstanceOf(MeetingException.class)
                     .extracting("errorCode")
                     .isEqualTo(MeetingErrorCode.MAX_PARTICIPANTS_LESS_THAN_CURRENT);
+        }
+    }
+
+    @DisplayName("약속 시작 24시간 이내면 약속을 수정할 수 없다.")
+    @Test
+    void givenMeetingWithin24Hours_whenUpdateMeeting_thenThrowException() {
+        // given
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingName("Meeting 1")
+                .meetingStatus(MeetingStatus.PENDING)
+                .meetingStartDate(LocalDateTime.now().plusHours(1))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+        MeetingUpdateRequest request = MeetingUpdateRequest.builder()
+                .meetingName("약속명 변경")
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
+
+        // when + then
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(leader.getId());
+
+            assertThatThrownBy(() -> meetingService.updateMeeting(meetingId, request))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.MEETING_UPDATE_NOT_ALLOWED);
+            verify(meetingValidator, never()).countActiveMembers(any());
         }
     }
 

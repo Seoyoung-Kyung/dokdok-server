@@ -126,6 +126,9 @@
 | M013 | INVALID_MAX_PARTICIPANTS | 최대 참가 인원은 1명 이상이어야 하며, 모임 전체 인원을 초과할 수 없습니다. | 400 |
 | M014 | MAX_PARTICIPANTS_LESS_THAN_CURRENT | 현재 참가 확정된 인원 수보다 적게 수정할 수 없습니다. | 400 |
 | M015 | MEETING_DELETE_NOT_ALLOWED | 약속 시작 24시간 이내에는 삭제할 수 없습니다. | 400 |
+| M016 | MEETING_JOIN_NOT_ALLOWED | 약속 시작 24시간 이내에는 참가 신청할 수 없습니다. | 400 |
+| M017 | MEETING_UPDATE_NOT_ALLOWED | 약속 시작 24시간 이내에는 수정할 수 없습니다. | 400 |
+| M018 | MEETING_NOT_CONFIRMED | 약속이 확정된 경우에만 주제를 제안할 수 있습니다. | 400 |
 
 ---
 

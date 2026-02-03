@@ -95,7 +95,7 @@ public record MeetingDetailResponse(
 
         User meetingLeader = meeting.getMeetingLeader();
         if (meetingLeader != null && meetingLeader.getId().equals(requestUserId)) {
-            if (isEditTimeExpired(meeting.getMeetingStartDate())) {
+            if (isActionTimeExpired(meeting.getMeetingStartDate())) {
                 return ActionState.editTimeExpired();
             }
             return ActionState.canEdit();
@@ -104,7 +104,14 @@ public record MeetingDetailResponse(
         boolean isParticipant = activeMembers.stream()
                 .anyMatch(member -> member.getUser().getId().equals(requestUserId));
         if (isParticipant) {
+            if (isActionTimeExpired(meeting.getMeetingStartDate())) {
+                return ActionState.cancelTimeExpired();
+            }
             return ActionState.canCancel();
+        }
+
+        if (isActionTimeExpired(meeting.getMeetingStartDate())) {
+            return ActionState.joinTimeExpired();
         }
 
         if (isRecruitmentClosed(currentCount, maxCount)) {
@@ -118,7 +125,7 @@ public record MeetingDetailResponse(
         return maxCount != null && currentCount >= maxCount;
     }
 
-    private static boolean isEditTimeExpired(LocalDateTime meetingStartDate) {
+    private static boolean isActionTimeExpired(LocalDateTime meetingStartDate) {
         return meetingStartDate != null
                 && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24));
     }
@@ -264,7 +271,9 @@ public record MeetingDetailResponse(
                     - 약속장: CAN_EDIT (enabled=true, buttonLabel=수정하기)
                     - 약속장(24시간 전): EDIT_TIME_EXPIRED (enabled=false, buttonLabel=수정 가능 시간이 지났어요)
                     - 모임원 + 미참가: CAN_JOIN (enabled=true, buttonLabel=참가 신청하기)
+                    - 모임원 + 미참가(24시간 전): JOIN_TIME_EXPIRED (enabled=false, buttonLabel=참가 신청하기)
                     - 모임원 + 참가: CAN_CANCEL (enabled=true, buttonLabel=참가 신청 취소하기)
+                    - 모임원 + 참가(24시간 전): CANCEL_TIME_EXPIRED (enabled=false, buttonLabel=참가 신청 취소하기)
                     - 모임원 + 모집 마감: RECRUITMENT_CLOSED (enabled=false, buttonLabel=모집인원이 마감되었어요)
                     - 약속 종료(DONE): DONE (enabled=false, buttonLabel=약속이 끝났어요)
                     - 약속 거절(REJECTED): REJECTED (enabled=false, buttonLabel=약속 신청이 거절됐어요)
@@ -289,8 +298,16 @@ public record MeetingDetailResponse(
             return fromType(MeetingActionType.CAN_JOIN);
         }
 
+        public static ActionState joinTimeExpired() {
+            return fromType(MeetingActionType.JOIN_TIME_EXPIRED);
+        }
+
         public static ActionState canCancel() {
             return fromType(MeetingActionType.CAN_CANCEL);
+        }
+
+        public static ActionState cancelTimeExpired() {
+            return fromType(MeetingActionType.CANCEL_TIME_EXPIRED);
         }
 
         public static ActionState recruitmentClosed() {
