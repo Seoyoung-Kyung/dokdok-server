@@ -46,14 +46,14 @@ public class MeetingValidator {
     }
 
     /**
-     * 약속 상태가 PENDING인지 검증한다.
+     * 약속 상태가 CONFIRMED인지 검증한다.
      */
     public void validateMeetingStatus(Long meetingId) {
         Meeting meeting = meetingRepository.findById(meetingId)
                 .orElseThrow(() -> new MeetingException(MeetingErrorCode.MEETING_NOT_FOUND));
 
-        if (meeting.getMeetingStatus() != MeetingStatus.PENDING) {
-            throw new MeetingException(MeetingErrorCode.MEETING_ALREADY_CONFIRMED);
+        if (meeting.getMeetingStatus() != MeetingStatus.CONFIRMED) {
+            throw new MeetingException(MeetingErrorCode.MEETING_NOT_CONFIRMED);
         }
     }
 

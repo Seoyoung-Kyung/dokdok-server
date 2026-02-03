@@ -220,6 +220,8 @@ public class MeetingService {
 
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
 
+        validateJoinableMeetingStartDate(meeting);
+
         gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
         if (restoreCanceledMemberIfExists(meetingId, userId, meeting.getMaxParticipants())) {
@@ -382,6 +384,7 @@ public class MeetingService {
         meetingValidator.validateMeetingLeader(meeting, userId);
 
         validateUpdatableStatus(meeting);
+        validateUpdatableMeetingStartDate(meeting);
 
         Long gatheringId = meeting.getGathering().getId();
         validateMaxParticipants(request.maxParticipants(), gatheringId);
@@ -416,6 +419,28 @@ public class MeetingService {
                     MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
                     "종료된 약속은 수정할 수 없습니다."
             );
+        }
+    }
+
+    /**
+     * 약속 시작 24시간 이내면 수정 불가
+     */
+    private void validateUpdatableMeetingStartDate(Meeting meeting) {
+        LocalDateTime meetingStartDate = meeting.getMeetingStartDate();
+        if (meetingStartDate != null
+                && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24))) {
+            throw new MeetingException(MeetingErrorCode.MEETING_UPDATE_NOT_ALLOWED);
+        }
+    }
+
+    /**
+     * 약속 시작 24시간 이내면 참가 신청 불가
+     */
+    private void validateJoinableMeetingStartDate(Meeting meeting) {
+        LocalDateTime meetingStartDate = meeting.getMeetingStartDate();
+        if (meetingStartDate != null
+                && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24))) {
+            throw new MeetingException(MeetingErrorCode.MEETING_JOIN_NOT_ALLOWED);
         }
     }
 
