@@ -27,6 +27,7 @@ import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
@@ -75,7 +76,19 @@ public class MeetingService {
 
         List<MeetingMember> meetingMembers = meetingMemberRepository.findAllByMeetingId(meetingId);
 
-        return MeetingDetailResponse.from(meeting, meetingMembers, userId);
+        LocalDateTime confirmedTopicDate = topicRepository.findConfirmedTopicDateByMeetingId(
+                meetingId,
+                TopicStatus.CONFIRMED
+        );
+        boolean confirmedTopic = confirmedTopicDate != null;
+
+        return MeetingDetailResponse.from(
+                meeting,
+                meetingMembers,
+                userId,
+                confirmedTopic,
+                confirmedTopicDate
+        );
     }
 
     /**

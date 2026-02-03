@@ -27,6 +27,15 @@ public record MeetingDetailResponse(
         @Schema(description = "약속 상태", example = "CONFIRMED")
         MeetingStatus meetingStatus,
 
+        @Schema(description = "약속 진행 상태(시간 기준)", example = "PRE")
+        MeetingDetailProgressStatus progressStatus,
+
+        @Schema(description = "주제 확정 여부", example = "true")
+        Boolean confirmedTopic,
+
+        @Schema(description = "주제 확정 날짜", example = "2026-01-30T10:00:00")
+        LocalDateTime confirmedTopicDate,
+
         @Schema(description = "모임 정보")
         GatheringInfo gathering,
 
@@ -49,7 +58,9 @@ public record MeetingDetailResponse(
     public static MeetingDetailResponse from(
             Meeting meeting,
             List<MeetingMember> meetingMembers,
-            Long requestUserId
+            Long requestUserId,
+            Boolean confirmedTopic,
+            LocalDateTime confirmedTopicDate
     ) {
         List<MeetingMember> safeMembers = meetingMembers == null ? Collections.emptyList() : meetingMembers;
         List<MeetingMember> activeMembers = safeMembers.stream()
@@ -66,10 +77,19 @@ public record MeetingDetailResponse(
                 participantsInfo.maxCount()
         );
 
+        MeetingDetailProgressStatus progressStatus = resolveProgressStatus(
+                meeting.getMeetingStartDate(),
+                meeting.getMeetingEndDate(),
+                LocalDateTime.now()
+        );
+
         return new MeetingDetailResponse(
                 meeting.getId(),
                 meeting.getMeetingName(),
                 meeting.getMeetingStatus(),
+                progressStatus,
+                confirmedTopic,
+                confirmedTopicDate,
                 GatheringInfo.from(meeting.getGathering()),
                 BookInfo.from(meeting.getBook()),
                 ScheduleInfo.from(meeting.getMeetingStartDate(), meeting.getMeetingEndDate()),
@@ -77,6 +97,23 @@ public record MeetingDetailResponse(
                 participantsInfo,
                 actionState
         );
+    }
+
+    private static MeetingDetailProgressStatus resolveProgressStatus(
+            LocalDateTime meetingStartDate,
+            LocalDateTime meetingEndDate,
+            LocalDateTime now
+    ) {
+        if (meetingStartDate == null || meetingEndDate == null) {
+            return MeetingDetailProgressStatus.UNKNOWN;
+        }
+        if (now.isBefore(meetingStartDate)) {
+            return MeetingDetailProgressStatus.PRE;
+        }
+        if (!now.isAfter(meetingEndDate)) {
+            return MeetingDetailProgressStatus.ONGOING;
+        }
+        return MeetingDetailProgressStatus.POST;
     }
 
     private static ActionState calculateActionState(
