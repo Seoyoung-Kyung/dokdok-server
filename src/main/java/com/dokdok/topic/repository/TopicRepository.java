@@ -183,6 +183,17 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("meetingId") Long meetingId
     );
 
+    @Query("""
+            SELECT t
+            FROM Topic t
+            WHERE t.meeting.id IN :meetingIds
+            AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+            ORDER BY t.meeting.id, t.confirmOrder, t.id
+            """)
+    List<Topic> findTopicsInfoByMeetingIds(
+            @Param("meetingIds") List<Long> meetingIds
+    );
+
     /**
      * 확정된 주제가 없고, 약속장 혹은 모임장일 경우 true
      */

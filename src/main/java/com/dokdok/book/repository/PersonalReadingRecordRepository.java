@@ -15,6 +15,7 @@ public interface PersonalReadingRecordRepository extends JpaRepository<PersonalR
     Optional<PersonalReadingRecord> findByIdAndPersonalBook_IdAndUserId(Long id, Long personalBookId, Long userId);
     Page<PersonalReadingRecord> findAllByPersonalBook_IdAndUserId(Long personalBookId, Long userId, Pageable pageable);
     long countByPersonalBook_IdAndUserId(Long personalBookId, Long userId);
+    List<PersonalReadingRecord> findByIdInAndPersonalBook_IdAndUserId(List<Long> ids, Long personalBookId, Long userId);
 
     @Query("""
             select record

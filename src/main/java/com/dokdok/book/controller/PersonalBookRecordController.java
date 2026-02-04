@@ -3,14 +3,18 @@ package com.dokdok.book.controller;
 import com.dokdok.book.api.PersonalBookRecordApi;
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
+import com.dokdok.book.dto.request.PreOpinionTimeType;
 import com.dokdok.book.dto.response.*;
 import com.dokdok.book.service.PersonalReadingRecordService;
+import com.dokdok.book.service.ReadingTimelineService;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @RestController
@@ -19,6 +23,7 @@ import java.time.OffsetDateTime;
 public class PersonalBookRecordController implements PersonalBookRecordApi {
 
     private final PersonalReadingRecordService personalReadingRecordService;
+    private final ReadingTimelineService readingTimelineService;
 
     @Override
     @PostMapping("/{personalBookId}/records")
@@ -64,5 +69,29 @@ public class PersonalBookRecordController implements PersonalBookRecordApi {
     ) {
         PersonalReadingTopicAnswerResponse response = personalReadingRecordService.getTopicAnswers(personalBookId);
         return ApiResponse.success(response, "사전 의견 조회 성공");
+    }
+
+    @Override
+    @GetMapping("/{personalBookId}/records/timeline")
+    public ResponseEntity<ApiResponse<CursorResponse<ReadingTimelineItem, ReadingTimelineCursor>>> getMyReadingTimeline(
+            @PathVariable Long personalBookId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime cursorEventAt,
+            @RequestParam(required = false) ReadingTimelineType cursorType,
+            @RequestParam(required = false) Long cursorSourceId,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false, defaultValue = "ANSWER_CREATED") PreOpinionTimeType preOpinionTime
+    ) {
+        CursorResponse<ReadingTimelineItem, ReadingTimelineCursor> response =
+                readingTimelineService.getTimeline(
+                        personalBookId,
+                        cursorEventAt,
+                        cursorType,
+                        cursorSourceId,
+                        size,
+                        preOpinionTime
+                );
+        return ApiResponse.success(response, "독서 타임라인 조회 성공");
     }
 }

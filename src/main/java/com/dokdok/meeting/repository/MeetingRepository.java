@@ -105,4 +105,12 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
             MeetingStatus meetingStatus
     );
 
+    @EntityGraph(attributePaths = {"gathering"})
+    @Query("""
+            SELECT m
+            FROM Meeting m
+            WHERE m.id IN :meetingIds
+            """)
+    List<Meeting> findByIdInWithGathering(@Param("meetingIds") List<Long> meetingIds);
+
 }
