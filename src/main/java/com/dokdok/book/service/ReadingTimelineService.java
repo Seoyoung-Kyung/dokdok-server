@@ -268,6 +268,7 @@ public class ReadingTimelineService {
                     .map(topic -> new PersonalReadingTopicAnswerResponse.TopicAnswerInfo(
                             topic.getTitle(),
                             topic.getDescription(),
+                            topic.getConfirmOrder(),
                             answerMap.containsKey(topic.getId())
                                     ? answerMap.get(topic.getId()).getContent()
                                     : null
