@@ -11,6 +11,7 @@ import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
 import com.dokdok.retrospective.exception.RetrospectiveException;
 import com.dokdok.retrospective.repository.RetrospectiveRepository;
 import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.repository.TopicRepository;
@@ -35,6 +36,7 @@ public class MeetingRetrospectiveService {
     private final RetrospectiveRepository retrospectiveRepository;
     private final MeetingValidator meetingValidator;
     private final TopicValidator topicValidator;
+    private final StorageService storageService;
 
     public MeetingRetrospectiveResponse getMeetingRetrospective(Long meetingId){
         Long userId = SecurityUtil.getCurrentUserId();
@@ -84,7 +86,11 @@ public class MeetingRetrospectiveService {
             return List.of();
         }
         return comments.stream()
-                .map(MeetingRetrospectiveResponse.CommentResponse::from)
+                .map(comment -> {
+                    String profileImageUrl = comment.getCreatedBy().getProfileImageUrl();
+                    String presignedUrl = storageService.getPresignedProfileImage(profileImageUrl);
+                    return MeetingRetrospectiveResponse.CommentResponse.from(comment, presignedUrl);
+                })
                 .toList();
     }
 
@@ -110,7 +116,10 @@ public class MeetingRetrospectiveService {
         MeetingRetrospective retrospective = MeetingRetrospective.of(meeting, user, topic, request.comment());
         MeetingRetrospective saved = retrospectiveRepository.save(retrospective);
 
-        return MeetingRetrospectiveResponse.CommentResponse.from(saved);
+        String profileImageUrl = saved.getCreatedBy().getProfileImageUrl();
+        String presignedUrl = storageService.getPresignedProfileImage(profileImageUrl);
+
+        return MeetingRetrospectiveResponse.CommentResponse.from(saved, presignedUrl);
     }
 
     @Transactional
