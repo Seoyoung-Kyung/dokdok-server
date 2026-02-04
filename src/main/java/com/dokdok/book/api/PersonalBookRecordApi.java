@@ -610,7 +610,7 @@ public interface PersonalBookRecordApi {
     );
 
     @Operation(
-            summary = "독서 타임라인 조회 (developer: Codex)",
+            summary = "독서 타임라인 조회 (developer: 권우희)",
             description = """
                     독서 기록/사전 의견/개인 회고를 하나의 타임라인으로 커서 기반 조회합니다.
                     - personalBook의 gatheringId가 null이면 사전 의견/회고는 제외됩니다.
