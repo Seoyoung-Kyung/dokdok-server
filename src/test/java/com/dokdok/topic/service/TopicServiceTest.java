@@ -25,6 +25,7 @@ import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
+import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicLikeRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
@@ -58,6 +59,9 @@ class TopicServiceTest {
 
     @Mock
     private TopicLikeRepository topicLikeRepository;
+
+    @Mock
+    private TopicAnswerRepository topicAnswerRepository;
 
     @Mock
     private MeetingValidator meetingValidator;
@@ -211,6 +215,7 @@ class TopicServiceTest {
             Long gatheringId = 1L;
             Long meetingId = 1L;
             Long userId = 1L;
+            int pageSize = 10;
 
             Topic topic1 = Topic.builder()
                     .id(12L)
@@ -238,23 +243,31 @@ class TopicServiceTest {
 
                 doNothing().when(gatheringValidator).validateMembership(gatheringId, userId);
                 doNothing().when(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
-                given(topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
-                        meetingId, TopicStatus.CONFIRMED))
+                given(topicRepository.findConfirmedTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(List.of(topic1, topic2));
+                given(topicRepository.countByMeetingIdAndTopicStatusAndDeletedAtIsNull(meetingId, TopicStatus.CONFIRMED))
+                        .willReturn(2L);
+                given(topicAnswerRepository.existsByMeetingIdAndUserId(meetingId, userId))
+                        .willReturn(false);
+                given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(testMeeting);
 
                 ConfirmedTopicsResponse response =
-                        topicService.getConfirmedTopics(gatheringId, meetingId);
+                        topicService.getConfirmedTopics(gatheringId, meetingId, pageSize, null, null);
 
-                assertThat(response.meetingId()).isEqualTo(meetingId);
-                assertThat(response.topics()).hasSize(2);
-                assertThat(response.topics().get(0).topicId()).isEqualTo(12L);
-                assertThat(response.topics().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
-                assertThat(response.topics().get(1).confirmOrder()).isEqualTo(2);
+                assertThat(response.items()).hasSize(2);
+                assertThat(response.items().get(0).topicId()).isEqualTo(12L);
+                assertThat(response.items().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+                assertThat(response.items().get(1).confirmOrder()).isEqualTo(2);
+                assertThat(response.pageSize()).isEqualTo(pageSize);
+                assertThat(response.hasNext()).isFalse();
+                assertThat(response.nextCursor()).isNull();
+                assertThat(response.totalCount()).isEqualTo(2);
+                assertThat(response.actions().canViewPreOpinions()).isFalse();
+                assertThat(response.actions().canWritePreOpinions()).isTrue();
 
                 verify(gatheringValidator).validateMembership(gatheringId, userId);
                 verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
-                verify(topicRepository).findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
-                        meetingId, TopicStatus.CONFIRMED);
+                verify(topicRepository).findConfirmedTopicsFirstPage(eq(meetingId), any(Pageable.class));
             }
         }
 
@@ -264,6 +277,7 @@ class TopicServiceTest {
             Long gatheringId = 1L;
             Long meetingId = 1L;
             Long userId = 1L;
+            int pageSize = 10;
 
             try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
                 securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -271,12 +285,12 @@ class TopicServiceTest {
                 doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
                         .when(gatheringValidator).validateMembership(gatheringId, userId);
 
-                assertThatThrownBy(() -> topicService.getConfirmedTopics(gatheringId, meetingId))
+                assertThatThrownBy(() -> topicService.getConfirmedTopics(gatheringId, meetingId, pageSize, null, null))
                         .isInstanceOf(GatheringException.class)
                         .hasFieldOrPropertyWithValue("errorCode", GatheringErrorCode.NOT_GATHERING_MEMBER);
 
                 verify(topicRepository, never())
-                        .findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(any(), any());
+                        .findConfirmedTopicsFirstPage(any(), any());
             }
         }
     }
