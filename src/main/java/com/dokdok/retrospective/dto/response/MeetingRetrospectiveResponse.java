@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.dto.response;
 
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.retrospective.entity.MeetingRetrospective;
@@ -42,7 +43,7 @@ public record MeetingRetrospectiveResponse(
                 .build();
     }
 
-    @Schema(description = "주제 회고 정보")
+    @Schema(description = "약속 회고 AI요약")
     @Builder
     public record TopicResponse(
             @Schema(description = "주제 ID", example = "1")
@@ -56,14 +57,11 @@ public record MeetingRetrospectiveResponse(
             @Schema(description = "핵심 요약", example = "참여자들은 『데미안』 속 싱클레어가...")
             String summary,
             @Schema(description = "주요 포인트 목록")
-            List<KeyPointResponse> keyPoints,
-            @Schema(description = "코멘트 목록")
-            List<CommentResponse> comments
+            List<KeyPointResponse> keyPoints
     ){
         public static TopicResponse from(
                 Topic topic,
-                TopicRetrospectiveSummary summary,
-                List<CommentResponse> comments
+                TopicRetrospectiveSummary summary
         ) {
             return TopicResponse.builder()
                     .topicId(topic.getId())
@@ -76,7 +74,6 @@ public record MeetingRetrospectiveResponse(
                             .map(KeyPointResponse::from)
                             .toList()
                             : null)
-                    .comments(comments)
                     .build();
         }
     }
