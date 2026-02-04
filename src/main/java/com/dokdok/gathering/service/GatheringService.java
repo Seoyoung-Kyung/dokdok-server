@@ -151,9 +151,11 @@ public class GatheringService {
         Pageable pageable = PageRequest.of(0, pageSize + 1);
 
         List<GatheringMember> members;
+        Integer totalCount = null;
         if (cursorJoinedAt == null || cursorId == null) {
             // 첫 페이지
             members = gatheringMemberRepository.findMyGatheringsFirstPage(userId, pageable);
+            totalCount = gatheringMemberRepository.countMyGatherings(userId);
         } else {
             // 다음 페이지
             members = gatheringMemberRepository.findMyGatheringsAfterCursor(userId, cursorJoinedAt, cursorId, pageable);
@@ -173,7 +175,7 @@ public class GatheringService {
         GatheringMember lastMember = pageMembers.isEmpty() ? null : pageMembers.get(pageMembers.size() - 1);
         MyGatheringCursor nextCursor = hasNext && lastMember != null ? MyGatheringCursor.from(lastMember) : null;
 
-        return CursorResponse.of(items, pageSize, hasNext, nextCursor);
+        return CursorResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
     }
 
     /**

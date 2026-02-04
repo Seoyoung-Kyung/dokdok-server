@@ -112,4 +112,15 @@ public interface GatheringMemberRepository extends JpaRepository<GatheringMember
             @Param("cursorId") Long cursorId,
             Pageable pageable
     );
+
+    /**
+     * 커서 기반 내 모임 목록 총 개수 조회 (첫 페이지용)
+     */
+    @Query("SELECT count(gm) FROM GatheringMember gm " +
+            "JOIN gm.gathering g " +
+            "WHERE gm.user.id = :userId " +
+            "AND gm.memberStatus = 'ACTIVE' " +
+            "AND g.gatheringStatus = 'ACTIVE' " +
+            "AND gm.removedAt IS NULL")
+    int countMyGatherings(@Param("userId") Long userId);
 }

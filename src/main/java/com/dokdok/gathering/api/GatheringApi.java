@@ -258,7 +258,7 @@ public interface GatheringApi {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MyGatheringListResponse.class),
+                            schema = @Schema(implementation = CursorResponse.class),
                             examples = @ExampleObject(value = """
                                     {
                                       "code": "SUCCESS",
@@ -278,7 +278,8 @@ public interface GatheringApi {
                                         ],
                                         "pageSize": 10,
                                         "hasNext": false,
-                                        "nextCursor": null
+                                        "nextCursor": null,
+                                        "totalCount": 1
                                       }
                                     }
                                     """)
