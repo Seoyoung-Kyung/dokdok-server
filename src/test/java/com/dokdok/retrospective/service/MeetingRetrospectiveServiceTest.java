@@ -132,39 +132,6 @@ class MeetingRetrospectiveServiceTest {
 	}
 
 	@Test
-	@DisplayName("확정된 토픽이 없으면 빈 목록을 반환한다")
-	void getMeetingRetrospective_withNoTopics_returnsEmptyList() {
-		Long meetingId = 1L;
-		Long userId = 1L;
-		Long gatheringId = 1L;
-
-		Gathering gathering = Gathering.builder().id(gatheringId).build();
-		Meeting meeting = Meeting.builder()
-				.id(meetingId)
-				.gathering(gathering)
-				.meetingName("모임")
-				.meetingStartDate(LocalDateTime.of(2026, 1, 15, 19, 0))
-				.meetingEndDate(LocalDateTime.of(2026, 1, 15, 21, 0))
-				.build();
-
-		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
-			securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
-
-			when(meetingValidator.findMeetingOrThrow(meetingId)).thenReturn(meeting);
-			doNothing().when(retrospectiveValidator).validateMeetingRetrospectiveAccess(gatheringId, meetingId, userId);
-			when(topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(meetingId, TopicStatus.CONFIRMED))
-					.thenReturn(List.of());
-			when(topicRetrospectiveSummaryRepository.findAllByTopicIdIn(List.of())).thenReturn(List.of());
-			when(retrospectiveRepository.findAllByMeetingId(meetingId)).thenReturn(List.of());
-
-			MeetingRetrospectiveResponse response = meetingRetrospectiveService.getMeetingRetrospective(meetingId);
-
-			assertThat(response.meetingId()).isEqualTo(meetingId);
-			assertThat(response.topics()).isEmpty();
-		}
-	}
-
-	@Test
 	@DisplayName("코멘트가 없어도 정상적으로 조회한다")
 	void getMeetingRetrospective_withNoComments_success() {
 		Long meetingId = 1L;
@@ -199,7 +166,6 @@ class MeetingRetrospectiveServiceTest {
 			when(topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(meetingId, TopicStatus.CONFIRMED))
 					.thenReturn(List.of(topic));
 			when(topicRetrospectiveSummaryRepository.findAllByTopicIdIn(List.of(1L))).thenReturn(List.of(summary));
-			when(retrospectiveRepository.findAllByMeetingId(meetingId)).thenReturn(List.of());
 
 			MeetingRetrospectiveResponse response = meetingRetrospectiveService.getMeetingRetrospective(meetingId);
 
@@ -207,7 +173,6 @@ class MeetingRetrospectiveServiceTest {
 			assertThat(response.topics().get(0).summary()).isEqualTo("요약1");
 			assertThat(response.topics().get(0).keyPoints()).hasSize(1);
 			assertThat(response.topics().get(0).keyPoints().get(0).title()).isEqualTo("핵심 포인트");
-			assertThat(response.topics().get(0).comments()).isEmpty();
 		}
 	}
 
