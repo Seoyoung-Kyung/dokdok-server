@@ -93,7 +93,8 @@ public record TopicsWithActionsResponse(
             int pageSize,
             boolean hasNext,
             Set<Long> deletableTopicIds,
-            Actions actions
+            Actions actions,
+            Long totalCount
     ) {
         List<TopicDto> topicDtos = topics.stream()
                 .map(topic -> TopicDto.from(
@@ -109,7 +110,8 @@ public record TopicsWithActionsResponse(
         }
 
         CursorResponse<TopicDto, TopicsCursor> page =
-                CursorResponse.of(topicDtos, pageSize, hasNext, cursor);
+                CursorResponse.of(topicDtos, pageSize, hasNext, cursor,
+                        totalCount != null ? totalCount.intValue() : null);
 
         return new TopicsWithActionsResponse(page, actions);
     }

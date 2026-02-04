@@ -31,6 +31,7 @@ import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.storage.service.StorageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -90,6 +91,9 @@ class GatheringServiceTest {
 
 	@Mock
 	private MeetingMemberRepository meetingMemberRepository;
+
+	@Mock
+	private StorageService storageService;
 
 	private MockedStatic<SecurityUtil> securityUtilMock;
 
@@ -475,6 +479,8 @@ class GatheringServiceTest {
 		given(gatheringValidator.validateAndGetMember(gatheringId, userId)).willReturn(normalMember);
 		given(gatheringMemberRepository.findAllMembersByGatheringId(gatheringId)).willReturn(allMembers);
 		given(meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE)).willReturn(3);
+		given(storageService.getPresignedProfileImage("leader.jpg")).willReturn("leader.jpg");
+		given(storageService.getPresignedProfileImage("member.jpg")).willReturn("member.jpg");
 
 		// when
 		GatheringDetailResponse response = gatheringService.getGatheringDetail(gatheringId);

@@ -192,6 +192,7 @@ public class PersonalReadingRecordService {
                 .map(topic -> new PersonalReadingTopicAnswerResponse.TopicAnswerInfo(
                         topic.getTitle(),
                         topic.getDescription(),
+                        topic.getConfirmOrder(),
                         topicAnswerMap.containsKey(topic.getId())
                                 ? topicAnswerMap.get(topic.getId()).getContent()
                                 : null

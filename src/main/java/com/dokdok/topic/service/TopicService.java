@@ -4,7 +4,6 @@ import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
-import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
@@ -28,7 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -121,7 +120,12 @@ public class TopicService {
             deletableTopicIds = topicRepository.findDeletableTopicIds(topicIds, userId);
         }
 
-        return TopicsWithActionsResponse.from(topics, pageSize, hasNext, deletableTopicIds, actions);
+        Long totalCount = null;
+        if (!hasCursor) {
+            totalCount = topicRepository.countByMeetingIdAndDeletedAtIsNull(meetingId);
+        }
+
+        return TopicsWithActionsResponse.from(topics, pageSize, hasNext, deletableTopicIds, actions, totalCount);
     }
 
     @Transactional
@@ -146,6 +150,7 @@ public class TopicService {
                 topics.stream()
                         .collect(Collectors.toMap(Topic::getId, Function.identity()));
 
+        List<ConfirmTopicsResponse.ConfirmedTopicOrder> confirmedTopics = new ArrayList<>(topicIds.size());
         for (int i = 0; i < topicIds.size(); i++) {
             Long topicId = topicIds.get(i);
             Topic topic = topicMap.get(topicId);
@@ -154,9 +159,10 @@ public class TopicService {
             }
             topic.updateStatus(TopicStatus.CONFIRMED);
             topic.updateConfirmOrder(i + 1);
+            confirmedTopics.add(ConfirmTopicsResponse.ConfirmedTopicOrder.of(topicId, i + 1));
         }
 
-        return ConfirmTopicsResponse.from(meetingId);
+        return ConfirmTopicsResponse.from(meetingId, confirmedTopics);
     }
 
     @Transactional(readOnly = true)

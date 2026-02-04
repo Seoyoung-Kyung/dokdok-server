@@ -166,6 +166,7 @@ public interface TopicApi {
                       - pageSize: 페이지 크기
                       - hasNext: 다음 페이지 존재 여부
                       - nextCursor: 다음 페이지 요청 시 사용할 커서 (hasNext가 false면 null)
+                      - totalCount : 전체 주제 수 (첫 요청 시만 포함, 이후 요청에서는 생략)
                     - actions: 현재 사용자의 권한 정보
                       - canConfirm: 주제 확정 가능 여부 (모임장과 약속장만 true)
                       - canSuggest: 주제 제안 가능 여부 (약속 멤버이고 약속 상태가 CONFIRMED일 때 true)
@@ -184,9 +185,9 @@ public interface TopicApi {
                     description = "주제 조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorResponse.class),
+                            schema = @Schema(implementation = TopicsWithActionsResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code":"SUCCESS","message":"제안된 주제 조회를 성공했습니다.","data":{"page":{"items":[{"topicId":1,"meetingId":10,"title":"이 책의 핵심 메시지는 무엇인가?","description":"저자가 전달하고자 하는 핵심 메시지에 대해 토론합니다.","topicType":"DISCUSSION","topicTypeLabel":"토론형","topicStatus":"PROPOSED","likeCount":5,"canDelete":true,"createdByInfo":{"userId":1,"nickname":"독서왕"}}],"pageSize":10,"hasNext":false,"nextCursor":null},"actions":{"canConfirm":false,"canSuggest":true}}}
+                                    {"code":"SUCCESS","message":"제안된 주제 조회를 성공했습니다.","data":{"page":{"items":[{"topicId":1,"meetingId":10,"title":"이 책의 핵심 메시지는 무엇인가?","description":"저자가 전달하고자 하는 핵심 메시지에 대해 토론합니다.","topicType":"DISCUSSION","topicTypeLabel":"토론형","topicStatus":"PROPOSED","likeCount":5,"canDelete":true,"createdByInfo":{"userId":1,"nickname":"독서왕"}}],"pageSize":10,"hasNext":true,"nextCursor":{"likeCount":5,"topicId":1},"totalCount":25},"actions":{"canConfirm":false,"canSuggest":true}}}
                                     """)
                     )
             ),
@@ -260,7 +261,7 @@ public interface TopicApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ConfirmTopicsResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code":"SUCCESS","message":"주제가 확정되었습니다.","data":{"confirmedTopicIds":[1,2,3]}}
+                                    {"code":"SUCCESS","message":"주제가 확정되었습니다.","data":{"meetingId":1,"topicStatus":"CONFIRMED","topics":[{"topicId":1,"confirmOrder":1},{"topicId":2,"confirmOrder":2},{"topicId":3,"confirmOrder":3}]}}
                                     """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

@@ -27,6 +27,7 @@ import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
@@ -75,7 +76,19 @@ public class MeetingService {
 
         List<MeetingMember> meetingMembers = meetingMemberRepository.findAllByMeetingId(meetingId);
 
-        return MeetingDetailResponse.from(meeting, meetingMembers, userId);
+        LocalDateTime confirmedTopicDate = topicRepository.findConfirmedTopicDateByMeetingId(
+                meetingId,
+                TopicStatus.CONFIRMED
+        );
+        boolean confirmedTopic = confirmedTopicDate != null;
+
+        return MeetingDetailResponse.from(
+                meeting,
+                meetingMembers,
+                userId,
+                confirmedTopic,
+                confirmedTopicDate
+        );
     }
 
     /**
@@ -219,6 +232,8 @@ public class MeetingService {
         Long userId = SecurityUtil.getCurrentUserId();
 
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+
+        validateJoinableMeetingStartDate(meeting);
 
         gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
@@ -382,6 +397,7 @@ public class MeetingService {
         meetingValidator.validateMeetingLeader(meeting, userId);
 
         validateUpdatableStatus(meeting);
+        validateUpdatableMeetingStartDate(meeting);
 
         Long gatheringId = meeting.getGathering().getId();
         validateMaxParticipants(request.maxParticipants(), gatheringId);
@@ -416,6 +432,28 @@ public class MeetingService {
                     MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
                     "종료된 약속은 수정할 수 없습니다."
             );
+        }
+    }
+
+    /**
+     * 약속 시작 24시간 이내면 수정 불가
+     */
+    private void validateUpdatableMeetingStartDate(Meeting meeting) {
+        LocalDateTime meetingStartDate = meeting.getMeetingStartDate();
+        if (meetingStartDate != null
+                && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24))) {
+            throw new MeetingException(MeetingErrorCode.MEETING_UPDATE_NOT_ALLOWED);
+        }
+    }
+
+    /**
+     * 약속 시작 24시간 이내면 참가 신청 불가
+     */
+    private void validateJoinableMeetingStartDate(Meeting meeting) {
+        LocalDateTime meetingStartDate = meeting.getMeetingStartDate();
+        if (meetingStartDate != null
+                && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24))) {
+            throw new MeetingException(MeetingErrorCode.MEETING_JOIN_NOT_ALLOWED);
         }
     }
 
@@ -581,7 +619,27 @@ public class MeetingService {
             );
         };
 
-        return buildMyMeetingListResponse(meetings, size, userId);
+        Integer totalCount = null;
+        if (cursor == null) {
+            totalCount = switch (safeFilter) {
+                case UPCOMING -> meetingMemberRepository.countMyUpcomingMeetings(
+                        userId,
+                        MeetingStatus.CONFIRMED,
+                        now,
+                        now.plusDays(3)
+                );
+                case DONE -> meetingMemberRepository.countMyMeetingsByStatus(
+                        userId,
+                        MeetingStatus.DONE
+                );
+                case ALL -> meetingMemberRepository.countMyMeetingsByStatuses(
+                        userId,
+                        List.of(MeetingStatus.CONFIRMED, MeetingStatus.DONE)
+                );
+            };
+        }
+
+        return buildMyMeetingListResponse(meetings, size, userId, totalCount);
     }
 
     /**
@@ -632,7 +690,10 @@ public class MeetingService {
                 cursorMeetingId(cursor),
                 pageable
         );
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        Integer totalCount = cursor == null
+                ? meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.CONFIRMED)
+                : null;
+        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
     }
 
     /**
@@ -658,7 +719,15 @@ public class MeetingService {
                         pageable
                 );
 
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        Integer totalCount = cursor == null
+                ? meetingRepository.countUpcomingMeetings(
+                        gatheringId,
+                        MeetingStatus.CONFIRMED,
+                        now,
+                        now.plusDays(3)
+                )
+                : null;
+        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
     }
 
     /**
@@ -678,7 +747,10 @@ public class MeetingService {
                 cursorMeetingId(cursor),
                 pageable
         );
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        Integer totalCount = cursor == null
+                ? meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE)
+                : null;
+        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
     }
 
     /**
@@ -699,7 +771,14 @@ public class MeetingService {
                 cursorMeetingId(cursor),
                 pageable
         );
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        Integer totalCount = cursor == null
+                ? meetingMemberRepository.countMeetingsByUserIdAndStatus(
+                        userId,
+                        gatheringId,
+                        MeetingStatus.DONE
+                )
+                : null;
+        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
     }
 
     /**
@@ -709,12 +788,13 @@ public class MeetingService {
             List<Meeting> meetingCandidates,
             int size,
             Long userId,
-            Long gatheringId
+            Long gatheringId,
+            Integer totalCount
     ) {
         boolean hasNext = meetingCandidates.size() > size;
         List<Meeting> meetings = hasNext ? meetingCandidates.subList(0, size) : meetingCandidates;
         if (meetings.isEmpty()) {
-            return CursorResponse.of(List.of(), size, false, null);
+            return CursorResponse.of(List.of(), size, false, null, totalCount);
         }
 
         List<MeetingListItemResponse> items = buildMeetingItems(meetings, userId, gatheringId);
@@ -725,7 +805,7 @@ public class MeetingService {
             nextCursor = new MeetingListCursor(last.getMeetingStartDate(), last.getId());
         }
 
-        return CursorResponse.of(items, size, hasNext, nextCursor);
+        return CursorResponse.of(items, size, hasNext, nextCursor, totalCount);
     }
 
     /**
@@ -734,12 +814,13 @@ public class MeetingService {
     private CursorResponse<MyMeetingListItemResponse, MeetingListCursor> buildMyMeetingListResponse(
             List<Meeting> meetingCandidates,
             int size,
-            Long userId
+            Long userId,
+            Integer totalCount
     ) {
         boolean hasNext = meetingCandidates.size() > size;
         List<Meeting> meetings = hasNext ? meetingCandidates.subList(0, size) : meetingCandidates;
         if (meetings.isEmpty()) {
-            return CursorResponse.of(List.of(), size, false, null);
+            return CursorResponse.of(List.of(), size, false, null, totalCount);
         }
 
         List<MyMeetingListItemResponse> items = buildMyMeetingItems(meetings, userId);
@@ -750,7 +831,7 @@ public class MeetingService {
             nextCursor = new MeetingListCursor(last.getMeetingStartDate(), last.getId());
         }
 
-        return CursorResponse.of(items, size, hasNext, nextCursor);
+        return CursorResponse.of(items, size, hasNext, nextCursor, totalCount);
     }
 
     /**

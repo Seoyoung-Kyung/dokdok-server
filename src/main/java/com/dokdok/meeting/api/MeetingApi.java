@@ -302,6 +302,7 @@ public interface MeetingApi {
             약속에 참가 신청합니다.
             - 권한: 모임원 전원
             - 제약: 모집 정원 마감 전
+            - 제약: 약속 시작 24시간 이내 참가 신청 불가
             """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
@@ -329,6 +330,9 @@ public interface MeetingApi {
                                             """),
                                     @ExampleObject(name = "이미 참가", value = """
                                             {"code": "M010", "message": "이미 참가한 약속입니다.", "data": null}
+                                            """),
+                                    @ExampleObject(name = "24시간 이내 참가 불가", value = """
+                                            {"code": "M016", "message": "약속 시작 24시간 이내에는 참가 신청할 수 없습니다.", "data": null}
                                             """)
                             })),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 멤버가 아님",
@@ -413,6 +417,7 @@ public interface MeetingApi {
             약속 정보를 수정합니다.
             - 권한: 약속장
             - 제약: 종료된 약속은 수정 불가
+            - 제약: 약속 시작 24시간 이내 수정 불가
             - 제약: 종료 일시는 시작 일시보다 이전일 수 없음
             - 제약: 최대 참여 인원은 현재 참여 인원보다 작을 수 없음
             """
@@ -451,6 +456,9 @@ public interface MeetingApi {
                                             """),
                                     @ExampleObject(name = "잘못된 최대 인원", value = """
                                             {"code": "M013", "message": "최대 참가 인원은 1명 이상이어야 하며, 모임 전체 인원을 초과할 수 없습니다.", "data": null}
+                                            """),
+                                    @ExampleObject(name = "24시간 이내 수정 불가", value = """
+                                            {"code": "M017", "message": "약속 시작 24시간 이내에는 수정할 수 없습니다.", "data": null}
                                             """)
                             })),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속장 아님",

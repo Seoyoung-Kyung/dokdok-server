@@ -48,7 +48,11 @@ public interface MeetingRetrospectiveApi {
                                           "meetingId": 1,                                                                                                                          
                                           "meetingName": "데미안을 읽어보아요",                                                                                                    
                                           "meetingDate": "2026-01-15",                                                                                                             
-                                          "meetingTime": "19:00-20:00",                                                                                                            
+                                          "meetingTime": "19:00-20:00",   
+                                          "gathering": {
+                                          "gatheringId": 1,
+                                          "gatheringName": "독서 모임"
+                                          },                                                                                                         
                                           "topics": [                                                                                                                              
                                             {                                                                                                                                      
                                               "topicId": 1,                                                                                                                        

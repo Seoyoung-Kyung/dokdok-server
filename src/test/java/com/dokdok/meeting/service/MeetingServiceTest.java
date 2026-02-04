@@ -24,6 +24,7 @@ import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
@@ -141,6 +142,8 @@ class MeetingServiceTest {
                 .willReturn(meeting);
         given(meetingMemberRepository.findAllByMeetingId(meetingId))
                 .willReturn(java.util.Collections.emptyList());
+        given(topicRepository.findConfirmedTopicDateByMeetingId(meetingId, TopicStatus.CONFIRMED))
+                .willReturn(null);
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
@@ -150,6 +153,90 @@ class MeetingServiceTest {
             // then
             assertThat(findMeeting.meetingName()).isEqualTo(meeting.getMeetingName());
             assertThat(findMeeting.meetingStatus()).isEqualTo(meeting.getMeetingStatus());
+            assertThat(findMeeting.progressStatus()).isEqualTo(MeetingDetailProgressStatus.UNKNOWN);
+            assertThat(findMeeting.confirmedTopic()).isFalse();
+            assertThat(findMeeting.confirmedTopicDate()).isNull();
+        }
+    }
+
+    @DisplayName("약속 상세 응답에 진행 상태가 전/중/후로 내려간다.")
+    @Test
+    void givenMeetingDates_whenFindMeeting_thenProgressStatus() {
+        // given
+        Long userId = 1L;
+        LocalDateTime now = LocalDateTime.now();
+        Meeting upcomingMeeting = Meeting.builder()
+                .id(meetingId)
+                .meetingName("Upcoming")
+                .meetingStatus(MeetingStatus.CONFIRMED)
+                .meetingStartDate(now.plusDays(1))
+                .meetingEndDate(now.plusDays(1).plusHours(1))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+        Meeting ongoingMeeting = Meeting.builder()
+                .id(meetingId)
+                .meetingName("Ongoing")
+                .meetingStatus(MeetingStatus.CONFIRMED)
+                .meetingStartDate(now.minusHours(1))
+                .meetingEndDate(now.plusHours(1))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+        Meeting finishedMeeting = Meeting.builder()
+                .id(meetingId)
+                .meetingName("Finished")
+                .meetingStatus(MeetingStatus.DONE)
+                .meetingStartDate(now.minusDays(1))
+                .meetingEndDate(now.minusDays(1).plusHours(1))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(upcomingMeeting, ongoingMeeting, finishedMeeting);
+        given(meetingMemberRepository.findAllByMeetingId(meetingId))
+                .willReturn(java.util.Collections.emptyList());
+        given(topicRepository.findConfirmedTopicDateByMeetingId(meetingId, TopicStatus.CONFIRMED))
+                .willReturn(null);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            MeetingDetailResponse upcoming = meetingService.findMeeting(meetingId);
+            MeetingDetailResponse ongoing = meetingService.findMeeting(meetingId);
+            MeetingDetailResponse finished = meetingService.findMeeting(meetingId);
+
+            // then
+            assertThat(upcoming.progressStatus()).isEqualTo(MeetingDetailProgressStatus.PRE);
+            assertThat(ongoing.progressStatus()).isEqualTo(MeetingDetailProgressStatus.ONGOING);
+            assertThat(finished.progressStatus()).isEqualTo(MeetingDetailProgressStatus.POST);
+        }
+    }
+
+    @DisplayName("약속 상세 응답에 주제 확정 여부와 날짜가 내려간다.")
+    @Test
+    void givenConfirmedTopicDate_whenFindMeeting_thenConfirmedTopicFields() {
+        // given
+        Long userId = 1L;
+        LocalDateTime confirmedAt = LocalDateTime.now().minusHours(1);
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+        given(meetingMemberRepository.findAllByMeetingId(meetingId))
+                .willReturn(java.util.Collections.emptyList());
+        given(topicRepository.findConfirmedTopicDateByMeetingId(meetingId, TopicStatus.CONFIRMED))
+                .willReturn(confirmedAt);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            MeetingDetailResponse findMeeting = meetingService.findMeeting(meetingId);
+
+            // then
+            assertThat(findMeeting.confirmedTopic()).isTrue();
+            assertThat(findMeeting.confirmedTopicDate()).isEqualTo(confirmedAt);
         }
     }
 
@@ -701,6 +788,41 @@ class MeetingServiceTest {
         }
     }
 
+    @DisplayName("약속 시작 24시간 이내면 참가 신청에 실패한다.")
+    @Test
+    void givenMeetingWithin24Hours_whenJoinMeeting_thenThrowException() {
+        // given
+        Long meetingId = 3L;
+        Long userId = 7L;
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingStartDate(LocalDateTime.now().plusHours(1))
+                .gathering(Gathering.builder()
+                        .id(1L)
+                        .gatheringName("gathering")
+                        .invitationLink("link")
+                        .build())
+                .book(sampleBook())
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when + then
+            assertThatThrownBy(() -> meetingService.joinMeeting(meetingId))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.MEETING_JOIN_NOT_ALLOWED);
+            verify(gatheringValidator, never()).validateMembership(any(), any());
+            verify(meetingValidator, never()).validateCapacity(any(), any());
+            verify(userValidator, never()).findUserOrThrow(any());
+            verify(meetingMemberRepository, never()).save(any());
+        }
+    }
+
     @DisplayName("약속 참가 신청을 취소할 수 있다.")
     @Test
     void givenMeetingId_whenMeetingCancel_thenSuccess() {
@@ -922,6 +1044,36 @@ class MeetingServiceTest {
                     .isInstanceOf(MeetingException.class)
                     .extracting("errorCode")
                     .isEqualTo(MeetingErrorCode.MAX_PARTICIPANTS_LESS_THAN_CURRENT);
+        }
+    }
+
+    @DisplayName("약속 시작 24시간 이내면 약속을 수정할 수 없다.")
+    @Test
+    void givenMeetingWithin24Hours_whenUpdateMeeting_thenThrowException() {
+        // given
+        Meeting meeting = Meeting.builder()
+                .id(meetingId)
+                .meetingName("Meeting 1")
+                .meetingStatus(MeetingStatus.PENDING)
+                .meetingStartDate(LocalDateTime.now().plusHours(1))
+                .meetingLeader(leader)
+                .gathering(gathering)
+                .build();
+        MeetingUpdateRequest request = MeetingUpdateRequest.builder()
+                .meetingName("약속명 변경")
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
+
+        // when + then
+        try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
+            mock.when(SecurityUtil::getCurrentUserId).thenReturn(leader.getId());
+
+            assertThatThrownBy(() -> meetingService.updateMeeting(meetingId, request))
+                    .isInstanceOf(MeetingException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(MeetingErrorCode.MEETING_UPDATE_NOT_ALLOWED);
+            verify(meetingValidator, never()).countActiveMembers(any());
         }
     }
 

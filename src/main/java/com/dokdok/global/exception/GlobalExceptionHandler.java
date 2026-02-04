@@ -16,6 +16,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import com.dokdok.storage.exception.StorageErrorCode;
 
 import java.util.stream.Collectors;
 
@@ -172,6 +174,22 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>(
                         GlobalErrorCode.INVALID_REQUEST_FORMAT.getCode(),
                         GlobalErrorCode.INVALID_REQUEST_FORMAT.getMessage(),
+                        null
+                ));
+    }
+
+    // 파일 크기 초과 예외처리
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException e
+    ) {
+        log.warn("Max Upload Size Exceeded - Message: {}", e.getMessage());
+
+        return ResponseEntity
+                .status(StorageErrorCode.FILE_SIZE_EXCEEDED.getStatus())
+                .body(new ApiResponse<>(
+                        StorageErrorCode.FILE_SIZE_EXCEEDED.getCode(),
+                        StorageErrorCode.FILE_SIZE_EXCEEDED.getMessage(),
                         null
                 ));
     }

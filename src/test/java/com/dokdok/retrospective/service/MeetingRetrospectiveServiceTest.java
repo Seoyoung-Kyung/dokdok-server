@@ -18,6 +18,7 @@ import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
 import com.dokdok.retrospective.exception.RetrospectiveException;
 import com.dokdok.retrospective.repository.RetrospectiveRepository;
 import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.repository.TopicRepository;
@@ -53,6 +54,9 @@ class MeetingRetrospectiveServiceTest {
 
 	@Mock
 	private RetrospectiveRepository retrospectiveRepository;
+
+	@Mock
+	private StorageService storageService;
 
 	@InjectMocks
 	private MeetingRetrospectiveService meetingRetrospectiveService;
@@ -242,6 +246,7 @@ class MeetingRetrospectiveServiceTest {
 			doNothing().when(retrospectiveValidator).validateMeetingRetrospectiveAccess(gatheringId, meetingId, userId);
 			when(topicValidator.getTopicInMeeting(topicId, meetingId)).thenReturn(topic);
 			when(retrospectiveRepository.save(any(MeetingRetrospective.class))).thenReturn(saved);
+			when(storageService.getPresignedProfileImage("https://image.jpg")).thenReturn("https://image.jpg");
 
 			// when
 			MeetingRetrospectiveResponse.CommentResponse response =
