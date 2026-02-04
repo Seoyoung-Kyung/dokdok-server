@@ -7,7 +7,6 @@ import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
-import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.oauth2.CustomOAuth2User;
 import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;

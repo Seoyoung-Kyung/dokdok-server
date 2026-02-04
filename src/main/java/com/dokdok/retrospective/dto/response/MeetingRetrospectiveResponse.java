@@ -1,6 +1,5 @@
 package com.dokdok.retrospective.dto.response;
 
-import com.dokdok.global.response.CursorResponse;
 import com.dokdok.meeting.dto.MeetingResponse;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.retrospective.entity.MeetingRetrospective;

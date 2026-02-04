@@ -14,8 +14,6 @@ import java.util.Optional;
 @Repository
 public interface RetrospectiveRepository extends JpaRepository<MeetingRetrospective, Long> {
 
-    List<MeetingRetrospective> findAllByMeetingId(Long meetingId);
-
     Optional<MeetingRetrospective> findByIdAndMeetingId(Long meetingRetrospectiveId, Long meetingId);
 
     @Query("SELECT mr FROM MeetingRetrospective mr " +

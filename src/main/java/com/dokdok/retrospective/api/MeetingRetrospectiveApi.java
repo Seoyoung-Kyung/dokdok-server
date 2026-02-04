@@ -245,18 +245,18 @@ public interface MeetingRetrospectiveApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = MeetingRetrospectiveResponse.CommentResponse.class),
                             examples = @ExampleObject(value = """                                                                                                                
-                                      {                                                                                                                                            
-                                        "code": "CREATED",                                                                                                                         
-                                        "message": "공동 회고 작성 완료",                                                                                                          
-                                        "data": {                                                                                                                                  
-                                          "meetingRetrospectiveId": 1,                                                                                                             
-                                          "userId": 1,                                                                                                                             
-                                          "nickname": "독서왕",                                                                                                                    
-                                          "profileImageUrl": "https://example.com/profile.jpg",                                                                                    
-                                          "comment": "좋았습니다.",                                                                                                                
-                                          "createdAt": "2025-02-01T16:30:00"                                                                                                       
-                                        }                                                                                                                                          
-                                      }                                                                                                                                            
+                                      {
+                                        "code": "CREATED",
+                                        "message": "공동 회고 작성 완료",
+                                        "data": {
+                                          "meetingRetrospectiveId": 1,
+                                          "userId": 1,
+                                          "nickname": "독서왕",
+                                          "profileImageUrl": "https://example.com/profile.jpg",
+                                          "comment": "좋았습니다.",
+                                          "createdAt": "2025-02-01T16:30:00"
+                                        }
+                                      }
                                       """)
                     )
             ),
