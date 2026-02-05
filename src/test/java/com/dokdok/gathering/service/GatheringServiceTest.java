@@ -10,6 +10,8 @@ import com.dokdok.gathering.dto.response.GatheringCreateResponse;
 import com.dokdok.gathering.dto.response.GatheringDetailResponse;
 import com.dokdok.gathering.dto.response.GatheringJoinResponse;
 import com.dokdok.gathering.dto.response.GatheringListItemResponse;
+import com.dokdok.gathering.dto.response.GatheringMemberCursor;
+import com.dokdok.gathering.dto.response.GatheringMemberResponse;
 import com.dokdok.gathering.dto.response.MyGatheringCursor;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.response.GatheringUpdateResponse;
@@ -1449,5 +1451,54 @@ class GatheringServiceTest {
 		verify(gatheringValidator).validateAndGetGathering(gatheringId);
 		verify(gatheringValidator).validateMembership(gatheringId, userId);
 		verify(gatheringBookRepository, times(0)).findGatheringBooks(any(), any());
+	}
+
+	@Test
+	@DisplayName("모임 멤버 목록 조회 성공 - 첫 페이지")
+	void getGatheringMembers_firstPage_success() {
+		Long gatheringId = 1L;
+		Long userId = 1L;
+		int pageSize = 1;
+		GatheringMemberStatus status = GatheringMemberStatus.PENDING;
+
+		securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+		Gathering gathering = Gathering.builder().id(gatheringId).build();
+		User user1 = User.builder().id(10L).nickname("멤버1").profileImageUrl("member1.jpg").build();
+		User user2 = User.builder().id(11L).nickname("멤버2").profileImageUrl("member2.jpg").build();
+
+		GatheringMember member1 = GatheringMember.builder()
+				.id(10L)
+				.gathering(gathering)
+				.user(user1)
+				.memberStatus(GatheringMemberStatus.PENDING)
+				.role(MEMBER)
+				.build();
+
+		GatheringMember member2 = GatheringMember.builder()
+				.id(9L)
+				.gathering(gathering)
+				.user(user2)
+				.memberStatus(GatheringMemberStatus.PENDING)
+				.role(MEMBER)
+				.build();
+
+			given(gatheringValidator.validateAndGetGathering(gatheringId)).willReturn(gathering);
+			given(storageService.getPresignedProfileImage("member1.jpg")).willReturn("member1.jpg");
+			given(gatheringMemberRepository.findMembersByStatusFirstPage(eq(gatheringId), eq(status), any(Pageable.class)))
+					.willReturn(List.of(member1, member2));
+			given(gatheringMemberRepository.countMembersByStatus(gatheringId, status)).willReturn(2);
+
+		CursorResponse<GatheringMemberResponse, GatheringMemberCursor> response =
+				gatheringService.getGatheringMembers(gatheringId, status, pageSize, null);
+
+		assertThat(response.items()).hasSize(1);
+		assertThat(response.hasNext()).isTrue();
+		assertThat(response.nextCursor()).isNotNull();
+		assertThat(response.totalCount()).isEqualTo(2);
+
+		verify(gatheringValidator).validateLeader(gatheringId, userId);
+		verify(gatheringMemberRepository).findMembersByStatusFirstPage(eq(gatheringId), eq(status), any(Pageable.class));
+		verify(gatheringMemberRepository).countMembersByStatus(gatheringId, status);
 	}
 }
