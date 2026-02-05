@@ -1,17 +1,15 @@
 package com.dokdok.retrospective.repository;
 
-import com.querydsl.core.annotations.QueryEmbedded;
+import com.dokdok.retrospective.entity.PersonalMeetingRetrospective;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.dokdok.retrospective.entity.PersonalMeetingRetrospective;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 
 @Repository
@@ -87,4 +85,16 @@ public interface PersonalRetrospectiveRepository extends JpaRepository<PersonalM
 
     boolean existsByIdAndUserId(Long retrospectiveId, Long userId);
 
+    @Query("""
+            SELECT pmr
+            FROM PersonalMeetingRetrospective pmr
+            JOIN FETCH pmr.meeting m
+            JOIN FETCH m.gathering g
+            WHERE pmr.id IN :retrospectiveIds
+            AND pmr.user.id = :userId
+            """)
+    List<PersonalMeetingRetrospective> findByIdsWithMeeting(
+            @Param("retrospectiveIds") List<Long> retrospectiveIds,
+            @Param("userId") Long userId
+    );
 }

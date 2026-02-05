@@ -2,8 +2,10 @@ package com.dokdok.book.api;
 
 import com.dokdok.book.dto.request.PersonalReadingRecordCreateRequest;
 import com.dokdok.book.dto.request.PersonalReadingRecordUpdateRequest;
+import com.dokdok.book.dto.request.PreOpinionTimeType;
 import com.dokdok.book.dto.response.*;
 import com.dokdok.global.response.ApiResponse;
+import com.dokdok.global.response.CursorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Tag(name = "독서 기록", description = "책별 독서 기록 관련 API")
 @RequestMapping("/api/book")
@@ -605,5 +608,71 @@ public interface PersonalBookRecordApi {
     ResponseEntity<ApiResponse<PersonalReadingTopicAnswerResponse>> getMyTopicAnswer(
             @Parameter(description = "개인 책장 ID (personal_book 테이블 PK)", required = true, example = "10")
             @PathVariable Long personalBookId
+    );
+
+    @Operation(
+            summary = "독서 타임라인 조회 (developer: 권우희)",
+            description = """
+                    독서 기록/사전 의견/개인 회고를 하나의 타임라인으로 커서 기반 조회합니다.
+                    - personalBook의 gatheringId가 null이면 사전 의견/회고는 제외됩니다.
+                    - 사전 의견(PRE_OPINION)은 **내 답변이 있는 미팅만** 포함합니다.
+                    - 정렬: eventAt DESC, typeOrder DESC, sourceId DESC
+                    - preOpinionTime: 사전 의견 정렬 기준 (MEETING_START | ANSWER_CREATED, 기본값 ANSWER_CREATED)
+
+                    **사용 방법**
+                    - 첫 페이지: `?size=10&preOpinionTime=ANSWER_CREATED`
+                    - 다음 페이지: `?size=10&cursorEventAt={nextCursor.eventAt}&cursorType={nextCursor.type}&cursorSourceId={nextCursor.sourceId}`
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "독서 타임라인 조회 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ReadingTimelineCursorResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "code": "SUCCESS",
+                                      "message": "독서 타임라인 조회 성공",
+                                      "data": {
+                                        "items": [
+                                          {
+                                            "type": "READING_RECORD",
+                                            "eventAt": "2026-01-25T22:39:57.899858",
+                                            "sourceId": 1,
+                                            "readingRecord": {
+                                              "recordId": 1,
+                                              "recordType": "QUOTE",
+                                              "recordContent": "기억에 남는 구절",
+                                              "meta": {"page": "12", "excerpt": "..."},
+                                              "createdAt": "2026-01-25T22:39:57.899858",
+                                              "bookId": 1
+                                            }
+                                          }
+                                        ],
+                                        "pageSize": 10,
+                                        "hasNext": false,
+                                        "nextCursor": null
+                                      }
+                                    }
+                                    """))
+            )
+    })
+    @GetMapping("/{personalBookId}/records/timeline")
+    ResponseEntity<ApiResponse<CursorResponse<ReadingTimelineItem, ReadingTimelineCursor>>> getMyReadingTimeline(
+            @Parameter(description = "개인 책장 ID (personal_book 테이블 PK)", required = true, example = "10")
+            @PathVariable Long personalBookId,
+            @Parameter(description = "커서 - 마지막 이벤트 시간 (ISO 8601)", example = "")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime cursorEventAt,
+            @Parameter(description = "커서 - 마지막 이벤트 타입 (READING_RECORD | PERSONAL_RETROSPECTIVE | PRE_OPINION)")
+            @RequestParam(required = false) ReadingTimelineType cursorType,
+            @Parameter(description = "커서 - 마지막 이벤트 원본 ID")
+            @RequestParam(required = false) Long cursorSourceId,
+            @Parameter(description = "한 페이지당 아이템 수", example = "10")
+            @RequestParam(required = false) Integer size,
+            @Parameter(description = "사전 의견 정렬 기준 (MEETING_START | ANSWER_CREATED)", example = "ANSWER_CREATED")
+            @RequestParam(required = false, defaultValue = "ANSWER_CREATED") PreOpinionTimeType preOpinionTime
     );
 }

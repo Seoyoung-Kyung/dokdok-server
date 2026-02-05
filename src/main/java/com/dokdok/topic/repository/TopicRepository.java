@@ -218,6 +218,17 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     long countByMeetingIdAndTopicStatusAndDeletedAtIsNull(Long meetingId, TopicStatus topicStatus);
 
     @Query("""
+            SELECT t
+            FROM Topic t
+            WHERE t.meeting.id IN :meetingIds
+            AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+            ORDER BY t.meeting.id, t.confirmOrder, t.id
+            """)
+    List<Topic> findTopicsInfoByMeetingIds(
+            @Param("meetingIds") List<Long> meetingIds
+    );
+
+    @Query("""
             SELECT MAX(t.updatedAt)
             FROM Topic t
             WHERE t.meeting.id = :meetingId
