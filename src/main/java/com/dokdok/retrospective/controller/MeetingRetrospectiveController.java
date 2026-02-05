@@ -1,14 +1,19 @@
 package com.dokdok.retrospective.controller;
 
 import com.dokdok.global.response.ApiResponse;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.retrospective.api.MeetingRetrospectiveApi;
 import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
+import com.dokdok.retrospective.dto.response.CommentCursor;
 import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
 import com.dokdok.retrospective.service.MeetingRetrospectiveService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,6 +28,22 @@ public class MeetingRetrospectiveController implements MeetingRetrospectiveApi {
         MeetingRetrospectiveResponse response = meetingRetrospectiveService.getMeetingRetrospective(meetingId);
 
         return ApiResponse.success(response,"공동 회고 조회 성공");
+    }
+
+    @Override
+    @GetMapping("/comments")
+    public ResponseEntity<ApiResponse<CursorResponse<MeetingRetrospectiveResponse.CommentResponse, CommentCursor>>> getTopicComments(
+            @PathVariable Long meetingId,
+            @RequestParam Long topicId,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorCreatedAt,
+            @RequestParam(required = false) Long cursorCommentId
+    ) {
+        CursorResponse<MeetingRetrospectiveResponse.CommentResponse, CommentCursor> response =
+                meetingRetrospectiveService.getTopicComments(
+                        meetingId, topicId, pageSize, cursorCreatedAt, cursorCommentId
+                );
+        return ApiResponse.success(response, "토픽 코멘트 조회 성공");
     }
 
     @Override
