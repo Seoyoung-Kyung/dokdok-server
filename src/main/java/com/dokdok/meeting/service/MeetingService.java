@@ -117,6 +117,8 @@ public class MeetingService {
                     .countByGatheringIdAndRemovedAtIsNull(gathering.getId());
         }
 
+        validateMeetingDatesRequired(request.meetingStartDate(), request.meetingEndDate());
+
         // 최대 참가 인원 검증
         validateMaxParticipants(maxParticipants, gathering.getId());
 
@@ -467,10 +469,20 @@ public class MeetingService {
         LocalDateTime endDate = request.endDate() != null
                 ? request.endDate()
                 : meeting.getMeetingEndDate();
+        validateMeetingDatesRequired(startDate, endDate);
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new MeetingException(
                     MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
                     "종료 일시는 시작 일시보다 이전일 수 없습니다."
+            );
+        }
+    }
+
+    private void validateMeetingDatesRequired(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null || endDate == null) {
+            throw new MeetingException(
+                    MeetingErrorCode.MEETING_DATE_REQUIRED,
+                    "약속 시작/종료 일시는 필수입니다."
             );
         }
     }

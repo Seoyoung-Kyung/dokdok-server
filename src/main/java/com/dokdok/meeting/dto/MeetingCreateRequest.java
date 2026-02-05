@@ -2,6 +2,7 @@ package com.dokdok.meeting.dto;
 
 import com.dokdok.meeting.entity.MeetingLocation;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
@@ -21,9 +22,11 @@ public record MeetingCreateRequest(
         String meetingName,
 
         @Schema(description = "약속 시작 일시", example = "2025-02-01T14:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotNull
         LocalDateTime meetingStartDate,
 
-        @Schema(description = "약속 종료 일시", example = "2025-02-01T16:00:00")
+        @Schema(description = "약속 종료 일시", example = "2025-02-01T16:00:00", requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotNull
         LocalDateTime meetingEndDate,
 
         @Schema(description = "최대 참가 인원 (null 허용)", example = "10")
