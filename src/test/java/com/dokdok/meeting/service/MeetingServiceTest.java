@@ -39,7 +39,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
@@ -1083,7 +1082,7 @@ class MeetingServiceTest {
         // given
         Long gatheringId = 100L;
         Long userId = 55L;
-        int size = 10;
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
         Book book1 = Book.builder().id(1L).bookName("book1").build();
         Book book2 = Book.builder().id(2L).bookName("book2").build();
         Meeting meeting1 = Meeting.builder()
@@ -1106,13 +1105,12 @@ class MeetingServiceTest {
                 .build();
 
         List<Meeting> meetings = List.of(meeting1, meeting2);
-        given(meetingRepository.findByGatheringIdAndMeetingStatusAfterCursor(
+        Page<Meeting> meetingPage = new PageImpl<>(meetings, pageable, meetings.size());
+        given(meetingRepository.findByGatheringIdAndMeetingStatus(
                 eq(gatheringId),
                 eq(MeetingStatus.CONFIRMED),
-                any(),
-                any(),
                 any()
-        )).willReturn(meetings);
+        )).willReturn(meetingPage);
         given(topicRepository.findTopicTypesByMeetingIds(List.of(1L, 2L)))
                 .willReturn(List.of(
                         new Object[]{1L, TopicType.FREE},
@@ -1126,14 +1124,14 @@ class MeetingServiceTest {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             // when
-            CursorResponse<MeetingListItemResponse, MeetingListCursor> response =
-                    meetingService.meetingList(gatheringId, MeetingListFilter.ALL, size, null);
+            PageResponse<MeetingListItemResponse> response =
+                    meetingService.meetingList(gatheringId, MeetingListFilter.ALL, pageable);
 
             // then
             assertThat(response.items()).hasSize(2);
             assertThat(response.pageSize()).isEqualTo(10);
-            assertThat(response.hasNext()).isFalse();
-            assertThat(response.nextCursor()).isNull();
+            assertThat(response.currentPage()).isEqualTo(0);
+            assertThat(response.totalPages()).isEqualTo(1);
             MeetingListItemResponse item1 = response.items().stream()
                     .filter(item -> item.meetingId().equals(1L))
                     .findFirst()
