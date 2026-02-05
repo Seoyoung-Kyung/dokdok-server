@@ -5,6 +5,7 @@ import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
 import com.dokdok.gathering.dto.response.*;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
+import com.dokdok.gathering.entity.GatheringMemberStatus;
 import com.dokdok.gathering.service.GatheringService;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.response.CursorResponse;
@@ -18,7 +19,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/gatherings")
@@ -135,5 +135,17 @@ public class GatheringController implements GatheringApi {
     ) {
         PageResponse<GatheringBookListResponse> response = gatheringService.getGatheringBooks(gatheringId, page, size);
         return ApiResponse.success(response, "모임 책장 조회를 성공했습니다.");
+    }
+
+    @Override
+    @GetMapping("/{gatheringId}/members")
+    public ResponseEntity<ApiResponse<CursorResponse<GatheringMemberResponse, GatheringMemberCursor>>> getGatheringMembers(
+            @PathVariable Long gatheringId,
+            @RequestParam GatheringMemberStatus status,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) Long cursorId
+    ){
+        CursorResponse<GatheringMemberResponse, GatheringMemberCursor> response = gatheringService.getGatheringMembers(gatheringId, status, pageSize, cursorId);
+        return ApiResponse.success(response,"모임 멤버 관리 조회 성공");
     }
 }

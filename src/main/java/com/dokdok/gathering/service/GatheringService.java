@@ -1,6 +1,5 @@
 package com.dokdok.gathering.service;
 
-import com.dokdok.book.entity.Book;
 import com.dokdok.book.repository.BookReviewRepository;
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
@@ -15,7 +14,6 @@ import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.response.PageResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.gathering.util.InvitationCodeGenerator;
-import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
@@ -28,12 +26,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -345,6 +341,55 @@ public class GatheringService {
         }
 
         member.updateFavorite();
+    }
+
+    /**
+     * 모임 멤버 관리 목록을 상태별로 조회합니다. (커시 기반 무한 스크롤)
+     */
+    public CursorResponse<GatheringMemberResponse, GatheringMemberCursor> getGatheringMembers(
+            Long gatheringId,
+            GatheringMemberStatus status,
+            int pageSize,
+            Long cursorId
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        // 모임 존재 여부 및 리더 권한 검증
+        gatheringValidator.validateAndGetGathering(gatheringId);
+        gatheringValidator.validateLeader(gatheringId, userId);
+
+        Pageable pageable = PageRequest.of(0, pageSize +1);
+
+        List<GatheringMember> members;
+        Integer totalCount = null;
+
+        if (cursorId == null) {
+            // 첫 페이지
+            members = gatheringMemberRepository.findMembersByStatusFirstPage(gatheringId, status, pageable);
+            totalCount = gatheringMemberRepository.countMembersByStatus(gatheringId, status);
+        } else {
+            // 다음 페이지
+            members = gatheringMemberRepository.findMembersByStatusAfterCursor(gatheringId, status, cursorId, pageable);
+        }
+
+        boolean hasNext = members.size() > pageSize;
+        List<GatheringMember> pageMembers = hasNext ? members.subList(0, pageSize) : members;
+
+        List<GatheringMemberResponse> items = pageMembers.stream()
+                .map(member -> {
+                    String presignedUrl = storageService.getPresignedProfileImage(
+                            member.getUser().getProfileImageUrl()
+                    );
+                    return GatheringMemberResponse.from(member, presignedUrl);
+                })
+                .toList();
+
+        GatheringMember lastMember = pageMembers.isEmpty() ? null : pageMembers.get(pageMembers.size() - 1);
+        GatheringMemberCursor nextCursor = hasNext && lastMember != null
+                ? GatheringMemberCursor.from(lastMember)
+                : null;
+
+        return CursorResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
     }
 
     /**
