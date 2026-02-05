@@ -1,28 +1,15 @@
 package com.dokdok.topic.dto.response;
 
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicType;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-import java.util.List;
-
-@JsonPropertyOrder({"items", "pageSize", "hasNext", "nextCursor", "totalCount", "actions"})
 @Schema(description = "확정된 주제 목록 응답")
 public record ConfirmedTopicsResponse(
-        @Schema(description = "확정된 주제 목록")
-        List<ConfirmedTopicDto> items,
-        @Schema(description = "페이지 크기", example = "10")
-        int pageSize,
-        @Schema(description = "다음 페이지 존재 여부", example = "false")
-        boolean hasNext,
-        @Schema(description = "다음 페이지 커서 (hasNext가 false면 null)")
-        ConfirmedTopicsCursor nextCursor,
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        @Schema(description = "전체 아이템 수", example = "25")
-        Integer totalCount,
+        @Schema(description = "확정된 주제 목록 페이지 정보")
+        CursorResponse<ConfirmedTopicDto, ConfirmedTopicsCursor> page,
         @Schema(description = "사전 의견 관련 권한 정보")
         Actions actions
 ) {
@@ -71,20 +58,9 @@ public record ConfirmedTopicsResponse(
     }
 
     public static ConfirmedTopicsResponse from(
-            List<ConfirmedTopicDto> items,
-            int pageSize,
-            boolean hasNext,
-            ConfirmedTopicsCursor nextCursor,
-            Integer totalCount,
+            CursorResponse<ConfirmedTopicDto, ConfirmedTopicsCursor> page,
             Actions actions
     ) {
-        return new ConfirmedTopicsResponse(
-                items,
-                pageSize,
-                hasNext,
-                hasNext ? nextCursor : null,
-                totalCount,
-                actions
-        );
+        return new ConfirmedTopicsResponse(page, actions);
     }
 }

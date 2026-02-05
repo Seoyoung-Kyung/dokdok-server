@@ -254,14 +254,14 @@ class TopicServiceTest {
                 ConfirmedTopicsResponse response =
                         topicService.getConfirmedTopics(gatheringId, meetingId, pageSize, null, null);
 
-                assertThat(response.items()).hasSize(2);
-                assertThat(response.items().get(0).topicId()).isEqualTo(12L);
-                assertThat(response.items().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
-                assertThat(response.items().get(1).confirmOrder()).isEqualTo(2);
-                assertThat(response.pageSize()).isEqualTo(pageSize);
-                assertThat(response.hasNext()).isFalse();
-                assertThat(response.nextCursor()).isNull();
-                assertThat(response.totalCount()).isEqualTo(2);
+                assertThat(response.page().items()).hasSize(2);
+                assertThat(response.page().items().get(0).topicId()).isEqualTo(12L);
+                assertThat(response.page().items().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+                assertThat(response.page().items().get(1).confirmOrder()).isEqualTo(2);
+                assertThat(response.page().pageSize()).isEqualTo(pageSize);
+                assertThat(response.page().hasNext()).isFalse();
+                assertThat(response.page().nextCursor()).isNull();
+                assertThat(response.page().totalCount()).isEqualTo(2);
                 assertThat(response.actions().canViewPreOpinions()).isFalse();
                 assertThat(response.actions().canWritePreOpinions()).isTrue();
 

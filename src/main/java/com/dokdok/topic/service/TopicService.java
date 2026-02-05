@@ -5,6 +5,7 @@ import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
@@ -227,7 +228,10 @@ public class TopicService {
                 isMeetingConfirmed && hasConfirmedTopics && !hasSubmitted
         );
 
-        return ConfirmedTopicsResponse.from(topicDtos, pageSize, hasNext, nextCursor, totalCount, actions);
+        CursorResponse<ConfirmedTopicsResponse.ConfirmedTopicDto, ConfirmedTopicsCursor> page =
+                CursorResponse.of(topicDtos, pageSize, hasNext, nextCursor, totalCount);
+
+        return ConfirmedTopicsResponse.from(page, actions);
     }
 
     @Transactional
