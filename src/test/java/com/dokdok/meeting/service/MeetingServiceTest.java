@@ -116,6 +116,8 @@ class MeetingServiceTest {
                 .id(meetingId)
                 .meetingName("Meeting 1")
                 .meetingStatus(MeetingStatus.PENDING)
+                .meetingStartDate(LocalDateTime.now().plusDays(2))
+                .meetingEndDate(LocalDateTime.now().plusDays(2).plusHours(1))
                 .meetingLeader(leader)
                 .gathering(gathering)
                 .build();
@@ -152,7 +154,7 @@ class MeetingServiceTest {
             // then
             assertThat(findMeeting.meetingName()).isEqualTo(meeting.getMeetingName());
             assertThat(findMeeting.meetingStatus()).isEqualTo(meeting.getMeetingStatus());
-            assertThat(findMeeting.progressStatus()).isEqualTo(MeetingDetailProgressStatus.UNKNOWN);
+            assertThat(findMeeting.progressStatus()).isEqualTo(MeetingDetailProgressStatus.PRE);
             assertThat(findMeeting.confirmedTopic()).isFalse();
             assertThat(findMeeting.confirmedTopicDate()).isNull();
         }
@@ -351,13 +353,14 @@ class MeetingServiceTest {
         Long bookId = 12L;
         Long userId = 7L;
         LocalDateTime startDate = LocalDateTime.of(2024, 1, 20, 20, 0);
+        LocalDateTime endDate = LocalDateTime.of(2024, 1, 20, 22, 0);
         int memberCount = 5;
         MeetingCreateRequest request = MeetingCreateRequest.builder()
                 .gatheringId(gatheringId)
                 .bookId(bookId)
                 .meetingName(null)
                 .meetingStartDate(startDate)
-                .meetingEndDate(null)
+                .meetingEndDate(endDate)
                 .maxParticipants(null)
                 .build();
 
@@ -387,7 +390,7 @@ class MeetingServiceTest {
                 .meetingStatus(MeetingStatus.PENDING)
                 .maxParticipants(memberCount)
                 .meetingStartDate(startDate)
-                .meetingEndDate(null)
+                .meetingEndDate(endDate)
                 .build();
 
         given(gatheringRepository.findById(gatheringId))
@@ -412,6 +415,7 @@ class MeetingServiceTest {
             assertThat(response.meetingStatus()).isEqualTo(MeetingStatus.PENDING);
             assertThat(response.meetingName()).isEqualTo(book.getBookName());
             assertThat(response.schedule().startDateTime()).isEqualTo(startDate);
+            assertThat(response.schedule().endDateTime()).isEqualTo(endDate);
             assertThat(response.participants().maxCount()).isEqualTo(memberCount);
         }
     }
@@ -945,7 +949,7 @@ class MeetingServiceTest {
     @Test
     void givenMeetingUpdateRequest_whenMeetingUpdate_thenSuccess() {
         // given
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime endDate = meeting.getMeetingStartDate().plusHours(2);
         MeetingUpdateRequest request = MeetingUpdateRequest.builder()
                 .meetingName("약속명 변경")
                 .location(new MeetingLocationDto(
@@ -954,7 +958,7 @@ class MeetingServiceTest {
                         37.0,
                         127.0
                 ))
-                .endDate(now)
+                .endDate(endDate)
                 .build();
 
         given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);

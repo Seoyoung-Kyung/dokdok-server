@@ -129,6 +129,7 @@
 | M016 | MEETING_JOIN_NOT_ALLOWED | 약속 시작 24시간 이내에는 참가 신청할 수 없습니다. | 400 |
 | M017 | MEETING_UPDATE_NOT_ALLOWED | 약속 시작 24시간 이내에는 수정할 수 없습니다. | 400 |
 | M018 | MEETING_NOT_CONFIRMED | 약속이 확정된 경우에만 주제를 제안할 수 있습니다. | 400 |
+| M019 | MEETING_DATE_REQUIRED | 약속 시작/종료 일시는 필수입니다. | 400 |
 
 ---
 

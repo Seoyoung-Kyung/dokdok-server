@@ -105,7 +105,7 @@ public record MeetingDetailResponse(
             LocalDateTime now
     ) {
         if (meetingStartDate == null || meetingEndDate == null) {
-            return MeetingDetailProgressStatus.UNKNOWN;
+            throw new IllegalStateException("meetingStartDate/meetingEndDate must be non-null");
         }
         if (now.isBefore(meetingStartDate)) {
             return MeetingDetailProgressStatus.PRE;
