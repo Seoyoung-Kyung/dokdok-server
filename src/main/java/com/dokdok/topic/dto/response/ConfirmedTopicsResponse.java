@@ -1,19 +1,28 @@
 package com.dokdok.topic.dto.response;
 
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
-import java.util.List;
-
 @Schema(description = "확정된 주제 목록 응답")
 public record ConfirmedTopicsResponse(
-        @Schema(description = "약속 ID", example = "1")
-        Long meetingId,
-        @Schema(description = "확정된 주제 목록")
-        List<ConfirmedTopicDto> topics
+        @Schema(description = "확정된 주제 목록 페이지 정보")
+        CursorResponse<ConfirmedTopicDto, ConfirmedTopicsCursor> page,
+        @Schema(description = "사전 의견 관련 권한 정보")
+        Actions actions
 ) {
+    public record Actions(
+            @Schema(description = "사전 의견 확인 가능 여부", example = "true")
+            Boolean canViewPreOpinions,
+            @Schema(description = "사전 의견 작성 가능 여부", example = "false")
+            Boolean canWritePreOpinions
+    ) {
+        public static Actions of(Boolean canViewPreOpinions, Boolean canWritePreOpinions) {
+            return new Actions(canViewPreOpinions, canWritePreOpinions);
+        }
+    }
 
     @Builder
     @Schema(description = "확정된 주제 정보")
@@ -49,9 +58,9 @@ public record ConfirmedTopicsResponse(
     }
 
     public static ConfirmedTopicsResponse from(
-            Long meetingId,
-            List<ConfirmedTopicDto> topics
+            CursorResponse<ConfirmedTopicDto, ConfirmedTopicsCursor> page,
+            Actions actions
     ) {
-        return new ConfirmedTopicsResponse(meetingId, topics);
+        return new ConfirmedTopicsResponse(page, actions);
     }
 }
