@@ -483,24 +483,22 @@ public class MeetingService {
      * 내가 참여한 약속 : 완전히 끝난 약속 중 내가 참여한 약속
      * @param gatheringId 모임 식별자
      * @param filter 약속 리스트 필터
-     * @param size 페이지 크기
-     * @param cursor 커서
-     * @return CursorResponse
+     * @param pageable 페이지 정보
+     * @return PageResponse
      */
-    public CursorResponse<MeetingListItemResponse, MeetingListCursor> meetingList(
+    public PageResponse<MeetingListItemResponse> meetingList(
             Long gatheringId,
             MeetingListFilter filter,
-            int size,
-            MeetingListCursor cursor
+            Pageable pageable
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
         gatheringValidator.validateMembership(gatheringId, userId);
 
         return switch (filter) {
-            case ALL -> getAllMeetings(gatheringId, size, cursor, userId);
-            case UPCOMING -> getUpcomingMeetings(gatheringId, size, cursor, userId);
-            case DONE -> getDoneMeetings(gatheringId, size, cursor, userId);
-            case JOINED -> getJoinedMeetings(gatheringId, size, cursor, userId);
+            case ALL -> getAllMeetingsPage(gatheringId, pageable, userId);
+            case UPCOMING -> getUpcomingMeetingsPage(gatheringId, pageable, userId);
+            case DONE -> getDoneMeetingsPage(gatheringId, pageable, userId);
+            case JOINED -> getJoinedMeetingsPage(gatheringId, pageable, userId);
         };
 
     }
@@ -674,138 +672,88 @@ public class MeetingService {
     }
 
     /**
-     * 모임의 약속 중 확정된 리스트를 전부 반환한다.
+     * 모임의 약속 중 확정된 리스트를 페이지로 반환한다.
      */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> getAllMeetings(
+    private PageResponse<MeetingListItemResponse> getAllMeetingsPage(
             Long gatheringId,
-            int size,
-            MeetingListCursor cursor,
+            Pageable pageable,
             Long userId
     ) {
-        Pageable pageable = cursorPageable(size);
-        List<Meeting> meetings = meetingRepository.findByGatheringIdAndMeetingStatusAfterCursor(
+        Page<Meeting> meetingPage = meetingRepository.findByGatheringIdAndMeetingStatus(
                 gatheringId,
                 MeetingStatus.CONFIRMED,
-                cursorStartDateTime(cursor),
-                cursorMeetingId(cursor),
                 pageable
         );
-        Integer totalCount = cursor == null
-                ? meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.CONFIRMED)
-                : null;
-        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
+        return buildMeetingPageResponse(meetingPage, userId, gatheringId);
     }
 
     /**
-     * 다가오는 약속 리스트를 반환한다.
+     * 다가오는 약속 리스트를 페이지로 반환한다.
      */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> getUpcomingMeetings(
+    private PageResponse<MeetingListItemResponse> getUpcomingMeetingsPage(
             Long gatheringId,
-            int size,
-            MeetingListCursor cursor,
+            Pageable pageable,
             Long userId
     ) {
         LocalDateTime now = LocalDateTime.now();
-        Pageable pageable = cursorPageable(size);
-
-        List<Meeting> meetings = meetingRepository
-                .findByGatheringIdAndMeetingStatusAndMeetingStartDateBetweenAfterCursor(
-                        gatheringId,
-                        MeetingStatus.CONFIRMED,
-                        now,
-                        now.plusDays(3),
-                        cursorStartDateTime(cursor),
-                        cursorMeetingId(cursor),
-                        pageable
-                );
-
-        Integer totalCount = cursor == null
-                ? meetingRepository.countUpcomingMeetings(
-                        gatheringId,
-                        MeetingStatus.CONFIRMED,
-                        now,
-                        now.plusDays(3)
-                )
-                : null;
-        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
-    }
-
-    /**
-     * 완료된 약속 리스트를 반환한다.
-     */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> getDoneMeetings(
-            Long gatheringId,
-            int size,
-            MeetingListCursor cursor,
-            Long userId
-    ) {
-        Pageable pageable = cursorPageable(size);
-        List<Meeting> meetings = meetingRepository.findByGatheringIdAndMeetingStatusAfterCursor(
+        Page<Meeting> meetingPage = meetingRepository.findByGatheringIdAndMeetingStatusAndMeetingStartDateBetween(
                 gatheringId,
-                MeetingStatus.DONE,
-                cursorStartDateTime(cursor),
-                cursorMeetingId(cursor),
+                MeetingStatus.CONFIRMED,
+                now,
+                now.plusDays(3),
                 pageable
         );
-        Integer totalCount = cursor == null
-                ? meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE)
-                : null;
-        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
+        return buildMeetingPageResponse(meetingPage, userId, gatheringId);
     }
 
     /**
-     * 완료된 약속 중 내가 참여했던 약속 리스트를 반환한다.
+     * 완료된 약속 리스트를 페이지로 반환한다.
      */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> getJoinedMeetings(
+    private PageResponse<MeetingListItemResponse> getDoneMeetingsPage(
             Long gatheringId,
-            int size,
-            MeetingListCursor cursor,
+            Pageable pageable,
             Long userId
     ) {
-        Pageable pageable = cursorPageable(size);
-        List<Meeting> meetings = meetingMemberRepository.findMeetingsByUserIdAndStatusAfterCursor(
+        Page<Meeting> meetingPage = meetingRepository.findByGatheringIdAndMeetingStatus(
+                gatheringId,
+                MeetingStatus.DONE,
+                pageable
+        );
+        return buildMeetingPageResponse(meetingPage, userId, gatheringId);
+    }
+
+    /**
+     * 완료된 약속 중 내가 참여했던 약속 리스트를 페이지로 반환한다.
+     */
+    private PageResponse<MeetingListItemResponse> getJoinedMeetingsPage(
+            Long gatheringId,
+            Pageable pageable,
+            Long userId
+    ) {
+        Page<Meeting> meetingPage = meetingMemberRepository.findMeetingsByUserIdAndStatus(
                 userId,
                 gatheringId,
                 MeetingStatus.DONE,
-                cursorStartDateTime(cursor),
-                cursorMeetingId(cursor),
                 pageable
         );
-        Integer totalCount = cursor == null
-                ? meetingMemberRepository.countMeetingsByUserIdAndStatus(
-                        userId,
-                        gatheringId,
-                        MeetingStatus.DONE
-                )
-                : null;
-        return buildMeetingListResponse(meetings, size, userId, gatheringId, totalCount);
+        return buildMeetingPageResponse(meetingPage, userId, gatheringId);
     }
 
     /**
-     * 약속 리스트 커서 응답을 구성한다.
+     * 약속 리스트 페이지 응답을 구성한다.
      */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> buildMeetingListResponse(
-            List<Meeting> meetingCandidates,
-            int size,
+    private PageResponse<MeetingListItemResponse> buildMeetingPageResponse(
+            Page<Meeting> meetingPage,
             Long userId,
-            Long gatheringId,
-            Integer totalCount
+            Long gatheringId
     ) {
-        boolean hasNext = meetingCandidates.size() > size;
-        List<Meeting> meetings = hasNext ? meetingCandidates.subList(0, size) : meetingCandidates;
-        if (meetings.isEmpty()) {
-            return CursorResponse.of(List.of(), size, false, null, totalCount);
-        }
-
-        List<MeetingListItemResponse> items = buildMeetingItems(meetings, userId, gatheringId);
-
-        MeetingListCursor nextCursor = null;
-        if (hasNext) {
-            Meeting last = meetings.get(meetings.size() - 1);
-            nextCursor = new MeetingListCursor(last.getMeetingStartDate(), last.getId());
-        }
-
-        return CursorResponse.of(items, size, hasNext, nextCursor, totalCount);
+        List<MeetingListItemResponse> items = buildMeetingItems(meetingPage.getContent(), userId, gatheringId);
+        return PageResponse.of(
+                items,
+                meetingPage.getTotalElements(),
+                meetingPage.getNumber(),
+                meetingPage.getSize()
+        );
     }
 
     /**

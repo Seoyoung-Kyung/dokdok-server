@@ -1,11 +1,8 @@
 package com.dokdok.meeting.controller;
 
 import com.dokdok.global.response.ApiResponse;
-import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.response.PageResponse;
 import com.dokdok.meeting.api.MeetingListApi;
-import com.dokdok.meeting.dto.MeetingListCursor;
-import com.dokdok.meeting.dto.MeetingListCursorRequest;
 import com.dokdok.meeting.dto.MeetingListFilter;
 import com.dokdok.meeting.dto.MeetingListItemResponse;
 import com.dokdok.meeting.entity.MeetingStatus;
@@ -31,15 +28,14 @@ public class MeetingListController implements MeetingListApi {
 
     @Override
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<CursorResponse<MeetingListItemResponse, MeetingListCursor>>> getMeetingList(
+    public ResponseEntity<ApiResponse<PageResponse<MeetingListItemResponse>>> getMeetingList(
             @PathVariable Long gatheringId,
             @RequestParam MeetingListFilter filter,
-            @ParameterObject MeetingListCursorRequest cursor,
-            @RequestParam(defaultValue = "4") int size
+            @ParameterObject
+            @PageableDefault(size = 5, sort = {"meetingStartDate", "id"}) Pageable pageable
     ) {
-        MeetingListCursor cursorValue = cursor == null ? null : cursor.toCursorOrNull();
-        CursorResponse<MeetingListItemResponse, MeetingListCursor> response =
-                meetingService.meetingList(gatheringId, filter, size, cursorValue);
+        PageResponse<MeetingListItemResponse> response =
+                meetingService.meetingList(gatheringId, filter, pageable);
         return ApiResponse.success(response, "약속 리스트 조회에 성공했습니다.");
     }
 
