@@ -117,12 +117,14 @@ public class TopicService {
         }
 
         Set<Long> deletableTopicIds = Set.of();
+        Set<Long> likedTopicIds = Set.of();
 
         if (userId != null && !topics.isEmpty()) {
             List<Long> topicIds = topics.stream()
                     .map(Topic::getId)
                     .toList();
             deletableTopicIds = topicRepository.findDeletableTopicIds(topicIds, userId);
+            likedTopicIds = topicLikeRepository.findLikedTopicIds(topicIds, userId);
         }
 
         Long totalCount = null;
@@ -130,7 +132,7 @@ public class TopicService {
             totalCount = topicRepository.countByMeetingIdAndDeletedAtIsNull(meetingId);
         }
 
-        return TopicsWithActionsResponse.from(topics, pageSize, hasNext, deletableTopicIds, actions, totalCount);
+        return TopicsWithActionsResponse.from(topics, pageSize, hasNext, deletableTopicIds, likedTopicIds, actions, totalCount);
     }
 
     @Transactional
