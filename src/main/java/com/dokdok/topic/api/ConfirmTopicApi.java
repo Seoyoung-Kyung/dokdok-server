@@ -47,7 +47,7 @@ public interface ConfirmTopicApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ConfirmedTopicsResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code":"SUCCESS","message":"확정된 주제 조회를 완료했습니다.","data":{"page":{"items":[{"topicId":10,"title":"데미안에서 '자기 자신'이란?","description":"주제에 대한 간단한 설명입니다.","topicType":"DISCUSSION","confirmOrder":1,"createdByInfo":{"userId":1,"nickname":"독서왕"}}],"pageSize":10,"hasNext":false,"nextCursor":null,"totalCount":1},"actions":{"canViewPreOpinions":true,"canWritePreOpinions":false}}}
+                                    {"code":"SUCCESS","message":"확정된 주제 조회를 완료했습니다.","data":{"items":[{"topicId":10,"title":"데미안에서 '자기 자신'이란?","description":"주제에 대한 간단한 설명입니다.","topicType":"DISCUSSION","topicTypeLabel":"토론형","likeCount":5,"confirmOrder":1,"createdByInfo":{"userId":1,"nickname":"독서왕"}}],"pageSize":10,"hasNext":false,"nextCursor":null,"totalCount":1,"actions":{"canViewPreOpinions":true,"canWritePreOpinions":false}}}
                                     """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
