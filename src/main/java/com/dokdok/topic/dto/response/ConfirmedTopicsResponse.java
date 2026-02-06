@@ -3,12 +3,15 @@ package com.dokdok.topic.dto.response;
 import com.dokdok.global.response.CursorResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicType;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
+@JsonPropertyOrder({"items", "pageSize", "hasNext", "nextCursor", "totalCount", "actions"})
 @Schema(description = "확정된 주제 목록 응답")
 public record ConfirmedTopicsResponse(
-        @Schema(description = "확정된 주제 목록 페이지 정보")
+        @JsonUnwrapped
         CursorResponse<ConfirmedTopicDto, ConfirmedTopicsCursor> page,
         @Schema(description = "사전 의견 관련 권한 정보")
         Actions actions
@@ -35,6 +38,10 @@ public record ConfirmedTopicsResponse(
             String description,
             @Schema(description = "주제 타입", example = "DISCUSSION")
             TopicType topicType,
+            @Schema(description = "주제 타입 라벨", example = "토론형")
+            String topicTypeLabel,
+            @Schema(description = "좋아요 수", example = "5")
+            Integer likeCount,
             @Schema(description = "확정 순서", example = "1")
             Integer confirmOrder,
             @Schema(description = "주제 제안자 정보")
@@ -46,6 +53,8 @@ public record ConfirmedTopicsResponse(
                     .title(topic.getTitle())
                     .description(topic.getDescription())
                     .topicType(topic.getTopicType())
+                    .topicTypeLabel(topic.getTopicType().getDisplayName())
+                    .likeCount(topic.getLikeCount())
                     .confirmOrder(topic.getConfirmOrder())
                     .createdByInfo(
                             CreatedByInfo.of(
