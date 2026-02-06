@@ -5,6 +5,7 @@ import com.dokdok.global.response.CursorResponse;
 import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
 import com.dokdok.retrospective.dto.response.CommentCursor;
 import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
+import com.dokdok.retrospective.dto.response.TopicCommentCursorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -130,7 +131,7 @@ public interface MeetingRetrospectiveApi {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CursorResponse.class),
+                            schema = @Schema(implementation = TopicCommentCursorResponse.class),
                             examples = @ExampleObject(value = """                                                                                                                
                                       {
                                         "code": "SUCCESS",
