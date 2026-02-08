@@ -7,10 +7,7 @@ import com.dokdok.topic.service.PreOpinionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,7 +27,7 @@ public class PreOpinionController implements PreOpinionApi {
     }
 
     @Override
-    @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Void>> deleteMyAnswer(
             @PathVariable("gatheringId") Long gatheringId,
             @PathVariable("meetingId") Long meetingId
