@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class TopicAnswerService {
@@ -120,21 +122,4 @@ public class TopicAnswerService {
         return TopicAnswerSubmitResponse.from(answer);
     }
 
-    @Transactional
-    public void deleteMyAnswer(
-            Long gatheringId,
-            Long meetingId,
-            Long topicId
-    ) {
-        Long userId = SecurityUtil.getCurrentUserId();
-
-        gatheringValidator.validateGathering(gatheringId);
-        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
-        meetingValidator.validateMeetingMember(meetingId, userId);
-        topicValidator.validateTopicInMeeting(topicId, meetingId);
-
-        TopicAnswer answer = topicValidator.getTopicAnswer(topicId, userId);
-
-        answer.softDelete();
-    }
 }

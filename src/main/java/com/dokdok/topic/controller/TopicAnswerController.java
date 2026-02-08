@@ -71,16 +71,4 @@ public class TopicAnswerController implements TopicAnswerApi {
 
         return ApiResponse.success(response, "답변이 제출되었습니다.");
     }
-
-    @Override
-    public ResponseEntity<ApiResponse<Void>> deleteMyAnswer(
-            @PathVariable("gatheringId") Long gatheringId,
-            @PathVariable("meetingId") Long meetingId,
-            @PathVariable("topicId") Long topicId
-    ) {
-
-        topicAnswerService.deleteMyAnswer(gatheringId, meetingId, topicId);
-
-        return ApiResponse.deleted("내 답변이 삭제되었습니다.");
-    }
 }

@@ -226,43 +226,4 @@ public interface TopicAnswerApi {
             @PathVariable("topicId") Long topicId
     );
 
-    @Operation(
-            summary = "내 토픽 답변 삭제 (developer: 경서영)",
-            description = """
-            현재 로그인 사용자의 토픽 답변을 삭제합니다.
-            - 권한: 모임 구성원
-            """,
-            parameters = {
-                    @Parameter(name = "gatheringId", description = "모임 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "topicId", description = "토픽 식별자", in = ParameterIn.PATH, required = true)
-            }
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "내 토픽 답변 삭제 성공"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 멤버가 아님",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            examples = @ExampleObject(value = """
-                                    {"code": "G002", "message": "모임의 멤버가 아닙니다.", "data": null}
-                                    """))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "답변을 찾을 수 없음",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            examples = @ExampleObject(value = """
-                                    {"code": "E103", "message": "답변을 찾을 수 없습니다.", "data": null}
-                                    """))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류",
-                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            examples = @ExampleObject(value = """
-                                    {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
-                                    """)))
-    })
-    @DeleteMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<ApiResponse<Void>> deleteMyAnswer(
-            @PathVariable("gatheringId") Long gatheringId,
-            @PathVariable("meetingId") Long meetingId,
-            @PathVariable("topicId") Long topicId
-    );
 }

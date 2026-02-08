@@ -58,6 +58,22 @@ public class PreOpinionService {
         return new PreOpinionResponse(topicInfos, preOpinionData);
     }
 
+    @Transactional
+    public void deleteMyAnswer(
+            Long gatheringId,
+            Long meetingId
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        gatheringValidator.validateGathering(gatheringId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
+        meetingValidator.validateMeetingMember(meetingId, userId);
+
+        List<TopicAnswer> topicAnswers = topicValidator.getTopicAnswers(meetingId, userId);
+
+        topicAnswers.forEach(TopicAnswer::softDelete);
+    }
+
     private void validateAccess(Long gatheringId, Long meetingId, Long userId) {
         gatheringValidator.validateGathering(gatheringId);
         meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
@@ -157,7 +173,7 @@ public class PreOpinionService {
         String role = resolveRole(mm, maps.gatheringRoleByUserId());
 
         PreOpinionResponse.MemberInfo memberInfo
-                = PreOpinionResponse.MemberInfo.of(memberId, user.getNickname(), presignedUrl, role);
+                = PreOpinionResponse.MemberInfo.of(user.getId(), user.getNickname(), presignedUrl, role);
 
         BookReview review = maps.bookReviewByUserId().get(memberId);
         BookReviewInfo bookReviewInfo = review != null
