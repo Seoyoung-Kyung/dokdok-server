@@ -92,4 +92,16 @@ public interface TopicAnswerRepository extends JpaRepository<TopicAnswer, Long> 
             """
     )
     List<TopicAnswer> findByMeetingId(Long meetingId);
+
+    @Query("""
+        SELECT ta
+        FROM TopicAnswer ta
+        JOIN FETCH ta.topic t
+        WHERE ta.user.id = :userId
+            AND t.meeting.id = :meetingId
+    """)
+    List<TopicAnswer> findByTopicAnswers(
+            @Param("meetingId") Long meetingId,
+            @Param("userId") Long userId
+    );
 }

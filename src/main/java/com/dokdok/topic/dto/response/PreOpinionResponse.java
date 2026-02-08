@@ -69,8 +69,8 @@ public record PreOpinionResponse(
 
     @Schema(description = "멤버 정보")
     public record MemberInfo(
-            @Schema(description = "멤버 ID", example = "1")
-            Long memberId,
+            @Schema(description = "사용자 ID", example = "1")
+            Long userId,
 
             @Schema(description = "닉네임", example = "독서왕")
             String nickname,
@@ -82,12 +82,12 @@ public record PreOpinionResponse(
             String role
     ) {
         public static MemberInfo of(
-                Long memberId,
+                Long userId,
                 String nickname,
                 String profileImage,
                 String role
         ) {
-            return new MemberInfo(memberId, nickname, profileImage, role);
+            return new MemberInfo(userId, nickname, profileImage, role);
         }
     }
 

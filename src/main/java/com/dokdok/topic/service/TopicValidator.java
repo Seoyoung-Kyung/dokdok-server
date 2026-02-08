@@ -66,6 +66,22 @@ public class TopicValidator {
                 .orElseThrow(() -> new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
     }
 
+    public List<TopicAnswer> getTopicAnswers(Long meetingId, Long userId) {
+        List<TopicAnswer> topicAnswers = topicAnswerRepository.findByTopicAnswers(meetingId, userId);
+
+        if(topicAnswers.isEmpty()) {
+            throw new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND);
+        }
+
+        boolean allDeleted = topicAnswers.stream().allMatch(TopicAnswer::isDeleted);
+
+        if (allDeleted) {
+            throw new TopicException(TopicErrorCode.TOPIC_ANSWER_ALREADY_DELETED);
+        }
+
+        return topicAnswers;
+    }
+
     /**
      * 주제에 대한 삭제 권한 검증한다
      * 권한 소유 : 모임장, 약속장, 주제 제안자

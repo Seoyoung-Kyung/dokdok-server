@@ -9,6 +9,7 @@ import com.dokdok.gathering.entity.GatheringMember;
 import com.dokdok.gathering.entity.GatheringRole;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.service.GatheringValidator;
+import com.dokdok.global.exception.GlobalException;
 import com.dokdok.keyword.entity.Keyword;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingMemberRole;
@@ -19,6 +20,8 @@ import com.dokdok.topic.dto.response.PreOpinionResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.entity.TopicType;
+import com.dokdok.topic.exception.TopicErrorCode;
+import com.dokdok.topic.exception.TopicException;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
@@ -40,12 +43,13 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PreOpinionServiceTest {
@@ -238,7 +242,7 @@ class PreOpinionServiceTest {
 
         // user1 answered -> sorted first
         PreOpinionResponse.MemberPreOpinion member1Opinion = response.members().get(0);
-        assertThat(member1Opinion.memberInfo().memberId()).isEqualTo(1L);
+        assertThat(member1Opinion.memberInfo().userId()).isEqualTo(1L);
         assertThat(member1Opinion.memberInfo().role()).isEqualTo("GATHERING_LEADER");
         assertThat(member1Opinion.bookReview()).isNotNull();
         assertThat(member1Opinion.topicOpinions()).isNotEmpty();
@@ -246,7 +250,7 @@ class PreOpinionServiceTest {
 
         // user2 did not answer -> sorted last
         PreOpinionResponse.MemberPreOpinion member2Opinion = response.members().get(1);
-        assertThat(member2Opinion.memberInfo().memberId()).isEqualTo(2L);
+        assertThat(member2Opinion.memberInfo().userId()).isEqualTo(2L);
         assertThat(member2Opinion.memberInfo().role()).isEqualTo("MEMBER");
         assertThat(member2Opinion.bookReview()).isNull();
         assertThat(member2Opinion.topicOpinions()).isEmpty();
@@ -296,9 +300,9 @@ class PreOpinionServiceTest {
 
         // then - ordered: member3 (earliest) -> member1 (second) -> member2 (no answer)
         assertThat(response.members()).hasSize(3);
-        assertThat(response.members().get(0).memberInfo().memberId()).isEqualTo(3L);
-        assertThat(response.members().get(1).memberInfo().memberId()).isEqualTo(1L);
-        assertThat(response.members().get(2).memberInfo().memberId()).isEqualTo(2L);
+        assertThat(response.members().get(0).memberInfo().userId()).isEqualTo(3L);
+        assertThat(response.members().get(1).memberInfo().userId()).isEqualTo(1L);
+        assertThat(response.members().get(2).memberInfo().userId()).isEqualTo(2L);
     }
 
     @Test
@@ -450,5 +454,116 @@ class PreOpinionServiceTest {
                 .orElseThrow();
         assertThat(ki2.name()).isEqualTo("감동적인");
         assertThat(ki2.type()).isEqualTo(KeywordType.IMPRESSION);
+    }
+
+
+    @Test
+    @DisplayName("내 사전의견 전체 삭제 시 모든 답변에 softDelete가 호출된다")
+    void deleteMyAnswer_callsSoftDeleteOnAll() {
+        Topic topic1 = Topic.builder().id(12L).build();
+        Topic topic2 = Topic.builder().id(13L).build();
+        User user = User.builder().id(1L).build();
+        TopicAnswer answer1 = TopicAnswer.builder()
+                .id(100L).topic(topic1).user(user).content("답변1").isSubmitted(false).build();
+        TopicAnswer answer2 = TopicAnswer.builder()
+                .id(101L).topic(topic2).user(user).content("답변2").isSubmitted(false).build();
+
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doNothing().when(meetingValidator).validateMeetingInGathering(1L, 1L);
+        doNothing().when(meetingValidator).validateMeetingMember(1L, 1L);
+        given(topicValidator.getTopicAnswers(1L, 1L)).willReturn(List.of(answer1, answer2));
+
+        preOpinionService.deleteMyAnswer(1L, 1L);
+
+        assertThat(answer1.isDeleted()).isTrue();
+        assertThat(answer2.isDeleted()).isTrue();
+    }
+
+    @Test
+    @DisplayName("모임 검증 실패 시 답변 삭제가 실패한다")
+    void deleteMyAnswer_throwsWhenGatheringValidationFails() {
+        doThrow(new com.dokdok.gathering.exception.GatheringException(
+                com.dokdok.gathering.exception.GatheringErrorCode.GATHERING_NOT_FOUND))
+                .when(gatheringValidator).validateGathering(1L);
+
+        assertThatThrownBy(() -> preOpinionService.deleteMyAnswer(1L, 1L))
+                .isInstanceOf(com.dokdok.gathering.exception.GatheringException.class);
+
+        verifyNoInteractions(topicAnswerRepository);
+    }
+
+    @Test
+    @DisplayName("미팅 검증 실패 시 답변 삭제가 실패한다")
+    void deleteMyAnswer_throwsWhenMeetingValidationFails() {
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doThrow(new com.dokdok.meeting.exception.MeetingException(
+                com.dokdok.meeting.exception.MeetingErrorCode.MEETING_NOT_FOUND))
+                .when(meetingValidator).validateMeetingInGathering(1L, 1L);
+
+        assertThatThrownBy(() -> preOpinionService.deleteMyAnswer(1L, 1L))
+                .isInstanceOf(com.dokdok.meeting.exception.MeetingException.class);
+
+        verifyNoInteractions(topicAnswerRepository);
+    }
+
+    @Test
+    @DisplayName("미팅 멤버 검증 실패 시 답변 삭제가 실패한다")
+    void deleteMyAnswer_throwsWhenMeetingMemberValidationFails() {
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doNothing().when(meetingValidator).validateMeetingInGathering(1L, 1L);
+        doThrow(new com.dokdok.meeting.exception.MeetingException(
+                com.dokdok.meeting.exception.MeetingErrorCode.MEETING_MEMBER_NOT_FOUND))
+                .when(meetingValidator).validateMeetingMember(1L, 1L);
+
+        assertThatThrownBy(() -> preOpinionService.deleteMyAnswer(1L, 1L))
+                .isInstanceOf(com.dokdok.meeting.exception.MeetingException.class);
+
+        verifyNoInteractions(topicAnswerRepository);
+    }
+
+    @Test
+    @DisplayName("답변이 없으면 삭제 시 예외가 발생한다")
+    void deleteMyAnswer_throwsWhenAnswerNotFound() {
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doNothing().when(meetingValidator).validateMeetingInGathering(1L, 1L);
+        doNothing().when(meetingValidator).validateMeetingMember(1L, 1L);
+        given(topicValidator.getTopicAnswers(1L, 1L))
+                .willThrow(new TopicException(TopicErrorCode.TOPIC_ANSWER_NOT_FOUND));
+
+        assertThatThrownBy(() -> preOpinionService.deleteMyAnswer(1L, 1L))
+                .isInstanceOf(TopicException.class);
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 답변은 다시 삭제할 수 없다")
+    void deleteMyAnswer_throwsWhenAlreadyDeleted() {
+        Topic topic = Topic.builder().id(12L).build();
+        User user = User.builder().id(1L).build();
+        TopicAnswer answer = TopicAnswer.builder()
+                .id(100L)
+                .topic(topic)
+                .user(user)
+                .content("삭제된 내용")
+                .isSubmitted(false)
+                .build();
+        answer.softDelete();
+
+        doNothing().when(gatheringValidator).validateGathering(1L);
+        doNothing().when(meetingValidator).validateMeetingInGathering(1L, 1L);
+        doNothing().when(meetingValidator).validateMeetingMember(1L, 1L);
+        given(topicValidator.getTopicAnswers(1L, 1L)).willReturn(List.of(answer));
+
+        assertThatThrownBy(() -> preOpinionService.deleteMyAnswer(1L, 1L))
+                .isInstanceOf(TopicException.class)
+                .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_ANSWER_ALREADY_DELETED);
+    }
+
+    @Test
+    @DisplayName("인증 정보가 없으면 삭제 시 예외가 발생한다")
+    void deleteMyAnswer_throwsWhenUnauthenticated() {
+        SecurityContextHolder.clearContext();
+
+        assertThatThrownBy(() -> preOpinionService.deleteMyAnswer(1L, 1L))
+                .isInstanceOf(GlobalException.class);
     }
 }

@@ -28,4 +28,15 @@ public class PreOpinionController implements PreOpinionApi {
         PreOpinionResponse response = preOpinionService.findPreOpinions(gatheringId, meetingId);
         return ApiResponse.success(response, "약속의 사전 의견 목록 조회를 성공했습니다.");
     }
+
+    @Override
+    public ResponseEntity<ApiResponse<Void>> deleteMyAnswer(
+            @PathVariable("gatheringId") Long gatheringId,
+            @PathVariable("meetingId") Long meetingId
+    ) {
+
+        preOpinionService.deleteMyAnswer(gatheringId, meetingId);
+
+        return ApiResponse.deleted("내 사전의견이 삭제되었습니다.");
+    }
 }
