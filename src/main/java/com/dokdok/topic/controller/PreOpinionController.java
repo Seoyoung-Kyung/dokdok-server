@@ -30,6 +30,7 @@ public class PreOpinionController implements PreOpinionApi {
     }
 
     @Override
+    @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<Void>> deleteMyAnswer(
             @PathVariable("gatheringId") Long gatheringId,
             @PathVariable("meetingId") Long meetingId
