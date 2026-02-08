@@ -155,7 +155,7 @@ public interface TopicAnswerRepository extends JpaRepository<TopicAnswer, Long> 
           WHERE t.meeting.id = :meetingId
           AND ta.isSubmitted = true
           AND u.id IN :userIds
-          ORDER BY u.id ASC, t.id ASC
+          ORDER BY u.id ASC, t.confirmOrder ASC NULLS LAST, t.id ASC
           """)
     List<TopicAnswer> findSubmittedAnswersByMeetingIdAndUserIds(
             @Param("meetingId") Long meetingId,

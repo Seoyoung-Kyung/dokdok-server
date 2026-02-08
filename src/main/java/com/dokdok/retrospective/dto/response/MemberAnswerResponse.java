@@ -24,7 +24,10 @@ public record MemberAnswerResponse(
             Long topicId,
 
             @Schema(description = "주제 제목", example = "가짜욕망 유사욕망")
-            String topicTitle,
+            String title,
+
+            @Schema(description = "확정 순서", example = "1")
+            Integer confirmOrder,
 
             @Schema(description = "답변 ID",example = "101")
             Long answerId,
