@@ -44,7 +44,7 @@ public interface PreOpinionApi {
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = PreOpinionResponse.class),
                             examples = @ExampleObject(value = """
-                                    {"code":"SUCCESS","message":"약속의 사전 의견 목록 조회를 성공했습니다.","data":{"topics":[{"topicId":1,"topicName":"책의 주요 메시지","topicDescription":"이 책에서 전달하고자 하는 핵심 메시지는 무엇인가요?","topicType":"토론","confirmOrder":1}],"members":[{"memberInfo":{"memberId":1,"nickname":"독서왕","profileImage":"https://example.com/profile.jpg"},"bookReview":{"rating":4.5,"bookKeywords":["성장","관계"],"impressionKeywords":["여운이 남는","즐거운"]},"topicOpinions":[{"topicId":1,"content":"저는 이 책의 핵심 메시지가 자기 성찰이라고 생각합니다."}]}]}}
+                                    {"code":"SUCCESS","message":"약속의 사전 의견 목록 조회를 성공했습니다.","data":{"topics":[{"topicId":1,"title":"책의 주요 메시지","description":"이 책에서 전달하고자 하는 핵심 메시지는 무엇인가요?","topicType":"DISCUSSION","topicTypeLabel":"DISCUSSION","confirmOrder":1}],"members":[{"memberInfo":{"memberId":1,"nickname":"독서왕","profileImage":"https://example.com/profile.jpg"},"bookReview":{"rating":4.5,"bookKeywords":["성장","관계"],"impressionKeywords":["여운이 남는","즐거운"]},"topicOpinions":[{"topicId":1,"content":"저는 이 책의 핵심 메시지가 자기 성찰이라고 생각합니다."}]}]}}
                                     """))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

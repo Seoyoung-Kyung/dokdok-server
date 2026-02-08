@@ -2,6 +2,7 @@ package com.dokdok.topic.dto.response;
 
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
+import com.dokdok.topic.entity.TopicType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -22,13 +23,17 @@ public record PreOpinionResponse(
             Long topicId,
 
             @Schema(description = "주제명", example = "책의 주요 메시지")
-            String topicName,
+            String title,
 
             @Schema(description = "주제 설명", example = "이 책에서 전달하고자 하는 핵심 메시지는 무엇인가요?")
-            String topicDescription,
+            String description,
 
-            @Schema(description = "주제 타입", example = "토론")
-            String topicType,
+            @Schema(description = "주제 타입", example = "DISCUSSION",
+                    allowableValues = {"FREE", "DISCUSSION", "EMOTION", "EXPERIENCE", "CHARACTER_ANALYSIS", "COMPARISON", "STRUCTURE", "IN_DEPTH", "CREATIVE", "CUSTOM"})
+            TopicType topicType,
+
+            @Schema(description = "주제 타입 라벨", example = "토론형")
+            String topicTypeLabel,
 
             @Schema(description = "주제 순서", example = "1")
             Integer confirmOrder
@@ -38,6 +43,7 @@ public record PreOpinionResponse(
                     topic.getId(),
                     topic.getTitle(),
                     topic.getDescription(),
+                    topic.getTopicType(),
                     topic.getTopicType().getDisplayName(),
                     topic.getConfirmOrder()
             );
