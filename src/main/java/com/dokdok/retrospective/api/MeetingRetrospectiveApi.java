@@ -362,13 +362,15 @@ public interface MeetingRetrospectiveApi {
                                           "topics": [
                                             {
                                               "topicId": 1,
-                                              "topicTitle": "가짜욕망, 유사 욕망",
+                                              "title": "가짜욕망, 유사 욕망",
+                                              "confirmOrder": 1,
                                               "answerId": 101,
                                               "content": "어쩌구 저쩌구..."
                                             },
                                             {
                                               "topicId": 2,
-                                              "topicTitle": "진정한 자아 찾기",
+                                              "title": "진정한 자아 찾기",
+                                              "confirmOrder": 2,
                                               "answerId": 102,
                                               "content": "저쩌구 어쩌구..."
                                             }
@@ -381,7 +383,8 @@ public interface MeetingRetrospectiveApi {
                                           "topics": [
                                             {
                                               "topicId": 1,
-                                              "topicTitle": "가짜욕망, 유사 욕망",
+                                              "title": "가짜욕망, 유사 욕망",
+                                              "confirmOrder": 1,
                                               "answerId": 103,
                                               "content": "내 생각은..."
                                             }
