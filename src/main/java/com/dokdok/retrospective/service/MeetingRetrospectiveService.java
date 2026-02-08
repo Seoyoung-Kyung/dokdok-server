@@ -259,6 +259,7 @@ public class MeetingRetrospectiveService {
                             .map(ta -> new MemberAnswerResponse.TopicAnswerItem(
                                     ta.getTopic().getId(),
                                     ta.getTopic().getTitle(),
+                                    ta.getTopic().getConfirmOrder(),
                                     ta.getId(),
                                     ta.getContent()
                             ))
