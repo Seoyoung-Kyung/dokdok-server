@@ -5,8 +5,7 @@ import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
-import com.dokdok.retrospective.dto.response.CommentCursor;
-import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
+import com.dokdok.retrospective.dto.response.*;
 import com.dokdok.retrospective.entity.MeetingRetrospective;
 import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
 import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
@@ -15,7 +14,9 @@ import com.dokdok.retrospective.repository.RetrospectiveRepository;
 import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.storage.service.StorageService;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.entity.TopicStatus;
+import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.entity.User;
@@ -42,6 +43,7 @@ public class MeetingRetrospectiveService {
     private final MeetingValidator meetingValidator;
     private final TopicValidator topicValidator;
     private final StorageService storageService;
+    private final TopicAnswerRepository topicAnswerRepository;
 
     /**
      * 공동 회고 조회 ( 토픽 정보 + 요약 + 키포인트, 코멘트 제외 )
@@ -185,5 +187,98 @@ public class MeetingRetrospectiveService {
         }
         MeetingRetrospective lastComment = comments.get(comments.size() - 1);
         return CommentCursor.from(lastComment);
+    }
+
+    /**
+     * 수집된 사전 의견 조회 (멤버별 그룹화, 커서 기반 무한 스크롤)
+     */
+    public CursorResponse<MemberAnswerResponse, CollectedAnswersCursor> getCollectedAnswers(
+            Long meetingId,
+            int pageSize,
+            Long cursorUserId) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+
+        meetingValidator.validateMeetingLeader(meeting, userId);
+
+        return fetchCollectedAnswers(meetingId, pageSize, cursorUserId);
+    }
+
+    private CursorResponse<MemberAnswerResponse, CollectedAnswersCursor> fetchCollectedAnswers(
+            Long meetingId,
+            int pageSize,
+            Long cursorUserId) {
+        Pageable pageable = PageRequest.of(0, pageSize + 1);
+        boolean isFirstPage = cursorUserId == null;
+
+        // 1. userId 목록 조회 (pageSize + 1개)
+        List<Long> userIds = isFirstPage
+                ? topicAnswerRepository.findDistinctUserIdsByMeetingIdFirstPage(meetingId, pageable)
+                : topicAnswerRepository.findDistinctUserIdsByMeetingIdAfterCursor(meetingId, cursorUserId, pageable);
+
+        // 2. hasNext 판단
+        boolean hasNext = userIds.size() > pageSize;
+        List<Long> pageUserIds = hasNext
+                ? userIds.subList(0, pageSize)
+                : userIds;
+
+        // 3. 해당 userId들의 답변 조회
+        List<TopicAnswer> answers = pageUserIds.isEmpty()
+                ? List.of()
+                : topicAnswerRepository.findSubmittedAnswersByMeetingIdAndUserIds(meetingId, pageUserIds);
+
+        // 4. 멤버별로 그룹화하여 Response 생성
+        List<MemberAnswerResponse> items = buildMemberAnswerResponses(answers, pageUserIds);
+
+        // 5. 커서 및 totalCount 생성
+        CollectedAnswersCursor nextCursor = buildCollectedAnswersCursor(pageUserIds, hasNext);
+        Integer totalCount = isFirstPage
+                ? topicAnswerRepository.countSubmittedAnswersByMeetingId(meetingId)
+                : null;
+
+        return CursorResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
+    }
+
+    private List<MemberAnswerResponse> buildMemberAnswerResponses(
+            List<TopicAnswer> answers,
+            List<Long> orderedUserIds
+    ) {
+        // userId -> 답변 목록 그룹화
+        Map<Long, List<TopicAnswer>> answersByUserId = answers.stream()
+                .collect(Collectors.groupingBy(ta -> ta.getUser().getId()));
+
+        // userId 순서 유지하며 Response 생성
+        return orderedUserIds.stream()
+                .filter(answersByUserId::containsKey)
+                .map(uid -> {
+                    List<TopicAnswer> userAnswers = answersByUserId.get(uid);
+                    User user = userAnswers.get(0).getUser();
+                    String presignedUrl = storageService.getPresignedProfileImage(user.getProfileImageUrl());
+
+                    List<MemberAnswerResponse.TopicAnswerItem> topics = userAnswers.stream()
+                            .map(ta -> new MemberAnswerResponse.TopicAnswerItem(
+                                    ta.getTopic().getId(),
+                                    ta.getTopic().getTitle(),
+                                    ta.getId(),
+                                    ta.getContent()
+                            ))
+                            .toList();
+
+                    return new MemberAnswerResponse(
+                            user.getId(),
+                            user.getNickname(),
+                            presignedUrl,
+                            topics
+                    );
+                })
+                .toList();
+    }
+
+    private CollectedAnswersCursor buildCollectedAnswersCursor(List<Long> userIds, boolean hasNext) {
+        if (!hasNext || userIds.isEmpty()) {
+            return null;
+        }
+        Long lastUserId = userIds.get(userIds.size() - 1);
+        return CollectedAnswersCursor.from(lastUserId);
     }
 }

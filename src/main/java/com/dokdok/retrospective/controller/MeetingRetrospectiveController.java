@@ -4,8 +4,10 @@ import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.response.CursorResponse;
 import com.dokdok.retrospective.api.MeetingRetrospectiveApi;
 import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
+import com.dokdok.retrospective.dto.response.CollectedAnswersCursor;
 import com.dokdok.retrospective.dto.response.CommentCursor;
 import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
+import com.dokdok.retrospective.dto.response.MemberAnswerResponse;
 import com.dokdok.retrospective.service.MeetingRetrospectiveService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -66,5 +68,17 @@ public class MeetingRetrospectiveController implements MeetingRetrospectiveApi {
         meetingRetrospectiveService.deleteMeetingRetrospective(meetingId, meetingRetrospectiveId);
 
         return ApiResponse.deleted("공동 회고 코멘트 삭제 완료");
+    }
+
+    @Override
+    @GetMapping("/collected-answers")
+    public ResponseEntity<ApiResponse<CursorResponse<MemberAnswerResponse, CollectedAnswersCursor>>> getCollectedAnswers(
+            @PathVariable Long meetingId,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) Long cursorUserId
+    ) {
+        CursorResponse<MemberAnswerResponse, CollectedAnswersCursor> response =
+                meetingRetrospectiveService.getCollectedAnswers(meetingId, pageSize, cursorUserId);
+        return ApiResponse.success(response, "수집된 사전 의견 조회 성공");
     }
 }
