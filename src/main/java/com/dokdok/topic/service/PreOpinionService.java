@@ -2,17 +2,21 @@ package com.dokdok.topic.service;
 
 import com.dokdok.book.entity.BookReview;
 import com.dokdok.book.entity.BookReviewKeyword;
-import com.dokdok.book.entity.KeywordType;
 import com.dokdok.book.repository.BookReviewKeywordRepository;
 import com.dokdok.book.repository.BookReviewRepository;
+import com.dokdok.gathering.entity.GatheringMember;
+import com.dokdok.gathering.entity.GatheringRole;
+import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.MeetingMember;
+import com.dokdok.meeting.entity.MeetingMemberRole;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.storage.service.StorageService;
 import com.dokdok.topic.dto.response.PreOpinionResponse;
 import com.dokdok.topic.dto.response.PreOpinionResponse.BookReviewInfo;
+import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
@@ -20,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,6 +34,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PreOpinionService {
 
+    private final GatheringMemberRepository gatheringMemberRepository;
     private final GatheringValidator gatheringValidator;
     private final MeetingValidator meetingValidator;
     private final TopicValidator topicValidator;
@@ -46,7 +53,7 @@ public class PreOpinionService {
         List<PreOpinionResponse.TopicInfo> topicInfos = buildTopicInfos(meetingId);
         List<MeetingMember> meetingMembers = meetingMemberRepository.findAllByMeetingId(meetingId);
 
-        List<PreOpinionResponse.MemberPreOpinion> preOpinionData = buildPreOpinionData(meetingId, meetingMembers);
+        List<PreOpinionResponse.MemberPreOpinion> preOpinionData = buildPreOpinionData(gatheringId, meetingId, meetingMembers);
 
         return new PreOpinionResponse(topicInfos, preOpinionData);
     }
@@ -64,20 +71,39 @@ public class PreOpinionService {
                 .toList();
     }
 
-    private List<PreOpinionResponse.MemberPreOpinion> buildPreOpinionData(Long meetingId, List<MeetingMember> meetingMembers) {
+    private List<PreOpinionResponse.MemberPreOpinion> buildPreOpinionData(Long gatheringId, Long meetingId, List<MeetingMember> meetingMembers) {
+        PreOpinionMaps maps = fetchPreOpinionMaps(gatheringId, meetingId, meetingMembers);
+        return assembleMembers(meetingMembers, maps);
+    }
+
+    private record PreOpinionMaps(
+            Map<Long, GatheringRole> gatheringRoleByUserId,
+            Map<Long, BookReview> bookReviewByUserId,
+            Map<Long, List<BookReviewKeyword>> keywordsByReviewId,
+            Map<Long, List<PreOpinionResponse.TopicOpinion>> topicAnswersByUserId,
+            Map<Long, LocalDateTime> earliestAnswerByUserId
+    ) {}
+
+    private PreOpinionMaps fetchPreOpinionMaps(Long gatheringId, Long meetingId, List<MeetingMember> meetingMembers) {
         List<Long> userIds = meetingMembers.stream()
                 .map(mm -> mm.getUser().getId())
                 .toList();
 
-        // 모든 멤버의 책 평가 일괄 조회
-        Map<Long, BookReview> bookReviewByUserId = bookReviewRepository.findByUserIdIn(userIds).stream()
+        Map<Long, GatheringRole> gatheringRoleByUserId = gatheringMemberRepository
+                .findAllMembersByGatheringId(gatheringId).stream()
+                .collect(Collectors.toMap(
+                        gm -> gm.getUser().getId(),
+                        GatheringMember::getRole,
+                        (existing, replacement) -> existing
+                ));
+
+        Map<Long, BookReview> bookReviewByUserId = bookReviewRepository.findByUserIdIn(userIds, meetingId).stream()
                 .collect(Collectors.toMap(
                         br -> br.getUser().getId(),
                         br -> br,
                         (existing, replacement) -> existing
                 ));
 
-        // 책 평가별 키워드 일괄 조회
         List<Long> bookReviewIds = bookReviewByUserId.values().stream()
                 .map(BookReview::getId)
                 .toList();
@@ -85,9 +111,10 @@ public class PreOpinionService {
                 .findByBookReviewIds(bookReviewIds).stream()
                 .collect(Collectors.groupingBy(k -> k.getBookReview().getId()));
 
-        // 주제 답변 일괄 조회
+        List<TopicAnswer> allTopicAnswers = topicAnswerRepository.findByMeetingId(meetingId);
+
         Map<Long, List<PreOpinionResponse.TopicOpinion>> topicAnswersByUserId =
-                topicAnswerRepository.findByMeetingId(meetingId).stream()
+                allTopicAnswers.stream()
                         .collect(Collectors.groupingBy(
                                 ta -> ta.getUser().getId(),
                                 Collectors.mapping(
@@ -96,47 +123,90 @@ public class PreOpinionService {
                                 )
                         ));
 
+        Map<Long, LocalDateTime> earliestAnswerByUserId = allTopicAnswers.stream()
+                .collect(Collectors.toMap(
+                        ta -> ta.getUser().getId(),
+                        TopicAnswer::getCreatedAt,
+                        (a, b) -> a.isBefore(b) ? a : b
+                ));
 
-        return meetingMembers.stream()
-                .map(mm -> {
-                    User user = mm.getUser();
-                    Long memberId = user.getId();
-
-                    String presignedUrl = storageService.getPresignedProfileImage(user.getProfileImageUrl());
-                    PreOpinionResponse.MemberInfo memberInfo
-                            = PreOpinionResponse.MemberInfo.of(memberId, user.getNickname(), presignedUrl);
-
-                    BookReview review = bookReviewByUserId.get(memberId);
-                    BookReviewInfo bookReviewInfo = review != null
-                            ? toBookReviewInfo(review, keywordsByReviewId)
-                            : null;
-
-                    List<PreOpinionResponse.TopicOpinion> topicAnswers = topicAnswersByUserId.getOrDefault(memberId, List.of());
-
-                    return new PreOpinionResponse.MemberPreOpinion(memberInfo, bookReviewInfo, topicAnswers);
-                })
-                .toList();
-    }
-
-    private BookReviewInfo toBookReviewInfo(
-            BookReview bookReview,
-            Map<Long, List<BookReviewKeyword>> keywordsByReviewId) {
-        List<BookReviewKeyword> reviewKeywords =
-                keywordsByReviewId.getOrDefault(bookReview.getId(), List.of());
-        Map<KeywordType, List<String>> keywordMap = toKeywordMap(reviewKeywords);
-
-        return BookReviewInfo.of(
-                bookReview.getRating(),
-                keywordMap.getOrDefault(KeywordType.BOOK, List.of()),
-                keywordMap.getOrDefault(KeywordType.IMPRESSION, List.of())
+        return new PreOpinionMaps(
+                gatheringRoleByUserId,
+                bookReviewByUserId,
+                keywordsByReviewId,
+                topicAnswersByUserId,
+                earliestAnswerByUserId
         );
     }
 
-    private Map<KeywordType, List<String>> toKeywordMap(List<BookReviewKeyword> keywords) {
-        return keywords.stream()
-                .collect(Collectors.groupingBy(
-                        k -> k.getKeyword().getKeywordType(),
-                        Collectors.mapping(k -> k.getKeyword().getKeywordName(), Collectors.toList())
-                ));
+    private List<PreOpinionResponse.MemberPreOpinion> assembleMembers(List<MeetingMember> meetingMembers, PreOpinionMaps maps) {
+        return meetingMembers.stream()
+                .sorted(Comparator.comparing(
+                        (MeetingMember mm) -> maps.earliestAnswerByUserId().getOrDefault(
+                                mm.getUser().getId(), LocalDateTime.MAX)
+                ))
+                .map(mm -> toMemberPreOpinion(mm, maps))
+                .toList();
+    }
+
+    private PreOpinionResponse.MemberPreOpinion toMemberPreOpinion(MeetingMember mm, PreOpinionMaps maps) {
+        User user = mm.getUser();
+        Long memberId = user.getId();
+
+        String presignedUrl = storageService.getPresignedProfileImage(user.getProfileImageUrl());
+        String role = resolveRole(mm, maps.gatheringRoleByUserId());
+
+        PreOpinionResponse.MemberInfo memberInfo
+                = PreOpinionResponse.MemberInfo.of(memberId, user.getNickname(), presignedUrl, role);
+
+        BookReview review = maps.bookReviewByUserId().get(memberId);
+        BookReviewInfo bookReviewInfo = review != null
+                ? toBookReviewInfo(review, maps.keywordsByReviewId())
+                : null;
+
+        List<PreOpinionResponse.TopicOpinion> topicAnswers = maps.topicAnswersByUserId().getOrDefault(memberId, List.of());
+
+        return new PreOpinionResponse.MemberPreOpinion(memberInfo, bookReviewInfo, topicAnswers, maps.topicAnswersByUserId().containsKey(memberId));
+    }
+
+    /**
+     * 모임장 / 약속장 구별을 위한 메서드
+     */
+    private String resolveRole(MeetingMember mm, Map<Long, GatheringRole> gatheringRoleByUserId) {
+        Long userId = mm.getUser().getId();
+        GatheringRole gatheringRole = gatheringRoleByUserId.get(userId);
+
+        if (gatheringRole == GatheringRole.LEADER) {
+            return "GATHERING_LEADER";
+        }
+        if (mm.getMeetingRole() == MeetingMemberRole.LEADER) {
+            return "MEETING_LEADER";
+        }
+        return "MEMBER";
+    }
+
+    /**
+     * 멤버들의 책 리뷰 조회
+     * - 사전의견을 발행하지 않은 사용자는 책 평가도 반환하지 않음
+     */
+    private BookReviewInfo toBookReviewInfo(
+            BookReview bookReview,
+            Map<Long, List<BookReviewKeyword>> keywordsByReviewId
+    ) {
+        List<BookReviewKeyword> reviewKeywords =
+                keywordsByReviewId.getOrDefault(bookReview.getId(), List.of());
+
+        List<PreOpinionResponse.KeywordInfo> keywordInfos = reviewKeywords.stream()
+                .map(rk -> PreOpinionResponse.KeywordInfo.of(
+                        rk.getKeyword().getId(),
+                        rk.getKeyword().getKeywordName(),
+                        rk.getKeyword().getKeywordType()
+                ))
+                .toList();
+
+        return BookReviewInfo.of(
+                bookReview.getRating(),
+                keywordInfos
+        );
     }
 }
