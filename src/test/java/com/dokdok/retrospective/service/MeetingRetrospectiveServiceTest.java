@@ -3,6 +3,7 @@ package com.dokdok.retrospective.service;
 import com.dokdok.gathering.entity.Gathering;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.exception.MeetingErrorCode;
@@ -10,7 +11,9 @@ import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.oauth2.CustomOAuth2User;
 import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
+import com.dokdok.retrospective.dto.response.CollectedAnswersCursor;
 import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
+import com.dokdok.retrospective.dto.response.MemberAnswerResponse;
 import com.dokdok.retrospective.entity.MeetingRetrospective;
 import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
 import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
@@ -19,7 +22,9 @@ import com.dokdok.retrospective.repository.RetrospectiveRepository;
 import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.storage.service.StorageService;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.entity.TopicStatus;
+import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.entity.User;
@@ -30,6 +35,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,6 +62,9 @@ class MeetingRetrospectiveServiceTest {
 
 	@Mock
 	private StorageService storageService;
+
+	@Mock
+	private TopicAnswerRepository topicAnswerRepository;
 
 	@InjectMocks
 	private MeetingRetrospectiveService meetingRetrospectiveService;
@@ -365,6 +374,46 @@ class MeetingRetrospectiveServiceTest {
 					.hasFieldOrPropertyWithValue("errorCode", GatheringErrorCode.NOT_GATHERING_LEADER);
 
 			verify(retrospectiveRepository, never()).delete(any());
+		}
+	}
+
+	@Test
+	@DisplayName("수집된 사전 의견 조회 - 첫 페이지")
+	void getCollectedAnswers_firstPage_success() {
+		Long meetingId = 1L;
+		Long userId = 1L;
+		int pageSize = 1;
+
+		User leader = User.builder().id(userId).nickname("리더").profileImageUrl("leader.jpg").build();
+		Meeting meeting = Meeting.builder().id(meetingId).meetingLeader(leader).build();
+		Topic topic = Topic.builder().id(10L).title("주제").build();
+		TopicAnswer answer = TopicAnswer.builder()
+				.id(100L)
+				.topic(topic)
+				.user(leader)
+				.content("답변")
+				.isSubmitted(true)
+				.build();
+
+		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+			securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+			when(meetingValidator.findMeetingOrThrow(meetingId)).thenReturn(meeting);
+			when(topicAnswerRepository.findDistinctUserIdsByMeetingIdFirstPage(eq(meetingId), any(Pageable.class)))
+					.thenReturn(List.of(userId, 2L));
+			when(topicAnswerRepository.findSubmittedAnswersByMeetingIdAndUserIds(meetingId, List.of(userId)))
+					.thenReturn(List.of(answer));
+			when(topicAnswerRepository.countSubmittedAnswersByMeetingId(meetingId)).thenReturn(2);
+			when(storageService.getPresignedProfileImage("leader.jpg")).thenReturn("leader.jpg");
+
+			CursorResponse<MemberAnswerResponse, CollectedAnswersCursor> response =
+					meetingRetrospectiveService.getCollectedAnswers(meetingId, pageSize, null);
+
+			assertThat(response.items()).hasSize(1);
+			assertThat(response.items().get(0).userId()).isEqualTo(userId);
+			assertThat(response.hasNext()).isTrue();
+			assertThat(response.nextCursor().userId()).isEqualTo(userId);
+			assertThat(response.totalCount()).isEqualTo(2);
 		}
 	}
 }
