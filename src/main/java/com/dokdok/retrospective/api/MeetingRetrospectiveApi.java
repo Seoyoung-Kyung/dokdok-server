@@ -3,9 +3,7 @@ package com.dokdok.retrospective.api;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.response.CursorResponse;
 import com.dokdok.retrospective.dto.request.MeetingRetrospectiveRequest;
-import com.dokdok.retrospective.dto.response.CommentCursor;
-import com.dokdok.retrospective.dto.response.MeetingRetrospectiveResponse;
-import com.dokdok.retrospective.dto.response.TopicCommentCursorResponse;
+import com.dokdok.retrospective.dto.response.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -331,5 +329,129 @@ public interface MeetingRetrospectiveApi {
     ResponseEntity<ApiResponse<Void>> deleteMeetingRetrospective(
             @PathVariable Long meetingId,
             @PathVariable Long meetingRetrospectiveId
+    );
+
+    @Operation(
+            summary = "수집된 사전 의견 조회 (developer: 오주현)",
+            description = """                                                                                                                                                        
+                  약속 회고 생성 화면에서 멤버별로 그룹화된 사전 의견을 조회합니다.
+                  - 권한: 약속장만 조회 가능
+                  - 커서 기반 무한스크롤을 지원합니다.
+                  - 첫 페이지: cursorUserId 없이 호출
+                  - 다음 페이지: 응답의 nextCursor.userId 값을 cursorUserId로 전달
+                  - 정렬: userId ASC
+                  """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "수집된 사전 의견 조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = CollectedAnswersCursorResponse.class),
+                            examples = @ExampleObject(value = """                                                                                                                    
+                                  {
+                                    "code": "SUCCESS",
+                                    "message": "수집된 사전 의견 조회 성공",
+                                    "data": {
+                                      "items": [
+                                        {
+                                          "userId": 1,
+                                          "nickname": "곰곰",
+                                          "profileImageUrl": "https://example.com/profile.jpg",
+                                          "topics": [
+                                            {
+                                              "topicId": 1,
+                                              "title": "가짜욕망, 유사 욕망",
+                                              "confirmOrder": 1,
+                                              "answerId": 101,
+                                              "content": "어쩌구 저쩌구..."
+                                            },
+                                            {
+                                              "topicId": 2,
+                                              "title": "진정한 자아 찾기",
+                                              "confirmOrder": 2,
+                                              "answerId": 102,
+                                              "content": "저쩌구 어쩌구..."
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "userId": 2,
+                                          "nickname": "독서왕",
+                                          "profileImageUrl": "https://example.com/profile2.jpg",
+                                          "topics": [
+                                            {
+                                              "topicId": 1,
+                                              "title": "가짜욕망, 유사 욕망",
+                                              "confirmOrder": 1,
+                                              "answerId": 103,
+                                              "content": "내 생각은..."
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "pageSize": 10,
+                                      "hasNext": true,
+                                      "nextCursor": {
+                                        "userId": 2
+                                      },
+                                      "totalCount": 8
+                                    }
+                                  }
+                                  """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """                                                                                                                    
+                                  {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                  """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 약속장만 조회할 수 있습니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """                                                                                                                    
+                                  {"code": "M003", "message": "약속장만 가능한 작업입니다.", "data": null}
+                                  """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "약속을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """                                                                                                                    
+                                  {"code": "M001", "message": "약속을 찾을 수 없습니다.", "data": null}
+                                  """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """                                                                                                                    
+                                  {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                  """)
+                    )
+            )
+    })
+    @GetMapping("/collected-answers")
+    ResponseEntity<ApiResponse<CursorResponse<MemberAnswerResponse, CollectedAnswersCursor>>> getCollectedAnswers(
+            @Parameter(description = "약속 ID", required = true, example = "1")
+            @PathVariable Long meetingId,
+
+            @Parameter(description = "페이지 크기", example = "10")
+            @RequestParam(defaultValue = "10") int pageSize,
+
+            @Parameter(description = "커서 - 마지막 멤버의 userId", example = "2")
+            @RequestParam(required = false) Long cursorUserId
     );
 }
