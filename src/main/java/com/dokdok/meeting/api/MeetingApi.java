@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
@@ -56,6 +57,7 @@ public interface MeetingApi {
                                         "book": {
                                           "bookId": 1,
                                           "bookName": "클린 코드",
+                                          "authors": "로버트 C. 마틴",
                                           "thumbnail": "https://example.com/thumb.jpg"
                                         },
                                         "schedule": {
@@ -120,7 +122,7 @@ public interface MeetingApi {
             summary = "약속 생성 신청 (developer: 김윤영)",
             description = """
             모임 구성원이 약속 생성을 신청합니다.
-            - 입력: 약속 제목(미입력 시 책 제목), 책 제목*, 약속 일시*, 최대 인원 수(null 허용), 장소 정보(null 허용)
+            - 입력: 약속 제목(미입력 시 책 제목), 책 정보(제목/저자/출판사/ISBN/썸네일), 약속 일시*, 최대 인원 수(null 허용), 장소 정보(null 허용)
             - 권한: 해당 모임의 구성원
             """
     )
@@ -144,7 +146,8 @@ public interface MeetingApi {
                                         },
                                         "book": {
                                           "bookId": 1,
-                                          "bookName": "클린 코드"
+                                          "bookName": "클린 코드",
+                                          "thumbnail": "https://example.com/thumb.jpg"
                                         },
                                         "schedule": {
                                           "date": "2025-02-01",
@@ -190,6 +193,31 @@ public interface MeetingApi {
                                     """)))
     })
     ResponseEntity<ApiResponse<MeetingResponse>> createMeeting(
+            @RequestBody(
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "gatheringId": 1,
+                                      "book": {
+                                        "title": "클린 코드",
+                                        "authors": "로버트 C. 마틴",
+                                        "publisher": "인사이트",
+                                        "isbn": "9788966260959",
+                                        "thumbnail": "https://example.com/thumb.jpg"
+                                      },
+                                      "meetingName": "1월 독서 모임",
+                                      "meetingStartDate": "2025-02-01T14:00:00",
+                                      "meetingEndDate": "2025-02-01T16:00:00",
+                                      "maxParticipants": 10,
+                                      "location": {
+                                        "name": "강남 스터디룸 A",
+                                        "address": "서울 강남구 ...",
+                                        "latitude": 37.4979,
+                                        "longitude": 127.0276
+                                      }
+                                    }
+                                    """))
+            )
             MeetingCreateRequest request
     );
 

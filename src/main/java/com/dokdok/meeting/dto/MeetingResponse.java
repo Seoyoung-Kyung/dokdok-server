@@ -78,13 +78,16 @@ public record MeetingResponse(
             Long bookId,
 
             @Schema(description = "책 이름", example = "클린 코드")
-            String bookName
+            String bookName,
+
+            @Schema(description = "책 썸네일 URL", example = "https://example.com/thumb.jpg")
+            String thumbnail
     ) {
         public static BookInfo from(Book book) {
             if (book == null) {
                 return null;
             }
-            return new BookInfo(book.getId(), book.getBookName());
+            return new BookInfo(book.getId(), book.getBookName(), book.getThumbnail());
         }
     }
 
