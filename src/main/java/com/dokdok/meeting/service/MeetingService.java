@@ -5,7 +5,6 @@ import com.dokdok.book.entity.Book;
 import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
-import com.dokdok.book.service.BookService;
 import com.dokdok.book.service.BookValidator;
 import com.dokdok.book.service.PersonalBookService;
 import com.dokdok.gathering.entity.Gathering;
@@ -106,8 +105,17 @@ public class MeetingService {
         Gathering gathering = gatheringRepository.findById(request.gatheringId())
                 .orElseThrow(() -> new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND));
 
-        Book book = bookRepository.findById(request.bookId())
-                .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_FOUND));
+        Book book = bookRepository.findByIsbn(request.book().isbn())
+                .orElseGet(() -> {
+                    BookCreateRequest bookCreateRequest = new BookCreateRequest(
+                            request.book().title(),
+                            request.book().authors(),
+                            request.book().publisher(),
+                            request.book().isbn(),
+                            request.book().thumbnail()
+                    );
+                    return bookRepository.save(bookCreateRequest.of());
+                });
 
         User user = userValidator.findUserOrThrow(userId);
 
@@ -146,6 +154,7 @@ public class MeetingService {
         ensureLeaderMember(meeting);
 
         meeting.changeStatus(MeetingStatus.CONFIRMED);
+        saveMeetingBookForUser(meeting, meeting.getGathering(), meeting.getMeetingLeader().getId());
 
         return MeetingStatusResponse.from(meeting);
     }
@@ -258,12 +267,19 @@ public class MeetingService {
      * 약속 참가 신청 성공 시 책장에 등록한다.
      */
     private void saveMeetingBook(Meeting meeting, Gathering gathering) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        saveMeetingBookForUser(meeting, gathering, userId);
+    }
+
+    /**
+     * 특정 사용자 책장에 약속 책을 등록한다.
+     */
+    private void saveMeetingBookForUser(Meeting meeting, Gathering gathering, Long userId) {
         Book book = meeting.getBook();
         if (book == null) {
             throw new BookException(BookErrorCode.BOOK_NOT_FOUND);
         }
 
-        Long userId = SecurityUtil.getCurrentUserId();
         if (bookValidator.isDuplicatePersonalBook(userId, book.getId())) {
             return;
         }

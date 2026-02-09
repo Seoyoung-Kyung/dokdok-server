@@ -1,8 +1,6 @@
 package com.dokdok.meeting.service;
 
 import com.dokdok.book.entity.Book;
-import com.dokdok.book.exception.BookErrorCode;
-import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
 import com.dokdok.book.service.BookValidator;
 import com.dokdok.book.service.PersonalBookService;
@@ -120,6 +118,7 @@ class MeetingServiceTest {
                 .meetingEndDate(LocalDateTime.now().plusDays(2).plusHours(1))
                 .meetingLeader(leader)
                 .gathering(gathering)
+                .book(sampleBook())
                 .build();
     }
 
@@ -350,14 +349,21 @@ class MeetingServiceTest {
     void givenMeetingCreateRequest_whenCreateMeeting_thenMeetingResponse() {
         // given
         Long gatheringId = 3L;
-        Long bookId = 12L;
         Long userId = 7L;
+        String title = "book";
+        String authors = "author";
+        String publisher = "publisher";
+        String isbn = "9781234567890";
+        String thumbnail = "https://example.com/thumb.jpg";
+        MeetingCreateRequest.BookInfo bookInfo = new MeetingCreateRequest.BookInfo(
+                title, authors, publisher, isbn, thumbnail
+        );
         LocalDateTime startDate = LocalDateTime.of(2024, 1, 20, 20, 0);
         LocalDateTime endDate = LocalDateTime.of(2024, 1, 20, 22, 0);
         int memberCount = 5;
         MeetingCreateRequest request = MeetingCreateRequest.builder()
                 .gatheringId(gatheringId)
-                .bookId(bookId)
+                .book(bookInfo)
                 .meetingName(null)
                 .meetingStartDate(startDate)
                 .meetingEndDate(endDate)
@@ -377,8 +383,12 @@ class MeetingServiceTest {
                 .build();
 
         Book book = Book.builder()
-                .id(bookId)
-                .bookName("book")
+                .id(12L)
+                .bookName(title)
+                .author(authors)
+                .publisher(publisher)
+                .isbn(isbn)
+                .thumbnail(thumbnail)
                 .build();
 
         Meeting savedMeeting = Meeting.builder()
@@ -397,7 +407,7 @@ class MeetingServiceTest {
                 .willReturn(Optional.of(gathering));
         given(gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(gatheringId))
                 .willReturn(memberCount);
-        given(bookRepository.findById(bookId))
+        given(bookRepository.findByIsbn(isbn))
                 .willReturn(Optional.of(book));
         given(userValidator.findUserOrThrow(userId))
                 .willReturn(user);
@@ -426,8 +436,12 @@ class MeetingServiceTest {
         // given
         Long gatheringId = 3L;
         Long userId = 7L;
+        MeetingCreateRequest.BookInfo bookInfo = new MeetingCreateRequest.BookInfo(
+                "book", "author", "publisher", "9781234567890", "https://example.com/thumb.jpg"
+        );
         MeetingCreateRequest request = MeetingCreateRequest.builder()
                 .gatheringId(gatheringId)
+                .book(bookInfo)
                 .build();
 
         given(gatheringRepository.findById(gatheringId))
@@ -444,16 +458,28 @@ class MeetingServiceTest {
         }
     }
 
-    @DisplayName("책을 찾지 못하면 약속 생성 요청이 실패한다.")
+    @DisplayName("책이 없으면 새로 생성해 약속을 생성한다.")
     @Test
-    void givenMissingBook_whenCreateMeeting_thenThrowBookException() {
+    void givenMissingBook_whenCreateMeeting_thenCreateBook() {
         // given
         Long gatheringId = 3L;
-        Long bookId = 12L;
         Long userId = 7L;
+        String title = "book";
+        String authors = "author";
+        String publisher = "publisher";
+        String isbn = "9781234567890";
+        String thumbnail = "https://example.com/thumb.jpg";
+        LocalDateTime startDate = LocalDateTime.of(2024, 1, 20, 20, 0);
+        LocalDateTime endDate = LocalDateTime.of(2024, 1, 20, 22, 0);
+        MeetingCreateRequest.BookInfo bookInfo = new MeetingCreateRequest.BookInfo(
+                title, authors, publisher, isbn, thumbnail
+        );
         MeetingCreateRequest request = MeetingCreateRequest.builder()
                 .gatheringId(gatheringId)
-                .bookId(bookId)
+                .book(bookInfo)
+                .meetingStartDate(startDate)
+                .meetingEndDate(endDate)
+                .maxParticipants(1)
                 .build();
 
         given(gatheringRepository.findById(gatheringId))
@@ -462,17 +488,49 @@ class MeetingServiceTest {
                         .gatheringName("gathering")
                         .invitationLink("link")
                         .build()));
-        given(bookRepository.findById(bookId))
+        given(gatheringMemberRepository.countByGatheringIdAndRemovedAtIsNull(gatheringId))
+                .willReturn(5);
+        given(bookRepository.findByIsbn(isbn))
                 .willReturn(Optional.empty());
+        given(bookRepository.save(any(Book.class)))
+                .willAnswer(invocation -> {
+                    Book saved = invocation.getArgument(0);
+                    return Book.builder()
+                            .id(12L)
+                            .bookName(saved.getBookName())
+                            .author(saved.getAuthor())
+                            .publisher(saved.getPublisher())
+                            .isbn(saved.getIsbn())
+                            .thumbnail(saved.getThumbnail())
+                            .build();
+                });
+        given(userValidator.findUserOrThrow(userId))
+                .willReturn(User.builder().id(userId).nickname("leader").build());
+        given(meetingRepository.save(any(Meeting.class)))
+                .willAnswer(invocation -> {
+                    Meeting meeting = invocation.getArgument(0);
+                    return Meeting.builder()
+                            .id(25L)
+                            .gathering(meeting.getGathering())
+                            .book(meeting.getBook())
+                            .meetingLeader(meeting.getMeetingLeader())
+                            .meetingName(meeting.getMeetingName())
+                            .meetingStatus(meeting.getMeetingStatus())
+                            .maxParticipants(meeting.getMaxParticipants())
+                            .meetingStartDate(meeting.getMeetingStartDate())
+                            .meetingEndDate(meeting.getMeetingEndDate())
+                            .build();
+                });
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
-            // when + then
-            assertThatThrownBy(() -> meetingService.createMeeting(request))
-                    .isInstanceOf(BookException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(BookErrorCode.BOOK_NOT_FOUND);
+            // when
+            MeetingResponse response = meetingService.createMeeting(request);
+
+            // then
+            assertThat(response.meetingId()).isEqualTo(25L);
+            assertThat(response.book().bookName()).isEqualTo(title);
         }
     }
 

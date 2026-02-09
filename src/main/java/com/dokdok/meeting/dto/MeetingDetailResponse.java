@@ -191,6 +191,9 @@ public record MeetingDetailResponse(
             @Schema(description = "책 이름", example = "클린 코드")
             String bookName,
 
+            @Schema(description = "저자", example = "로버트 C. 마틴")
+            String authors,
+
             @Schema(description = "책 썸네일 URL", example = "https://example.com/thumb.jpg")
             String thumbnail
     ) {
@@ -198,7 +201,7 @@ public record MeetingDetailResponse(
             if (book == null) {
                 return null;
             }
-            return new BookInfo(book.getId(), book.getBookName(), book.getThumbnail());
+            return new BookInfo(book.getId(), book.getBookName(), book.getAuthor(), book.getThumbnail());
         }
     }
 
