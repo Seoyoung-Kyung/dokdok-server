@@ -262,7 +262,7 @@ class PersonalBookServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         LocalDateTime addedAt = LocalDateTime.now();
         String thumbnail = "thumbnail-url";
-        String gatheringName = "독서 모임";
+        String gatherings = "[{\"gatheringId\":5,\"gatheringName\":\"독서 모임\"}]";
         BookReadingStatus readingStatus = BookReadingStatus.READING;
 
         User user = User.builder()
@@ -311,8 +311,13 @@ class PersonalBookServiceTest {
             }
 
             @Override
-            public String getGatheringName() {
-                return gatheringName;
+            public java.math.BigDecimal getRating() {
+                return new java.math.BigDecimal("4.5");
+            }
+
+            @Override
+            public String getGatherings() {
+                return gatherings;
             }
 
             @Override
@@ -344,7 +349,9 @@ class PersonalBookServiceTest {
         assertThat(response.authors()).isEqualTo(book.getAuthor());
         assertThat(response.bookReadingStatus()).isEqualTo(readingStatus);
         assertThat(response.thumbnail()).isEqualTo(thumbnail);
-        assertThat(response.gatheringName()).isEqualTo(gatheringName);
+        assertThat(response.rating()).isEqualByComparingTo("4.5");
+        assertThat(response.gatherings()).hasSize(1);
+        assertThat(response.gatherings().getFirst().gatheringName()).isEqualTo("독서 모임");
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
