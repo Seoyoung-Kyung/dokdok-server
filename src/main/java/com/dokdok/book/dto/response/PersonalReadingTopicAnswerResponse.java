@@ -9,6 +9,10 @@ import java.util.List;
 public record PersonalReadingTopicAnswerResponse(
         @Schema(description = "응답 타입", example = "PRE_OPINION")
         String type,
+        @Schema(description = "모임 ID", example = "10")
+        Long gatheringId,
+        @Schema(description = "약속 ID", example = "25")
+        Long meetingId,
         @Schema(description = "모임명", example = "책책책 책을 읽자")
         String gatheringName,
         @Schema(description = "공유일", example = "2026-01-05T21:38:00")
