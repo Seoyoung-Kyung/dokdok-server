@@ -549,7 +549,6 @@ public interface PersonalBookRecordApi {
                     독서 기록의 사전 의견 정보를 조회합니다.
                     - 경로의 personalBookId로 책을 지정합니다.
                     - 로그인한 사용자 기준으로 본인 사전 의견만 조회됩니다.
-                    - 응답의 gatheringId/meetingId로 사전 의견 삭제 API 호출에 사용할 식별자를 제공합니다.
                     """
     )
     @ApiResponses({
@@ -564,8 +563,6 @@ public interface PersonalBookRecordApi {
                                       "message": "사전 의견 조회 성공",
                                       "data": {
                                         "type": "PRE_OPINION",
-                                        "gatheringId": 10,
-                                        "meetingId": 25,
                                         "gatheringName": "책책책 책을 읽자",
                                         "sharedAt": "2026-01-05T21:38:00",
                                         "topics": [

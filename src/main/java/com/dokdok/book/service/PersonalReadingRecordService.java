@@ -201,8 +201,6 @@ public class PersonalReadingRecordService {
 
         return new PersonalReadingTopicAnswerResponse(
                 "PRE_OPINION",
-                meeting.getGathering().getId(),
-                meeting.getId(),
                 meeting.getGathering().getGatheringName(),
                 meeting.getMeetingStartDate(),
                 items
