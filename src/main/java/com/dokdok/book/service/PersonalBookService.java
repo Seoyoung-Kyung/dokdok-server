@@ -170,6 +170,20 @@ public class PersonalBookService {
         personalBookRepository.delete(personalBook);
     }
 
+    @Transactional
+    public void deleteBooks(List<Long> bookIds) {
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+
+        List<Long> distinctBookIds = bookIds.stream()
+                .distinct()
+                .toList();
+
+        for (Long bookId : distinctBookIds) {
+            PersonalBook personalBook = bookValidator.validateInBookShelf(userEntity.getId(), bookId);
+            personalBookRepository.delete(personalBook);
+        }
+    }
+
     /**
      * 약속 참가 취소시에 PersonalBook에 들어가 있는 책을 삭제한다.
      * @param bookId 책 식별자

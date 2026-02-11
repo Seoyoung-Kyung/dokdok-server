@@ -1,6 +1,7 @@
 package com.dokdok.book.api;
 
 import com.dokdok.book.dto.request.BookCreateRequest;
+import com.dokdok.book.dto.request.BookBulkDeleteRequest;
 import com.dokdok.book.dto.request.PersonalBookSortBy;
 import com.dokdok.book.dto.request.PersonalBookSortOrder;
 import com.dokdok.book.dto.response.*;
@@ -546,6 +547,105 @@ public interface BookApi {
     ResponseEntity<ApiResponse<Void>> deleteMyBook(
             @Parameter(description = "삭제할 책 ID (book 테이블 PK)", required = true, example = "10")
             @PathVariable Long bookId
+    );
+
+    @Operation(
+            summary = "내 책장에서 책 일괄 삭제 (developer: 권우희)",
+            description = """
+                    내 책장에 등록된 책 여러 권을 한 번에 삭제합니다.
+                    - 로그인한 사용자 소유의 책만 삭제할 수 있습니다.
+                    - 요청 본문의 bookIds 배열에 삭제할 book ID 목록을 전달합니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "책 일괄 삭제 성공",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = Void.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "DELETED",
+                                              "message": "책 일괄 삭제 성공",
+                                              "data": null
+                                            }
+                                            """
+                            ))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "G002",
+                                              "message": "입력값이 올바르지 않습니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "G102",
+                                              "message": "인증이 필요합니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "책을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "B003",
+                                              "message": "책장에 해당 책이 존재하지 않습니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @io.swagger.v3.oas.annotations.media.ExampleObject(
+                                    value = """
+                                            {
+                                              "code": "E000",
+                                              "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.",
+                                              "data": null
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    @DeleteMapping
+    ResponseEntity<ApiResponse<Void>> deleteMyBooks(
+            @Parameter(description = "일괄 삭제할 책 ID 목록", required = true)
+            @Valid @RequestBody BookBulkDeleteRequest request
     );
 
     @Operation(

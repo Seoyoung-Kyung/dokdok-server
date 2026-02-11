@@ -1,6 +1,7 @@
 package com.dokdok.book.controller;
 
 import com.dokdok.book.api.BookApi;
+import com.dokdok.book.dto.request.BookBulkDeleteRequest;
 import com.dokdok.book.dto.request.BookCreateRequest;
 import com.dokdok.book.dto.request.PersonalBookSortBy;
 import com.dokdok.book.dto.request.PersonalBookSortOrder;
@@ -84,6 +85,13 @@ public class BookController implements BookApi {
     public ResponseEntity<ApiResponse<Void>> deleteMyBook(@PathVariable Long bookId) {
         personalBookService.deleteBook(bookId);
         return ApiResponse.deleted("책 삭제 성공");
+    }
+
+    @Override
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteMyBooks(@Valid @RequestBody BookBulkDeleteRequest request) {
+        personalBookService.deleteBooks(request.bookIds());
+        return ApiResponse.deleted("책 일괄 삭제 성공");
     }
 
 
