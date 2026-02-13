@@ -1,5 +1,6 @@
 package com.dokdok.meeting.repository;
 
+import com.dokdok.gathering.repository.GatheringCountProjection;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingStatus;
 import org.springframework.data.domain.Page;
@@ -112,5 +113,15 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
             WHERE m.id IN :meetingIds
             """)
     List<Meeting> findByIdInWithGathering(@Param("meetingIds") List<Long> meetingIds);
+
+    /**
+     * 여러 모임의 완료된 미팅 수를 한번에 조회
+     */
+    @Query("SELECT m.gathering.id AS gatheringId, COUNT (m) AS count " +
+            "FROM Meeting m " +
+            "WHERE m.gathering.id IN :gatheringIds " +
+            "AND m.meetingStatus = :status " +
+            "GROUP BY m.gathering.id")
+    List<GatheringCountProjection> countByGatheringIdsAndStatus(@Param("gatheringIds") List<Long> gatheringIds, @Param("status") MeetingStatus status);
 
 }
