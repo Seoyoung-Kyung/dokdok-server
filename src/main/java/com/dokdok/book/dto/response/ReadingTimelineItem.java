@@ -20,7 +20,7 @@ public record ReadingTimelineItem(
         @Schema(description = "개인 회고 데이터 (type=PERSONAL_RETROSPECTIVE)")
         RetrospectiveRecordResponse retrospective,
         @Schema(description = "사전 의견 데이터 (type=PRE_OPINION)")
-        PersonalReadingTopicAnswerResponse preOpinion
+        ReadingTimelinePreOpinionResponse preOpinion
 ) {
     public static ReadingTimelineItem readingRecord(
             LocalDateTime eventAt,
@@ -55,7 +55,7 @@ public record ReadingTimelineItem(
     public static ReadingTimelineItem preOpinion(
             LocalDateTime eventAt,
             Long sourceId,
-            PersonalReadingTopicAnswerResponse preOpinion
+            ReadingTimelinePreOpinionResponse preOpinion
     ) {
         return new ReadingTimelineItem(
                 ReadingTimelineType.PRE_OPINION,

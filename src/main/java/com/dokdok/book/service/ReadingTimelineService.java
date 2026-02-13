@@ -117,7 +117,7 @@ public class ReadingTimelineService {
                 fetchReadingRecords(readingRecordIds, personalBookId, userId);
         Map<Long, RetrospectiveRecordResponse> retrospectiveMap =
                 fetchRetrospectives(retrospectiveIds, userId);
-        Map<Long, PersonalReadingTopicAnswerResponse> preOpinionMap =
+        Map<Long, ReadingTimelinePreOpinionResponse> preOpinionMap =
                 fetchPreOpinions(meetingIds, userId);
 
         List<ReadingTimelineItem> items = pageRows.stream()
@@ -223,7 +223,7 @@ public class ReadingTimelineService {
         return map;
     }
 
-    private Map<Long, PersonalReadingTopicAnswerResponse> fetchPreOpinions(
+    private Map<Long, ReadingTimelinePreOpinionResponse> fetchPreOpinions(
             List<Long> meetingIds,
             Long userId
     ) {
@@ -250,7 +250,7 @@ public class ReadingTimelineService {
                     .put(answer.getTopic().getId(), answer);
         }
 
-        Map<Long, PersonalReadingTopicAnswerResponse> map = new HashMap<>();
+        Map<Long, ReadingTimelinePreOpinionResponse> map = new HashMap<>();
         for (Long meetingId : meetingIds) {
             Meeting meeting = meetingMap.get(meetingId);
             if (meeting == null) {
@@ -264,8 +264,8 @@ public class ReadingTimelineService {
                     .toList();
 
             Map<Long, TopicAnswer> answerMap = answersByMeeting.getOrDefault(meetingId, Map.of());
-            List<PersonalReadingTopicAnswerResponse.TopicAnswerInfo> items = meetingTopics.stream()
-                    .map(topic -> new PersonalReadingTopicAnswerResponse.TopicAnswerInfo(
+            List<ReadingTimelinePreOpinionResponse.TopicAnswerInfo> items = meetingTopics.stream()
+                    .map(topic -> new ReadingTimelinePreOpinionResponse.TopicAnswerInfo(
                             topic.getTitle(),
                             topic.getDescription(),
                             topic.getConfirmOrder(),
@@ -275,8 +275,10 @@ public class ReadingTimelineService {
                     ))
                     .toList();
 
-            PersonalReadingTopicAnswerResponse response = new PersonalReadingTopicAnswerResponse(
+            ReadingTimelinePreOpinionResponse response = new ReadingTimelinePreOpinionResponse(
                     "PRE_OPINION",
+                    meeting.getGathering().getId(),
+                    meeting.getId(),
                     meeting.getGathering().getGatheringName(),
                     meeting.getMeetingStartDate(),
                     items

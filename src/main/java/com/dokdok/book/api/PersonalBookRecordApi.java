@@ -616,6 +616,7 @@ public interface PersonalBookRecordApi {
                     독서 기록/사전 의견/개인 회고를 하나의 타임라인으로 커서 기반 조회합니다.
                     - personalBook의 gatheringId가 null이면 사전 의견/회고는 제외됩니다.
                     - 사전 의견(PRE_OPINION)은 **내 답변이 있는 미팅만** 포함합니다.
+                    - PRE_OPINION의 preOpinion 객체에는 gatheringId/meetingId가 포함됩니다.
                     - 정렬: eventAt DESC, typeOrder DESC, sourceId DESC
                     - preOpinionTime: 사전 의견 정렬 기준 (MEETING_START | ANSWER_CREATED, 기본값 ANSWER_CREATED)
 
