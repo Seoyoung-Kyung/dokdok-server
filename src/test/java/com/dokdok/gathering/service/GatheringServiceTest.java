@@ -309,7 +309,7 @@ class GatheringServiceTest {
 		List<GatheringMember> favoriteMembers = List.of(member1, member2);
 
 		given(gatheringMemberRepository.findFavoriteGatheringsByUserId(userId)).willReturn(favoriteMembers);
-		given(gatheringMemberRepository.countActiveMembersByGatheringIds(List.of(1L, 2L)))
+		given(gatheringMemberRepository.countActiveMembersByGatherings(List.of(1L, 2L)))
 				.willReturn(List.of(
 						createCountProjection(1L, 1L),
 						createCountProjection(2L, 1L)
@@ -348,7 +348,7 @@ class GatheringServiceTest {
 
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
 		verify(gatheringMemberRepository, times(1)).findFavoriteGatheringsByUserId(eq(userId));
-		verify(gatheringMemberRepository, times(1)).countActiveMembersByGatheringIds(List.of(1L, 2L));
+		verify(gatheringMemberRepository, times(1)).countActiveMembersByGatherings(List.of(1L, 2L));
 		verify(meetingRepository, times(1)).countByGatheringIdsAndStatus(List.of(1L, 2L), MeetingStatus.DONE);
 	}
 
@@ -380,7 +380,7 @@ class GatheringServiceTest {
 
 		securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
 		verify(gatheringMemberRepository, times(1)).findFavoriteGatheringsByUserId(eq(userId));
-		verify(gatheringMemberRepository, times(0)).countActiveMembersByGatheringIds(any());
+		verify(gatheringMemberRepository, times(0)).countActiveMembersByGatherings(any());
 		verify(meetingRepository, times(0)).countByGatheringIdsAndStatus(any(), any());
 	}
 
@@ -416,7 +416,7 @@ class GatheringServiceTest {
 		given(gatheringMemberRepository.findMyGatheringsFirstPage(eq(userId), any(Pageable.class)))
 				.willReturn(members);
 		given(gatheringMemberRepository.countMyGatherings(userId)).willReturn(2);
-		given(gatheringMemberRepository.countActiveMembersByGatheringIds(List.of(1L, 2L)))
+		given(gatheringMemberRepository.countActiveMembersByGatherings(List.of(1L, 2L)))
 				.willReturn(List.of(
 						createCountProjection(1L, 1L),
 						createCountProjection(2L, 1L)
@@ -439,7 +439,7 @@ class GatheringServiceTest {
 		assertThat(response.nextCursor()).isNull();
 
 		verify(gatheringMemberRepository).findMyGatheringsFirstPage(eq(userId), any(Pageable.class));
-		verify(gatheringMemberRepository).countActiveMembersByGatheringIds(List.of(1L, 2L));
+		verify(gatheringMemberRepository).countActiveMembersByGatherings(List.of(1L, 2L));
 		verify(meetingRepository).countByGatheringIdsAndStatus(List.of(1L, 2L), MeetingStatus.DONE);
 	}
 
@@ -477,7 +477,7 @@ class GatheringServiceTest {
 				.willReturn(members);
 		given(gatheringMemberRepository.countMyGatherings(userId)).willReturn(2);
 		// pageSize=1이므로 pageMembers는 member1만 포함, gatheringIds = List.of(1L)
-		given(gatheringMemberRepository.countActiveMembersByGatheringIds(List.of(1L)))
+		given(gatheringMemberRepository.countActiveMembersByGatherings(List.of(1L)))
 				.willReturn(List.of(createCountProjection(1L, 1L)));
 		given(meetingRepository.countByGatheringIdsAndStatus(List.of(1L), MeetingStatus.DONE))
 				.willReturn(List.of(createCountProjection(1L, 0L)));
