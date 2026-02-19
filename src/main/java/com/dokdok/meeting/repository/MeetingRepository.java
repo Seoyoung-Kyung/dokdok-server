@@ -21,6 +21,23 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
   
     boolean existsByGatheringIdAndMeetingStatus(Long gatheringId, MeetingStatus meetingStatus);
 
+    @Query("""
+            SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END
+            FROM Meeting m
+            WHERE m.gathering.id = :gatheringId
+            AND m.meetingStatus = :meetingStatus
+            AND m.id <> :meetingId
+            AND m.meetingStartDate < :endDate
+            AND m.meetingEndDate > :startDate
+            """)
+    boolean existsOverlappingMeeting(
+            @Param("gatheringId") Long gatheringId,
+            @Param("meetingStatus") MeetingStatus meetingStatus,
+            @Param("meetingId") Long meetingId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
     int countByGatheringIdAndMeetingStatus(Long gatheringId, MeetingStatus meetingStatus);
 
     @EntityGraph(attributePaths = {"book"})

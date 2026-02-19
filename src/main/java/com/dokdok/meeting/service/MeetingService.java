@@ -31,6 +31,7 @@ import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicService;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class MeetingService {
     private final TopicRepository topicRepository;
     private final TopicAnswerRepository topicAnswerRepository;
     private final TopicService topicService;
+    private final StorageService storageService;
     private final GatheringRepository gatheringRepository;
     private final GatheringMemberRepository gatheringMemberRepository;
     private final GatheringValidator gatheringValidator;
@@ -76,6 +78,7 @@ public class MeetingService {
         gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
         List<MeetingMember> meetingMembers = meetingMemberRepository.findAllByMeetingId(meetingId);
+        Map<Long, String> profileImageUrlMap = buildProfileImageUrlMap(meetingMembers);
 
         LocalDateTime confirmedTopicDate = topicRepository.findConfirmedTopicDateByMeetingId(
                 meetingId,
@@ -88,8 +91,28 @@ public class MeetingService {
                 meetingMembers,
                 userId,
                 confirmedTopic,
-                confirmedTopicDate
+                confirmedTopicDate,
+                profileImageUrlMap
         );
+    }
+
+    /**
+     * 약속 멤버들의 프로필 이미지 presigned URL Map 생성
+     */
+    private Map<Long, String> buildProfileImageUrlMap(List<MeetingMember> members) {
+        Map<Long, String> profileImageUrlMap = new HashMap<>();
+
+        members.forEach(member -> {
+            User user = member.getUser();
+            if (user == null || user.getId() == null) {
+                return;
+            }
+            String profileImageUrl = user.getProfileImageUrl();
+            String presignedUrl = storageService.getPresignedProfileImage(profileImageUrl);
+            profileImageUrlMap.put(user.getId(), presignedUrl);
+        });
+
+        return profileImageUrlMap;
     }
 
     /**
@@ -206,11 +229,22 @@ public class MeetingService {
      */
     private void validateConfirmable(Meeting meeting) {
         Long gatheringId = meeting.getGathering().getId();
-        boolean hasConfirmedMeeting = meetingRepository
-                .existsByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.CONFIRMED);
-        if (hasConfirmedMeeting) {
+        LocalDateTime startDate = meeting.getMeetingStartDate();
+        LocalDateTime endDate = meeting.getMeetingEndDate();
+        if (startDate == null || endDate == null) {
+            throw new MeetingException(MeetingErrorCode.MEETING_DATE_REQUIRED,
+                    "약속 시작/종료 일시는 필수입니다.");
+        }
+        boolean hasOverlappingMeeting = meetingRepository.existsOverlappingMeeting(
+                gatheringId,
+                MeetingStatus.CONFIRMED,
+                meeting.getId(),
+                startDate,
+                endDate
+        );
+        if (hasOverlappingMeeting) {
             throw new MeetingException(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
-                    "이미 확정된 약속이 존재합니다.");
+                    "동일 시간에 확정된 약속이 존재합니다.");
         }
     }
 

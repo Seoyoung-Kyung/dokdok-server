@@ -60,14 +60,19 @@ public record MeetingDetailResponse(
             List<MeetingMember> meetingMembers,
             Long requestUserId,
             Boolean confirmedTopic,
-            LocalDateTime confirmedTopicDate
+            LocalDateTime confirmedTopicDate,
+            Map<Long, String> profileImageUrlMap
     ) {
         List<MeetingMember> safeMembers = meetingMembers == null ? Collections.emptyList() : meetingMembers;
         List<MeetingMember> activeMembers = safeMembers.stream()
                 .filter(member -> member.getCanceledAt() == null)
                 .toList();
 
-        ParticipantsInfo participantsInfo = ParticipantsInfo.from(activeMembers, meeting.getMaxParticipants());
+        ParticipantsInfo participantsInfo = ParticipantsInfo.from(
+                activeMembers,
+                meeting.getMaxParticipants(),
+                profileImageUrlMap
+        );
 
         ActionState actionState = calculateActionState(
                 meeting,
@@ -270,9 +275,13 @@ public record MeetingDetailResponse(
             @Schema(description = "참가자 목록")
             List<MemberInfo> members
     ) {
-        public static ParticipantsInfo from(List<MeetingMember> activeMembers, Integer maxCount) {
+        public static ParticipantsInfo from(
+                List<MeetingMember> activeMembers,
+                Integer maxCount,
+                Map<Long, String> profileImageUrlMap
+        ) {
             List<MemberInfo> members = activeMembers.stream()
-                    .map(MemberInfo::from)
+                    .map(member -> MemberInfo.from(member, profileImageUrlMap))
                     .toList();
 
             return new ParticipantsInfo(members.size(), maxCount, members);
@@ -293,15 +302,27 @@ public record MeetingDetailResponse(
             @Schema(description = "참가자 역할", example = "LEADER")
             MeetingMemberRole role
     ) {
-        public static MemberInfo from(MeetingMember meetingMember) {
+        public static MemberInfo from(MeetingMember meetingMember, Map<Long, String> profileImageUrlMap) {
             User user = meetingMember.getUser();
+            String profileImageUrl = resolveProfileImageUrl(user, profileImageUrlMap);
             return new MemberInfo(
                     user.getId(),
                     user.getNickname(),
-                    user.getProfileImageUrl(),
+                    profileImageUrl,
                     meetingMember.getMeetingRole()
             );
         }
+    }
+
+    private static String resolveProfileImageUrl(User user, Map<Long, String> profileImageUrlMap) {
+        if (user == null) {
+            return null;
+        }
+        if (profileImageUrlMap == null) {
+            return user.getProfileImageUrl();
+        }
+        String presignedUrl = profileImageUrlMap.get(user.getId());
+        return presignedUrl != null ? presignedUrl : user.getProfileImageUrl();
     }
 
     @Schema(description = "화면 버튼 상태")
