@@ -3,7 +3,8 @@ package com.dokdok.book.dto.response;
 public enum ReadingTimelineType {
     READING_RECORD(3),
     PERSONAL_RETROSPECTIVE(2),
-    PRE_OPINION(1);
+    PRE_OPINION(1),
+    MEETING_RETROSPECTIVE(0);
 
     private final int order;
 

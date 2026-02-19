@@ -1,6 +1,7 @@
 package com.dokdok.book.dto.response;
 
 import com.dokdok.retrospective.dto.response.RetrospectiveRecordResponse;
+import com.dokdok.retrospective.dto.response.RetrospectiveSummaryResponse;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -20,7 +21,9 @@ public record ReadingTimelineItem(
         @Schema(description = "개인 회고 데이터 (type=PERSONAL_RETROSPECTIVE)")
         RetrospectiveRecordResponse retrospective,
         @Schema(description = "사전 의견 데이터 (type=PRE_OPINION)")
-        ReadingTimelinePreOpinionResponse preOpinion
+        ReadingTimelinePreOpinionResponse preOpinion,
+        @Schema(description = "약속 회고 요약 (type=MEETING_RETROSPECTIVE)")
+        RetrospectiveSummaryResponse meetingRetrospective
 ) {
     public static ReadingTimelineItem readingRecord(
             LocalDateTime eventAt,
@@ -32,6 +35,7 @@ public record ReadingTimelineItem(
                 eventAt,
                 sourceId,
                 readingRecord,
+                null,
                 null,
                 null
         );
@@ -48,6 +52,7 @@ public record ReadingTimelineItem(
                 sourceId,
                 null,
                 retrospective,
+                null,
                 null
         );
     }
@@ -63,7 +68,24 @@ public record ReadingTimelineItem(
                 sourceId,
                 null,
                 null,
-                preOpinion
+                preOpinion,
+                null
+        );
+    }
+
+    public static ReadingTimelineItem meetingRetrospective(
+            LocalDateTime eventAt,
+            Long sourceId,
+            RetrospectiveSummaryResponse meetingRetrospective
+    ) {
+        return new ReadingTimelineItem(
+                ReadingTimelineType.MEETING_RETROSPECTIVE,
+                eventAt,
+                sourceId,
+                null,
+                null,
+                null,
+                meetingRetrospective
         );
     }
 }

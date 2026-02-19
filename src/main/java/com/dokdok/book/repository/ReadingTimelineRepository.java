@@ -84,6 +84,22 @@ public class ReadingTimelineRepository {
                           AND m.book_id = :bookId
                         GROUP BY m.meeting_id, m.meeting_start_date
                     ) pre
+
+                    UNION ALL
+
+                    SELECT
+                        MAX(trs.created_at) AS event_at,
+                        'MEETING_RETROSPECTIVE' AS type,
+                        m.meeting_id              AS source_id,
+                        0                         AS type_order
+                    FROM topic_retrospective_summary trs
+                    JOIN topic t  ON t.topic_id  = trs.topic_id
+                    JOIN meeting m ON m.meeting_id = t.meeting_id
+                    WHERE m.deleted_at IS NULL
+                      AND CAST(:gatheringId AS bigint) IS NOT NULL
+                      AND m.gathering_id = :gatheringId
+                      AND m.book_id      = :bookId
+                    GROUP BY m.meeting_id
                 )
                 SELECT
                     event_at AS eventAt,
