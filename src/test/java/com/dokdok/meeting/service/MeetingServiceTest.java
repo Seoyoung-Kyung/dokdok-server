@@ -27,6 +27,7 @@ import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.topic.service.TopicService;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,6 +72,9 @@ class MeetingServiceTest {
 
     @Mock
     private TopicService topicService;
+
+    @Mock
+    private StorageService storageService;
 
     @Mock
     private GatheringRepository gatheringRepository;
@@ -216,6 +220,43 @@ class MeetingServiceTest {
             assertThat(upcoming.progressStatus()).isEqualTo(MeetingDetailProgressStatus.PRE);
             assertThat(ongoing.progressStatus()).isEqualTo(MeetingDetailProgressStatus.ONGOING);
             assertThat(finished.progressStatus()).isEqualTo(MeetingDetailProgressStatus.POST);
+        }
+    }
+
+    @DisplayName("약속 상세 조회 시 멤버 프로필 이미지는 presigned URL로 내려간다.")
+    @Test
+    void givenMeetingMembers_whenFindMeeting_thenUsePresignedProfileImage() {
+        // given
+        Long userId = 1L;
+        User memberUser = User.builder()
+                .id(2L)
+                .nickname("member")
+                .profileImageUrl("profiles/2/profile.jpg")
+                .build();
+        MeetingMember member = MeetingMember.builder()
+                .meeting(meeting)
+                .user(memberUser)
+                .build();
+
+        given(meetingValidator.findMeetingOrThrow(meetingId))
+                .willReturn(meeting);
+        given(meetingMemberRepository.findAllByMeetingId(meetingId))
+                .willReturn(List.of(member));
+        given(topicRepository.findConfirmedTopicDateByMeetingId(meetingId, TopicStatus.CONFIRMED))
+                .willReturn(null);
+        given(storageService.getPresignedProfileImage(memberUser.getProfileImageUrl()))
+                .willReturn("https://presigned.example.com/profile.jpg");
+
+        try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+            securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+            // when
+            MeetingDetailResponse response = meetingService.findMeeting(meetingId);
+
+            // then
+            assertThat(response.participants().members()).hasSize(1);
+            assertThat(response.participants().members().get(0).profileImageUrl())
+                    .isEqualTo("https://presigned.example.com/profile.jpg");
         }
     }
 
@@ -546,7 +587,13 @@ class MeetingServiceTest {
         Long gatheringLeaderId = 10L;
 
         given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
-        given(meetingRepository.existsByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.CONFIRMED))
+        given(meetingRepository.existsOverlappingMeeting(
+                gathering.getId(),
+                MeetingStatus.CONFIRMED,
+                meetingId,
+                meeting.getMeetingStartDate(),
+                meeting.getMeetingEndDate()
+        ))
                 .willReturn(false);
         given(meetingMemberRepository.findByMeetingIdAndUserId(meetingId, leader.getId()))
                 .willReturn(Optional.empty());
@@ -569,14 +616,20 @@ class MeetingServiceTest {
         }
     }
 
-    @DisplayName("이미 확정된 약속이 있으면 다른 약속을 확정할 수 없다.")
+    @DisplayName("시간이 겹치는 확정 약속이 있으면 다른 약속을 확정할 수 없다.")
     @Test
     void givenConfirmedMeetingExists_whenConfirm_thenThrowMeetingException() {
         // given
         Long meetingId = 1L;
         Long gatheringLeaderId = 10L;
         given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(meeting);
-        given(meetingRepository.existsByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.CONFIRMED))
+        given(meetingRepository.existsOverlappingMeeting(
+                gathering.getId(),
+                MeetingStatus.CONFIRMED,
+                meetingId,
+                meeting.getMeetingStartDate(),
+                meeting.getMeetingEndDate()
+        ))
                 .willReturn(true);
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -621,10 +674,18 @@ class MeetingServiceTest {
                 .id(meetingId)
                 .meetingName("Meeting 1")
                 .meetingStatus(MeetingStatus.PENDING)
+                .meetingStartDate(LocalDateTime.now().plusDays(2))
+                .meetingEndDate(LocalDateTime.now().plusDays(2).plusHours(1))
                 .gathering(gathering)
                 .build();
         given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(missingLeaderMeeting);
-        given(meetingRepository.existsByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.CONFIRMED))
+        given(meetingRepository.existsOverlappingMeeting(
+                gathering.getId(),
+                MeetingStatus.CONFIRMED,
+                meetingId,
+                missingLeaderMeeting.getMeetingStartDate(),
+                missingLeaderMeeting.getMeetingEndDate()
+        ))
                 .willReturn(false);
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
