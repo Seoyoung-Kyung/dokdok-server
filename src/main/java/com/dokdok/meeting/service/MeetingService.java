@@ -30,6 +30,7 @@ import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
+import com.dokdok.topic.service.TopicService;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,7 @@ public class MeetingService {
     private final MeetingMemberRepository meetingMemberRepository;
     private final TopicRepository topicRepository;
     private final TopicAnswerRepository topicAnswerRepository;
+    private final TopicService topicService;
     private final GatheringRepository gatheringRepository;
     private final GatheringMemberRepository gatheringMemberRepository;
     private final GatheringValidator gatheringValidator;
@@ -155,6 +157,7 @@ public class MeetingService {
 
         meeting.changeStatus(MeetingStatus.CONFIRMED);
         saveMeetingBookForUser(meeting, meeting.getGathering(), meeting.getMeetingLeader().getId());
+        topicService.createDefaultTopic(meeting);
 
         return MeetingStatusResponse.from(meeting);
     }

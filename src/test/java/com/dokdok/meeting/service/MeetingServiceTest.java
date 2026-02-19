@@ -26,6 +26,7 @@ import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
+import com.dokdok.topic.service.TopicService;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,6 +68,9 @@ class MeetingServiceTest {
 
     @Mock
     private TopicAnswerRepository topicAnswerRepository;
+
+    @Mock
+    private TopicService topicService;
 
     @Mock
     private GatheringRepository gatheringRepository;
@@ -561,6 +565,7 @@ class MeetingServiceTest {
             MeetingMember savedMember = meetingMemberCaptor.getValue();
             assertThat(savedMember.getUser().getId()).isEqualTo(leader.getId());
             assertThat(savedMember.getMeetingRole()).isEqualTo(MeetingMemberRole.LEADER);
+            verify(topicService).createDefaultTopic(meeting);
         }
     }
 
