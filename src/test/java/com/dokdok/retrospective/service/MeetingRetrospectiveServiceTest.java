@@ -26,7 +26,6 @@ import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
-import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,9 +70,6 @@ class MeetingRetrospectiveServiceTest {
 
 	@Mock
 	private MeetingValidator meetingValidator;
-
-	@Mock
-	private TopicValidator topicValidator;
 
 	@Test
 	@DisplayName("약속이 없으면 예외가 발생한다")
@@ -190,21 +186,18 @@ class MeetingRetrospectiveServiceTest {
 		// given
 		Long meetingId = 1L;
 		Long userId = 1L;
-		Long topicId = 1L;
 		Long gatheringId = 1L;
 
 		Gathering gathering = Gathering.builder().id(gatheringId).build();
 		Meeting meeting = Meeting.builder().id(meetingId).gathering(gathering).build();
 		User user = User.builder().id(userId).nickname("사용자1").profileImageUrl("https://image.jpg").build();
-		Topic topic = Topic.builder().id(topicId).meeting(meeting).title("토픽1").build();
 
-		MeetingRetrospectiveRequest request = new MeetingRetrospectiveRequest(topicId, "회고 코멘트입니다.");
+		MeetingRetrospectiveRequest request = new MeetingRetrospectiveRequest("회고 코멘트입니다.");
 
 		MeetingRetrospective saved = MeetingRetrospective.builder()
 				.id(1L)
 				.meeting(meeting)
 				.createdBy(user)
-				.topic(topic)
 				.comment("회고 코멘트입니다.")
 				.build();
 
@@ -217,7 +210,6 @@ class MeetingRetrospectiveServiceTest {
 
 			when(meetingValidator.findMeetingOrThrow(meetingId)).thenReturn(meeting);
 			doNothing().when(retrospectiveValidator).validateMeetingRetrospectiveAccess(gatheringId, meetingId, userId);
-			when(topicValidator.getTopicInMeeting(topicId, meetingId)).thenReturn(topic);
 			when(retrospectiveRepository.save(any(MeetingRetrospective.class))).thenReturn(saved);
 			when(storageService.getPresignedProfileImage("https://image.jpg")).thenReturn("https://image.jpg");
 
@@ -226,13 +218,12 @@ class MeetingRetrospectiveServiceTest {
 					meetingRetrospectiveService.createMeetingRetrospective(meetingId, request);
 
 			// then
-			assertThat(response.meetingRetrospectiveId()).isEqualTo(1L);
+			assertThat(response.commentId()).isEqualTo(1L);
 			assertThat(response.userId()).isEqualTo(userId);
 			assertThat(response.comment()).isEqualTo("회고 코멘트입니다.");
 
 			verify(meetingValidator).findMeetingOrThrow(meetingId);
 			verify(retrospectiveValidator).validateMeetingRetrospectiveAccess(gatheringId, meetingId, userId);
-			verify(topicValidator).getTopicInMeeting(topicId, meetingId);
 			verify(retrospectiveRepository).save(any(MeetingRetrospective.class));
 		}
 	}
@@ -243,7 +234,7 @@ class MeetingRetrospectiveServiceTest {
 		Long meetingId = 999L;
 		Long userId = 1L;
 		User user = User.builder().id(userId).build();
-		MeetingRetrospectiveRequest request = new MeetingRetrospectiveRequest(1L, "코멘트");
+		MeetingRetrospectiveRequest request = new MeetingRetrospectiveRequest("코멘트");
 
 		CustomOAuth2User customOAuth2User = mock(CustomOAuth2User.class);
 		when(customOAuth2User.getUser()).thenReturn(user);
@@ -273,7 +264,7 @@ class MeetingRetrospectiveServiceTest {
 		Gathering gathering = Gathering.builder().id(gatheringId).build();
 		Meeting meeting = Meeting.builder().id(meetingId).gathering(gathering).build();
 		User user = User.builder().id(userId).build();
-		MeetingRetrospectiveRequest request = new MeetingRetrospectiveRequest(1L, "코멘트");
+		MeetingRetrospectiveRequest request = new MeetingRetrospectiveRequest( "코멘트");
 
 		CustomOAuth2User customOAuth2User = mock(CustomOAuth2User.class);
 		when(customOAuth2User.getUser()).thenReturn(user);
