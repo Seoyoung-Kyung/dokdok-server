@@ -100,16 +100,16 @@ public class PersonalRetrospectiveService {
     }
 
     @Transactional(readOnly = true)
-    public PersonalRetrospectiveEditResponse getPersonalRetrospectiveEditForm(
-            Long meetingId,
-            Long retrospectiveId
-    ) {
+    public PersonalRetrospectiveEditResponse getPersonalRetrospectiveEditForm(Long meetingId) {
 
         Long userId = SecurityUtil.getCurrentUserId();
 
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
-        retrospectiveValidator.validateRetrospective(retrospectiveId);
+
+        PersonalMeetingRetrospective retrospective
+                = retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId);
+        Long retrospectiveId = retrospective.getId();
 
         List<RetrospectiveChangedThought> changedThoughts
                 = changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId);
@@ -138,16 +138,14 @@ public class PersonalRetrospectiveService {
     @Transactional
     public PersonalRetrospectiveResponse editPersonalRetrospective(
             Long meetingId,
-            Long retrospectiveId,
             PersonalRetrospectiveRequest request
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
-        retrospectiveValidator.validateRetrospective(retrospectiveId);
         PersonalMeetingRetrospective retrospective
-                = retrospectiveValidator.getRetrospective(retrospectiveId, userId);
+                = retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId);
 
         retrospective.clearChangedThoughts();
         retrospective.clearOthersPerspectives();
@@ -230,29 +228,28 @@ public class PersonalRetrospectiveService {
     }
 
     @Transactional
-    public void deletePersonalRetrospective(Long meetingId, Long retrospectiveId) {
+    public void deletePersonalRetrospective(Long meetingId) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
 
         PersonalMeetingRetrospective retrospective
-                = retrospectiveValidator.getRetrospective(retrospectiveId, userId);
+                = retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId);
 
         retrospective.softDelete();
     }
 
     @Transactional(readOnly = true)
-    public PersonalRetrospectiveDetailResponse getPersonalRetrospective(
-            Long meetingId,
-            Long retrospectiveId
-    ) {
+    public PersonalRetrospectiveDetailResponse getPersonalRetrospective(Long meetingId) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
-        retrospectiveValidator.validateRetrospective(retrospectiveId);
-        retrospectiveValidator.validateRetrospectiveByUser(retrospectiveId, userId);
+
+        PersonalMeetingRetrospective retrospective
+                = retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId);
+        Long retrospectiveId = retrospective.getId();
 
         List<RetrospectiveChangedThought> changedThoughts
                 = changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId);

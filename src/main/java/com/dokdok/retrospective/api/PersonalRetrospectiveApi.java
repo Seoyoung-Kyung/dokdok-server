@@ -226,7 +226,7 @@ public interface PersonalRetrospectiveApi {
             summary = "개인 회고 수정 폼 조회 (developer: 경서영)",
             description = """
             기존에 작성한 개인 회고를 수정하기 위한 데이터를 조회합니다.
-            - 권한: 약속 멤버
+            - 권한: 약속 멤버 (본인이 작성한 회고만 조회 가능)
 
             **응답 구조**
             - changedThoughts: 기존 생각의 변화 목록 (confirmOrder 순)
@@ -236,8 +236,7 @@ public interface PersonalRetrospectiveApi {
             - meetingMembers: 본인 제외 약속 멤버 목록
             """,
             parameters = {
-                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
@@ -311,17 +310,16 @@ public interface PersonalRetrospectiveApi {
                     )
             )
     })
-    @GetMapping(value = "/{retrospectiveId}/form", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/form/edit", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<PersonalRetrospectiveEditResponse>> getPersonalRetrospectiveEditForm(
-            @PathVariable Long meetingId,
-            @PathVariable Long retrospectiveId
+            @PathVariable Long meetingId
     );
 
     @Operation(
             summary = "개인 회고 상세 조회 (developer: 경서영)",
             description = """
-            특정 개인 회고의 상세 정보를 조회합니다.
-            - 권한: 약속 멤버
+            본인이 작성한 개인 회고의 상세 정보를 조회합니다.
+            - 권한: 약속 멤버 (본인 회고만 조회 가능)
 
             **응답 구조**
             - changedThoughts: 생각의 변화 목록 (confirmOrder 순, 주제별 사전/사후 의견)
@@ -329,8 +327,7 @@ public interface PersonalRetrospectiveApi {
             - freeTexts: 자유 기록 목록
             """,
             parameters = {
-                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
@@ -404,10 +401,9 @@ public interface PersonalRetrospectiveApi {
                     )
             )
     })
-    @GetMapping(value = "/{retrospectiveId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<PersonalRetrospectiveDetailResponse>> getPersonalRetrospective(
-            @PathVariable Long meetingId,
-            @PathVariable Long retrospectiveId
+            @PathVariable Long meetingId
     );
 
     @Operation(
@@ -419,8 +415,7 @@ public interface PersonalRetrospectiveApi {
             - 동작: 기존 데이터 삭제 후 새로운 데이터로 전체 교체
             """,
             parameters = {
-                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
@@ -506,10 +501,9 @@ public interface PersonalRetrospectiveApi {
                     )
             )
     })
-    @PutMapping(value = "/{retrospectiveId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<PersonalRetrospectiveResponse>> editPersonalRetrospective(
             @PathVariable Long meetingId,
-            @PathVariable Long retrospectiveId,
             @Valid @RequestBody PersonalRetrospectiveRequest request
     );
 
@@ -522,8 +516,7 @@ public interface PersonalRetrospectiveApi {
             - 제약: 이미 삭제된 회고는 다시 삭제 불가
             """,
             parameters = {
-                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "retrospectiveId", description = "개인 회고 식별자", in = ParameterIn.PATH, required = true)
+                    @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
@@ -604,9 +597,8 @@ public interface PersonalRetrospectiveApi {
                     )
             )
     })
-    @DeleteMapping(value = "/{retrospectiveId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<Void>> deletePersonalRetrospective(
-            @PathVariable Long meetingId,
-            @PathVariable Long retrospectiveId
+            @PathVariable Long meetingId
     );
 }
