@@ -2,9 +2,10 @@ package com.dokdok.stt.service;
 
 import com.dokdok.ai.client.AiSttClient;
 import com.dokdok.ai.dto.SttRequest;
-import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
+import com.dokdok.gathering.service.GatheringValidator;
+import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.service.MeetingValidator;
@@ -49,6 +50,7 @@ public class SttJobService {
     );
 
     private final MeetingValidator meetingValidator;
+    private final GatheringValidator gatheringValidator;
     private final SttJobRepository sttJobRepository;
     private final SttSummaryRepository sttSummaryRepository;
     private final TopicRepository topicRepository;
@@ -60,8 +62,10 @@ public class SttJobService {
     private String tempDirProperty;
 
     @Transactional
-    public SttJobResponse createJob(Long meetingId, MultipartFile file) {
+    public SttJobResponse createJob(Long gatheringId, Long meetingId, MultipartFile file) {
         Long userId = SecurityUtil.getCurrentUserId();
+        gatheringValidator.validateMembership(gatheringId, userId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
 
@@ -142,8 +146,10 @@ public class SttJobService {
     }
 
     @Transactional(readOnly = true)
-    public SttJobResponse getJob(Long meetingId, Long jobId) {
+    public SttJobResponse getJob(Long gatheringId, Long meetingId, Long jobId) {
         Long userId = SecurityUtil.getCurrentUserId();
+        gatheringValidator.validateMembership(gatheringId, userId);
+        meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
 

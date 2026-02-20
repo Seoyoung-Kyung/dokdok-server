@@ -16,14 +16,18 @@ public class SttController implements SttApi {
     private final SttJobService sttJobService;
 
     @Override
-    public ResponseEntity<ApiResponse<SttJobResponse>> createJob(Long meetingId, MultipartFile file) {
-        SttJobResponse response = sttJobService.createJob(meetingId, file);
+    public ResponseEntity<ApiResponse<SttJobResponse>> createJob(
+            Long gatheringId,
+            Long meetingId,
+            MultipartFile file
+    ) {
+        SttJobResponse response = sttJobService.createJob(gatheringId, meetingId, file);
         return ApiResponse.created(response, "STT 작업이 생성되었습니다.");
     }
 
     @Override
-    public ResponseEntity<ApiResponse<SttJobResponse>> getJob(Long meetingId, Long jobId) {
-        SttJobResponse response = sttJobService.getJob(meetingId, jobId);
+    public ResponseEntity<ApiResponse<SttJobResponse>> getJob(Long gatheringId, Long meetingId, Long jobId) {
+        SttJobResponse response = sttJobService.getJob(gatheringId, meetingId, jobId);
         return ApiResponse.success(response, "STT 작업 조회를 완료했습니다.");
     }
 }
