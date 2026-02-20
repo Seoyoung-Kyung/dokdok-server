@@ -96,8 +96,8 @@ public record MeetingRetrospectiveResponse(
     @Schema(description = "모임 회고 코멘트")
     @Builder
     public record CommentResponse(
-            @Schema(description = "모임 회고 ID", example = "1")
-            Long meetingRetrospectiveId,
+            @Schema(description = "코멘트 ID", example = "1")
+            Long commentId,
             @Schema(description = "작성자 사용자 ID", example = "1")
             Long userId,
             @Schema(description = "닉네임", example = "독서왕")
@@ -112,7 +112,7 @@ public record MeetingRetrospectiveResponse(
 
         public static CommentResponse from(MeetingRetrospective retrospective, String presignedProfileImageUrl) {
             return CommentResponse.builder()
-                    .meetingRetrospectiveId(retrospective.getId())
+                    .commentId(retrospective.getId())
                     .userId(retrospective.getCreatedBy().getId())
                     .nickname(retrospective.getCreatedBy().getNickname())
                     .profileImageUrl(presignedProfileImageUrl)

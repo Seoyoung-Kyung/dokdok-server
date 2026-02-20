@@ -36,16 +36,15 @@ public class MeetingRetrospectiveController implements MeetingRetrospectiveApi {
     @GetMapping("/comments")
     public ResponseEntity<ApiResponse<CursorResponse<MeetingRetrospectiveResponse.CommentResponse, CommentCursor>>> getTopicComments(
             @PathVariable Long meetingId,
-            @RequestParam Long topicId,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorCreatedAt,
             @RequestParam(required = false) Long cursorCommentId
     ) {
         CursorResponse<MeetingRetrospectiveResponse.CommentResponse, CommentCursor> response =
-                meetingRetrospectiveService.getTopicComments(
-                        meetingId, topicId, pageSize, cursorCreatedAt, cursorCommentId
+                meetingRetrospectiveService.getComments(
+                        meetingId, pageSize, cursorCreatedAt, cursorCommentId
                 );
-        return ApiResponse.success(response, "토픽 코멘트 조회 성공");
+        return ApiResponse.success(response, "코멘트 조회 성공");
     }
 
     @Override
