@@ -262,7 +262,7 @@ class PersonalBookServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         LocalDateTime addedAt = LocalDateTime.now();
         String thumbnail = "thumbnail-url";
-        String gatheringName = "독서 모임";
+        String gatherings = "[{\"gatheringId\":5,\"gatheringName\":\"독서 모임\"}]";
         BookReadingStatus readingStatus = BookReadingStatus.READING;
 
         User user = User.builder()
@@ -311,8 +311,13 @@ class PersonalBookServiceTest {
             }
 
             @Override
-            public String getGatheringName() {
-                return gatheringName;
+            public java.math.BigDecimal getRating() {
+                return new java.math.BigDecimal("4.5");
+            }
+
+            @Override
+            public String getGatherings() {
+                return gatherings;
             }
 
             @Override
@@ -344,7 +349,9 @@ class PersonalBookServiceTest {
         assertThat(response.authors()).isEqualTo(book.getAuthor());
         assertThat(response.bookReadingStatus()).isEqualTo(readingStatus);
         assertThat(response.thumbnail()).isEqualTo(thumbnail);
-        assertThat(response.gatheringName()).isEqualTo(gatheringName);
+        assertThat(response.rating()).isEqualByComparingTo("4.5");
+        assertThat(response.gatherings()).hasSize(1);
+        assertThat(response.gatherings().getFirst().gatheringName()).isEqualTo("독서 모임");
 
         securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
         verify(userValidator, times(1)).findUserOrThrow(userId);
@@ -538,5 +545,84 @@ class PersonalBookServiceTest {
         verify(userValidator, times(1)).findUserOrThrow(userId);
         verify(bookValidator, times(1)).validateInBookShelf(userId, bookId);
         verify(personalBookRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("내 책장에서 도서를 다건 삭제하면 성공적으로 삭제된다")
+    void deleteBooks_Success() {
+        // given
+        Long userId = 1L;
+        List<Long> bookIds = List.of(10L, 11L);
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        Book firstBook = Book.builder().id(10L).bookName("첫 번째 책").build();
+        Book secondBook = Book.builder().id(11L).bookName("두 번째 책").build();
+
+        PersonalBook firstPersonalBook = PersonalBook.builder()
+                .id(100L)
+                .user(user)
+                .book(firstBook)
+                .readingStatus(BookReadingStatus.READING)
+                .build();
+        PersonalBook secondPersonalBook = PersonalBook.builder()
+                .id(101L)
+                .user(user)
+                .book(secondBook)
+                .readingStatus(BookReadingStatus.READING)
+                .build();
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(bookValidator.validateInBookShelf(userId, 10L)).thenReturn(firstPersonalBook);
+        when(bookValidator.validateInBookShelf(userId, 11L)).thenReturn(secondPersonalBook);
+
+        // when
+        personalBookService.deleteBooks(bookIds);
+
+        // then
+        securityUtilMock.verify(SecurityUtil::getCurrentUserId, times(1));
+        verify(userValidator, times(1)).findUserOrThrow(userId);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, 10L);
+        verify(bookValidator, times(1)).validateInBookShelf(userId, 11L);
+        verify(personalBookRepository, times(1)).delete(firstPersonalBook);
+        verify(personalBookRepository, times(1)).delete(secondPersonalBook);
+    }
+
+    @Test
+    @DisplayName("다건 삭제에서 중복 bookId는 한 번만 처리된다")
+    void deleteBooks_DeduplicateIds() {
+        // given
+        Long userId = 1L;
+        List<Long> bookIds = List.of(10L, 10L, 10L);
+
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        Book book = Book.builder().id(10L).bookName("중복 책").build();
+        PersonalBook personalBook = PersonalBook.builder()
+                .id(100L)
+                .user(user)
+                .book(book)
+                .readingStatus(BookReadingStatus.READING)
+                .build();
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(bookValidator.validateInBookShelf(userId, 10L)).thenReturn(personalBook);
+
+        // when
+        personalBookService.deleteBooks(bookIds);
+
+        // then
+        verify(bookValidator, times(1)).validateInBookShelf(userId, 10L);
+        verify(personalBookRepository, times(1)).delete(personalBook);
     }
 }

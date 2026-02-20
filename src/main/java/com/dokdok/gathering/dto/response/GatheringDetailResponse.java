@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 
 import java.util.List;
+import java.util.Map;
 
 @Schema(description = "모임 상세 응답")
 @Builder
@@ -38,10 +39,11 @@ public record GatheringDetailResponse(
     public static GatheringDetailResponse from(
             GatheringMember currentMember,
             List<GatheringMember> allMember,
-            int totalMeetings
+            int totalMeetings,
+            Map<Long, String> profileImageUrlMap
     ){
         List<MemberInfo> memberInfoList = allMember.stream()
-                .map(MemberInfo::from)
+                .map(member -> MemberInfo.from(member, profileImageUrlMap.get(member.getUser().getId())))
                 .toList();
 
         Gathering gathering = currentMember.getGathering();
@@ -75,7 +77,7 @@ public record GatheringDetailResponse(
             @Schema(description = "모임 역할", example = "LEADER")
             GatheringRole role
     ){
-        public static MemberInfo from(GatheringMember member){
+        public static MemberInfo from(GatheringMember member, String presignedProfileImageUrl){
             if(member == null){
                 return null;
             }
@@ -83,7 +85,7 @@ public record GatheringDetailResponse(
                     .gatheringMemberId(member.getId())
                     .userId(member.getUser().getId())
                     .nickname(member.getUser().getNickname())
-                    .profileImageUrl(member.getUser().getProfileImageUrl())
+                    .profileImageUrl(presignedProfileImageUrl)
                     .role(member.getRole())
                     .build();
         }

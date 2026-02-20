@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
@@ -56,6 +57,7 @@ public interface MeetingApi {
                                         "book": {
                                           "bookId": 1,
                                           "bookName": "클린 코드",
+                                          "authors": "로버트 C. 마틴",
                                           "thumbnail": "https://example.com/thumb.jpg"
                                         },
                                         "schedule": {
@@ -120,7 +122,7 @@ public interface MeetingApi {
             summary = "약속 생성 신청 (developer: 김윤영)",
             description = """
             모임 구성원이 약속 생성을 신청합니다.
-            - 입력: 약속 제목(미입력 시 책 제목), 책 제목*, 약속 일시*, 최대 인원 수(null 허용), 장소 정보(null 허용)
+            - 입력: 약속 제목(미입력 시 책 제목), 책 정보(제목/저자/출판사/ISBN/썸네일), 약속 일시*, 최대 인원 수(null 허용), 장소 정보(null 허용)
             - 권한: 해당 모임의 구성원
             """
     )
@@ -144,7 +146,8 @@ public interface MeetingApi {
                                         },
                                         "book": {
                                           "bookId": 1,
-                                          "bookName": "클린 코드"
+                                          "bookName": "클린 코드",
+                                          "thumbnail": "https://example.com/thumb.jpg"
                                         },
                                         "schedule": {
                                           "date": "2025-02-01",
@@ -190,6 +193,31 @@ public interface MeetingApi {
                                     """)))
     })
     ResponseEntity<ApiResponse<MeetingResponse>> createMeeting(
+            @RequestBody(
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "gatheringId": 1,
+                                      "book": {
+                                        "title": "클린 코드",
+                                        "authors": "로버트 C. 마틴",
+                                        "publisher": "인사이트",
+                                        "isbn": "9788966260959",
+                                        "thumbnail": "https://example.com/thumb.jpg"
+                                      },
+                                      "meetingName": "1월 독서 모임",
+                                      "meetingStartDate": "2025-02-01T14:00:00",
+                                      "meetingEndDate": "2025-02-01T16:00:00",
+                                      "maxParticipants": 10,
+                                      "location": {
+                                        "name": "강남 스터디룸 A",
+                                        "address": "서울 강남구 ...",
+                                        "latitude": 37.4979,
+                                        "longitude": 127.0276
+                                      }
+                                    }
+                                    """))
+            )
             MeetingCreateRequest request
     );
 
@@ -302,6 +330,7 @@ public interface MeetingApi {
             약속에 참가 신청합니다.
             - 권한: 모임원 전원
             - 제약: 모집 정원 마감 전
+            - 제약: 약속 시작 24시간 이내 참가 신청 불가
             """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
@@ -329,6 +358,9 @@ public interface MeetingApi {
                                             """),
                                     @ExampleObject(name = "이미 참가", value = """
                                             {"code": "M010", "message": "이미 참가한 약속입니다.", "data": null}
+                                            """),
+                                    @ExampleObject(name = "24시간 이내 참가 불가", value = """
+                                            {"code": "M016", "message": "약속 시작 24시간 이내에는 참가 신청할 수 없습니다.", "data": null}
                                             """)
                             })),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "모임 멤버가 아님",
@@ -413,6 +445,7 @@ public interface MeetingApi {
             약속 정보를 수정합니다.
             - 권한: 약속장
             - 제약: 종료된 약속은 수정 불가
+            - 제약: 약속 시작 24시간 이내 수정 불가
             - 제약: 종료 일시는 시작 일시보다 이전일 수 없음
             - 제약: 최대 참여 인원은 현재 참여 인원보다 작을 수 없음
             """
@@ -451,6 +484,9 @@ public interface MeetingApi {
                                             """),
                                     @ExampleObject(name = "잘못된 최대 인원", value = """
                                             {"code": "M013", "message": "최대 참가 인원은 1명 이상이어야 하며, 모임 전체 인원을 초과할 수 없습니다.", "data": null}
+                                            """),
+                                    @ExampleObject(name = "24시간 이내 수정 불가", value = """
+                                            {"code": "M017", "message": "약속 시작 24시간 이내에는 수정할 수 없습니다.", "data": null}
                                             """)
                             })),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "약속장 아님",

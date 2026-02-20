@@ -27,6 +27,15 @@ public record MeetingDetailResponse(
         @Schema(description = "약속 상태", example = "CONFIRMED")
         MeetingStatus meetingStatus,
 
+        @Schema(description = "약속 진행 상태(시간 기준)", example = "PRE")
+        MeetingDetailProgressStatus progressStatus,
+
+        @Schema(description = "주제 확정 여부", example = "true")
+        Boolean confirmedTopic,
+
+        @Schema(description = "주제 확정 날짜", example = "2026-01-30T10:00:00")
+        LocalDateTime confirmedTopicDate,
+
         @Schema(description = "모임 정보")
         GatheringInfo gathering,
 
@@ -49,14 +58,21 @@ public record MeetingDetailResponse(
     public static MeetingDetailResponse from(
             Meeting meeting,
             List<MeetingMember> meetingMembers,
-            Long requestUserId
+            Long requestUserId,
+            Boolean confirmedTopic,
+            LocalDateTime confirmedTopicDate,
+            Map<Long, String> profileImageUrlMap
     ) {
         List<MeetingMember> safeMembers = meetingMembers == null ? Collections.emptyList() : meetingMembers;
         List<MeetingMember> activeMembers = safeMembers.stream()
                 .filter(member -> member.getCanceledAt() == null)
                 .toList();
 
-        ParticipantsInfo participantsInfo = ParticipantsInfo.from(activeMembers, meeting.getMaxParticipants());
+        ParticipantsInfo participantsInfo = ParticipantsInfo.from(
+                activeMembers,
+                meeting.getMaxParticipants(),
+                profileImageUrlMap
+        );
 
         ActionState actionState = calculateActionState(
                 meeting,
@@ -66,10 +82,19 @@ public record MeetingDetailResponse(
                 participantsInfo.maxCount()
         );
 
+        MeetingDetailProgressStatus progressStatus = resolveProgressStatus(
+                meeting.getMeetingStartDate(),
+                meeting.getMeetingEndDate(),
+                LocalDateTime.now()
+        );
+
         return new MeetingDetailResponse(
                 meeting.getId(),
                 meeting.getMeetingName(),
                 meeting.getMeetingStatus(),
+                progressStatus,
+                confirmedTopic,
+                confirmedTopicDate,
                 GatheringInfo.from(meeting.getGathering()),
                 BookInfo.from(meeting.getBook()),
                 ScheduleInfo.from(meeting.getMeetingStartDate(), meeting.getMeetingEndDate()),
@@ -77,6 +102,23 @@ public record MeetingDetailResponse(
                 participantsInfo,
                 actionState
         );
+    }
+
+    private static MeetingDetailProgressStatus resolveProgressStatus(
+            LocalDateTime meetingStartDate,
+            LocalDateTime meetingEndDate,
+            LocalDateTime now
+    ) {
+        if (meetingStartDate == null || meetingEndDate == null) {
+            throw new IllegalStateException("meetingStartDate/meetingEndDate must be non-null");
+        }
+        if (now.isBefore(meetingStartDate)) {
+            return MeetingDetailProgressStatus.PRE;
+        }
+        if (!now.isAfter(meetingEndDate)) {
+            return MeetingDetailProgressStatus.ONGOING;
+        }
+        return MeetingDetailProgressStatus.POST;
     }
 
     private static ActionState calculateActionState(
@@ -95,7 +137,7 @@ public record MeetingDetailResponse(
 
         User meetingLeader = meeting.getMeetingLeader();
         if (meetingLeader != null && meetingLeader.getId().equals(requestUserId)) {
-            if (isEditTimeExpired(meeting.getMeetingStartDate())) {
+            if (isActionTimeExpired(meeting.getMeetingStartDate())) {
                 return ActionState.editTimeExpired();
             }
             return ActionState.canEdit();
@@ -104,7 +146,14 @@ public record MeetingDetailResponse(
         boolean isParticipant = activeMembers.stream()
                 .anyMatch(member -> member.getUser().getId().equals(requestUserId));
         if (isParticipant) {
+            if (isActionTimeExpired(meeting.getMeetingStartDate())) {
+                return ActionState.cancelTimeExpired();
+            }
             return ActionState.canCancel();
+        }
+
+        if (isActionTimeExpired(meeting.getMeetingStartDate())) {
+            return ActionState.joinTimeExpired();
         }
 
         if (isRecruitmentClosed(currentCount, maxCount)) {
@@ -118,7 +167,7 @@ public record MeetingDetailResponse(
         return maxCount != null && currentCount >= maxCount;
     }
 
-    private static boolean isEditTimeExpired(LocalDateTime meetingStartDate) {
+    private static boolean isActionTimeExpired(LocalDateTime meetingStartDate) {
         return meetingStartDate != null
                 && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24));
     }
@@ -147,6 +196,9 @@ public record MeetingDetailResponse(
             @Schema(description = "책 이름", example = "클린 코드")
             String bookName,
 
+            @Schema(description = "저자", example = "로버트 C. 마틴")
+            String authors,
+
             @Schema(description = "책 썸네일 URL", example = "https://example.com/thumb.jpg")
             String thumbnail
     ) {
@@ -154,7 +206,7 @@ public record MeetingDetailResponse(
             if (book == null) {
                 return null;
             }
-            return new BookInfo(book.getId(), book.getBookName(), book.getThumbnail());
+            return new BookInfo(book.getId(), book.getBookName(), book.getAuthor(), book.getThumbnail());
         }
     }
 
@@ -223,9 +275,13 @@ public record MeetingDetailResponse(
             @Schema(description = "참가자 목록")
             List<MemberInfo> members
     ) {
-        public static ParticipantsInfo from(List<MeetingMember> activeMembers, Integer maxCount) {
+        public static ParticipantsInfo from(
+                List<MeetingMember> activeMembers,
+                Integer maxCount,
+                Map<Long, String> profileImageUrlMap
+        ) {
             List<MemberInfo> members = activeMembers.stream()
-                    .map(MemberInfo::from)
+                    .map(member -> MemberInfo.from(member, profileImageUrlMap))
                     .toList();
 
             return new ParticipantsInfo(members.size(), maxCount, members);
@@ -246,15 +302,27 @@ public record MeetingDetailResponse(
             @Schema(description = "참가자 역할", example = "LEADER")
             MeetingMemberRole role
     ) {
-        public static MemberInfo from(MeetingMember meetingMember) {
+        public static MemberInfo from(MeetingMember meetingMember, Map<Long, String> profileImageUrlMap) {
             User user = meetingMember.getUser();
+            String profileImageUrl = resolveProfileImageUrl(user, profileImageUrlMap);
             return new MemberInfo(
                     user.getId(),
                     user.getNickname(),
-                    user.getProfileImageUrl(),
+                    profileImageUrl,
                     meetingMember.getMeetingRole()
             );
         }
+    }
+
+    private static String resolveProfileImageUrl(User user, Map<Long, String> profileImageUrlMap) {
+        if (user == null) {
+            return null;
+        }
+        if (profileImageUrlMap == null) {
+            return user.getProfileImageUrl();
+        }
+        String presignedUrl = profileImageUrlMap.get(user.getId());
+        return presignedUrl != null ? presignedUrl : user.getProfileImageUrl();
     }
 
     @Schema(description = "화면 버튼 상태")
@@ -264,7 +332,9 @@ public record MeetingDetailResponse(
                     - 약속장: CAN_EDIT (enabled=true, buttonLabel=수정하기)
                     - 약속장(24시간 전): EDIT_TIME_EXPIRED (enabled=false, buttonLabel=수정 가능 시간이 지났어요)
                     - 모임원 + 미참가: CAN_JOIN (enabled=true, buttonLabel=참가 신청하기)
+                    - 모임원 + 미참가(24시간 전): JOIN_TIME_EXPIRED (enabled=false, buttonLabel=참가 신청하기)
                     - 모임원 + 참가: CAN_CANCEL (enabled=true, buttonLabel=참가 신청 취소하기)
+                    - 모임원 + 참가(24시간 전): CANCEL_TIME_EXPIRED (enabled=false, buttonLabel=참가 신청 취소하기)
                     - 모임원 + 모집 마감: RECRUITMENT_CLOSED (enabled=false, buttonLabel=모집인원이 마감되었어요)
                     - 약속 종료(DONE): DONE (enabled=false, buttonLabel=약속이 끝났어요)
                     - 약속 거절(REJECTED): REJECTED (enabled=false, buttonLabel=약속 신청이 거절됐어요)
@@ -289,8 +359,16 @@ public record MeetingDetailResponse(
             return fromType(MeetingActionType.CAN_JOIN);
         }
 
+        public static ActionState joinTimeExpired() {
+            return fromType(MeetingActionType.JOIN_TIME_EXPIRED);
+        }
+
         public static ActionState canCancel() {
             return fromType(MeetingActionType.CAN_CANCEL);
+        }
+
+        public static ActionState cancelTimeExpired() {
+            return fromType(MeetingActionType.CANCEL_TIME_EXPIRED);
         }
 
         public static ActionState recruitmentClosed() {

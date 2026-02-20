@@ -4,11 +4,13 @@ import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
-import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.meeting.entity.MeetingStatus;
+import com.dokdok.global.response.CursorResponse;
 import com.dokdok.meeting.service.MeetingValidator;
 import com.dokdok.topic.dto.request.ConfirmTopicsRequest;
 import com.dokdok.topic.dto.request.SuggestTopicRequest;
 import com.dokdok.topic.dto.response.ConfirmTopicsResponse;
+import com.dokdok.topic.dto.response.ConfirmedTopicsCursor;
 import com.dokdok.topic.dto.response.ConfirmedTopicsResponse;
 import com.dokdok.topic.dto.response.SuggestTopicResponse;
 import com.dokdok.topic.dto.response.TopicLikeResponse;
@@ -16,10 +18,12 @@ import com.dokdok.topic.dto.response.TopicsWithActionsResponse;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicLike;
 import com.dokdok.topic.entity.TopicMessage;
-import com.dokdok.topic.repository.TopicLikeRepository;
 import com.dokdok.topic.entity.TopicStatus;
+import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
+import com.dokdok.topic.repository.TopicAnswerRepository;
+import com.dokdok.topic.repository.TopicLikeRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,9 +46,36 @@ public class TopicService {
 
     private final TopicRepository topicRepository;
     private final TopicLikeRepository topicLikeRepository;
+    private final TopicAnswerRepository topicAnswerRepository;
     private final GatheringValidator gatheringValidator;
     private final MeetingValidator meetingValidator;
     private final TopicValidator topicValidator;
+
+    @Transactional
+    public void createDefaultTopic(Meeting meeting) {
+        if (meeting == null || meeting.getId() == null) {
+            return;
+        }
+        if (topicRepository.countByMeetingIdAndDeletedAtIsNull(meeting.getId()) > 0) {
+            return;
+        }
+
+        User leader = meeting.getMeetingLeader();
+        if (leader == null) {
+            return;
+        }
+        TopicType type = TopicType.FREE;
+
+        Topic topic = Topic.create(
+                meeting,
+                leader,
+                type.getDisplayName(),
+                type.getDescription(),
+                type
+        );
+
+        topicRepository.save(topic);
+    }
 
     @Transactional
     public SuggestTopicResponse createTopic(
@@ -113,15 +144,22 @@ public class TopicService {
         }
 
         Set<Long> deletableTopicIds = Set.of();
+        Set<Long> likedTopicIds = Set.of();
 
         if (userId != null && !topics.isEmpty()) {
             List<Long> topicIds = topics.stream()
                     .map(Topic::getId)
                     .toList();
             deletableTopicIds = topicRepository.findDeletableTopicIds(topicIds, userId);
+            likedTopicIds = topicLikeRepository.findLikedTopicIds(topicIds, userId);
         }
 
-        return TopicsWithActionsResponse.from(topics, pageSize, hasNext, deletableTopicIds, actions);
+        Long totalCount = null;
+        if (!hasCursor) {
+            totalCount = topicRepository.countByMeetingIdAndDeletedAtIsNull(meetingId);
+        }
+
+        return TopicsWithActionsResponse.from(topics, pageSize, hasNext, deletableTopicIds, likedTopicIds, actions, totalCount);
     }
 
     @Transactional
@@ -146,6 +184,7 @@ public class TopicService {
                 topics.stream()
                         .collect(Collectors.toMap(Topic::getId, Function.identity()));
 
+        List<ConfirmTopicsResponse.ConfirmedTopicOrder> confirmedTopics = new ArrayList<>(topicIds.size());
         for (int i = 0; i < topicIds.size(); i++) {
             Long topicId = topicIds.get(i);
             Topic topic = topicMap.get(topicId);
@@ -154,31 +193,74 @@ public class TopicService {
             }
             topic.updateStatus(TopicStatus.CONFIRMED);
             topic.updateConfirmOrder(i + 1);
+            confirmedTopics.add(ConfirmTopicsResponse.ConfirmedTopicOrder.of(topicId, i + 1));
         }
 
-        return ConfirmTopicsResponse.from(meetingId);
+        return ConfirmTopicsResponse.from(meetingId, confirmedTopics);
     }
 
     @Transactional(readOnly = true)
     public ConfirmedTopicsResponse getConfirmedTopics(
             Long gatheringId,
-            Long meetingId
+            Long meetingId,
+            int pageSize,
+            Integer cursorConfirmOrder,
+            Long cursorTopicId
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         gatheringValidator.validateMembership(gatheringId, userId);
         meetingValidator.validateMeetingInGathering(meetingId, gatheringId);
 
-        List<Topic> topics = topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
-                meetingId,
-                TopicStatus.CONFIRMED
-        );
+        PageRequest pageable = PageRequest.of(0, pageSize + 1);
+        boolean hasCursor = cursorConfirmOrder != null && cursorTopicId != null;
+
+        List<Topic> topics = hasCursor
+                ? topicRepository.findConfirmedTopicsAfterCursor(meetingId, cursorConfirmOrder, cursorTopicId, pageable)
+                : topicRepository.findConfirmedTopicsFirstPage(meetingId, pageable);
+
+        boolean hasNext = topics.size() > pageSize;
+        if (hasNext) {
+            topics = topics.subList(0, pageSize);
+        }
 
         List<ConfirmedTopicsResponse.ConfirmedTopicDto> topicDtos = topics.stream()
                 .map(ConfirmedTopicsResponse.ConfirmedTopicDto::from)
                 .toList();
 
-        return ConfirmedTopicsResponse.from(meetingId, topicDtos);
+        ConfirmedTopicsCursor nextCursor = null;
+        if (hasNext && !topics.isEmpty()) {
+            Topic lastTopic = topics.get(topics.size() - 1);
+            nextCursor = ConfirmedTopicsCursor.from(lastTopic);
+        }
+
+        Integer totalCount = null;
+        if (!hasCursor) {
+            totalCount = (int) topicRepository.countByMeetingIdAndTopicStatusAndDeletedAtIsNull(
+                    meetingId, TopicStatus.CONFIRMED
+            );
+        }
+
+        boolean hasSubmitted = topicAnswerRepository.existsByMeetingIdAndUserId(meetingId, userId);
+        boolean isMeetingConfirmed = meetingValidator.findMeetingOrThrow(meetingId).getMeetingStatus()
+                == MeetingStatus.CONFIRMED;
+        Integer confirmedTopicsCount = totalCount;
+        if (confirmedTopicsCount == null) {
+            confirmedTopicsCount = (int) topicRepository.countByMeetingIdAndTopicStatusAndDeletedAtIsNull(
+                    meetingId, TopicStatus.CONFIRMED
+            );
+        }
+        boolean hasConfirmedTopics = confirmedTopicsCount > 0;
+
+        ConfirmedTopicsResponse.Actions actions = ConfirmedTopicsResponse.Actions.of(
+                hasSubmitted,
+                isMeetingConfirmed && hasConfirmedTopics && !hasSubmitted
+        );
+
+        CursorResponse<ConfirmedTopicsResponse.ConfirmedTopicDto, ConfirmedTopicsCursor> page =
+                CursorResponse.of(topicDtos, pageSize, hasNext, nextCursor, totalCount);
+
+        return ConfirmedTopicsResponse.from(page, actions);
     }
 
     @Transactional

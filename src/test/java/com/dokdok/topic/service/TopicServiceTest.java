@@ -25,6 +25,7 @@ import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.exception.TopicErrorCode;
 import com.dokdok.topic.exception.TopicException;
+import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicLikeRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
@@ -58,6 +59,9 @@ class TopicServiceTest {
 
     @Mock
     private TopicLikeRepository topicLikeRepository;
+
+    @Mock
+    private TopicAnswerRepository topicAnswerRepository;
 
     @Mock
     private MeetingValidator meetingValidator;
@@ -117,6 +121,61 @@ class TopicServiceTest {
     }
 
     @Test
+    @DisplayName("기본 자유형 토픽이 없으면 생성한다")
+    void createDefaultTopic_Success() {
+        Meeting meeting = Meeting.builder()
+                .id(10L)
+                .meetingLeader(testUser)
+                .build();
+
+        given(topicRepository.countByMeetingIdAndDeletedAtIsNull(meeting.getId()))
+                .willReturn(0L);
+
+        topicService.createDefaultTopic(meeting);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Topic.class);
+        verify(topicRepository).save(captor.capture());
+        Topic saved = captor.getValue();
+        assertThat(saved.getMeeting()).isEqualTo(meeting);
+        assertThat(saved.getProposedBy()).isEqualTo(testUser);
+        assertThat(saved.getTopicType()).isEqualTo(TopicType.FREE);
+        assertThat(saved.getTitle()).isEqualTo(TopicType.FREE.getDisplayName());
+        assertThat(saved.getDescription()).isEqualTo(TopicType.FREE.getDescription());
+    }
+
+    @Test
+    @DisplayName("이미 토픽이 있으면 기본 토픽을 생성하지 않는다")
+    void createDefaultTopic_SkipWhenExists() {
+        Meeting meeting = Meeting.builder()
+                .id(10L)
+                .meetingLeader(testUser)
+                .build();
+
+        given(topicRepository.countByMeetingIdAndDeletedAtIsNull(meeting.getId()))
+                .willReturn(1L);
+
+        topicService.createDefaultTopic(meeting);
+
+        verify(topicRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("약속장이 없으면 기본 토픽을 생성하지 않는다")
+    void createDefaultTopic_SkipWhenLeaderMissing() {
+        Meeting meeting = Meeting.builder()
+                .id(10L)
+                .meetingLeader(null)
+                .build();
+
+        given(topicRepository.countByMeetingIdAndDeletedAtIsNull(meeting.getId()))
+                .willReturn(0L);
+
+        topicService.createDefaultTopic(meeting);
+
+        verify(topicRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("선택한 주제를 확정 상태로 변경한다")
     void confirmTopics_Success() {
         Long gatheringId = 1L;
@@ -152,6 +211,11 @@ class TopicServiceTest {
 
             assertThat(response.meetingId()).isEqualTo(meetingId);
             assertThat(response.topicStatus()).isEqualTo(TopicStatus.CONFIRMED);
+            assertThat(response.topics()).hasSize(2);
+            assertThat(response.topics().get(0).topicId()).isEqualTo(12L);
+            assertThat(response.topics().get(0).confirmOrder()).isEqualTo(1);
+            assertThat(response.topics().get(1).topicId()).isEqualTo(13L);
+            assertThat(response.topics().get(1).confirmOrder()).isEqualTo(2);
             assertThat(topic1.getTopicStatus()).isEqualTo(TopicStatus.CONFIRMED);
             assertThat(topic2.getTopicStatus()).isEqualTo(TopicStatus.CONFIRMED);
             assertThat(topic1.getConfirmOrder()).isEqualTo(1);
@@ -206,6 +270,7 @@ class TopicServiceTest {
             Long gatheringId = 1L;
             Long meetingId = 1L;
             Long userId = 1L;
+            int pageSize = 10;
 
             Topic topic1 = Topic.builder()
                     .id(12L)
@@ -233,23 +298,31 @@ class TopicServiceTest {
 
                 doNothing().when(gatheringValidator).validateMembership(gatheringId, userId);
                 doNothing().when(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
-                given(topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
-                        meetingId, TopicStatus.CONFIRMED))
+                given(topicRepository.findConfirmedTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(List.of(topic1, topic2));
+                given(topicRepository.countByMeetingIdAndTopicStatusAndDeletedAtIsNull(meetingId, TopicStatus.CONFIRMED))
+                        .willReturn(2L);
+                given(topicAnswerRepository.existsByMeetingIdAndUserId(meetingId, userId))
+                        .willReturn(false);
+                given(meetingValidator.findMeetingOrThrow(meetingId)).willReturn(testMeeting);
 
                 ConfirmedTopicsResponse response =
-                        topicService.getConfirmedTopics(gatheringId, meetingId);
+                        topicService.getConfirmedTopics(gatheringId, meetingId, pageSize, null, null);
 
-                assertThat(response.meetingId()).isEqualTo(meetingId);
-                assertThat(response.topics()).hasSize(2);
-                assertThat(response.topics().get(0).topicId()).isEqualTo(12L);
-                assertThat(response.topics().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
-                assertThat(response.topics().get(1).confirmOrder()).isEqualTo(2);
+                assertThat(response.page().items()).hasSize(2);
+                assertThat(response.page().items().get(0).topicId()).isEqualTo(12L);
+                assertThat(response.page().items().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+                assertThat(response.page().items().get(1).confirmOrder()).isEqualTo(2);
+                assertThat(response.page().pageSize()).isEqualTo(pageSize);
+                assertThat(response.page().hasNext()).isFalse();
+                assertThat(response.page().nextCursor()).isNull();
+                assertThat(response.page().totalCount()).isEqualTo(2);
+                assertThat(response.actions().canViewPreOpinions()).isFalse();
+                assertThat(response.actions().canWritePreOpinions()).isTrue();
 
                 verify(gatheringValidator).validateMembership(gatheringId, userId);
                 verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
-                verify(topicRepository).findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(
-                        meetingId, TopicStatus.CONFIRMED);
+                verify(topicRepository).findConfirmedTopicsFirstPage(eq(meetingId), any(Pageable.class));
             }
         }
 
@@ -259,6 +332,7 @@ class TopicServiceTest {
             Long gatheringId = 1L;
             Long meetingId = 1L;
             Long userId = 1L;
+            int pageSize = 10;
 
             try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
                 securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -266,12 +340,12 @@ class TopicServiceTest {
                 doThrow(new GatheringException(GatheringErrorCode.NOT_GATHERING_MEMBER))
                         .when(gatheringValidator).validateMembership(gatheringId, userId);
 
-                assertThatThrownBy(() -> topicService.getConfirmedTopics(gatheringId, meetingId))
+                assertThatThrownBy(() -> topicService.getConfirmedTopics(gatheringId, meetingId, pageSize, null, null))
                         .isInstanceOf(GatheringException.class)
                         .hasFieldOrPropertyWithValue("errorCode", GatheringErrorCode.NOT_GATHERING_MEMBER);
 
                 verify(topicRepository, never())
-                        .findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(any(), any());
+                        .findConfirmedTopicsFirstPage(any(), any());
             }
         }
     }
@@ -408,7 +482,7 @@ class TopicServiceTest {
     }
 
     @Test
-    @DisplayName("약속 상태가 PENDING인 경우 예외가 발생한다")
+    @DisplayName("약속 상태가 CONFIRMED가 아니면 예외가 발생한다")
     void createTopic_MeetingStatusPending_ThrowsException() {
         Long gatheringId = 1L;
         Long meetingId = 1L;
@@ -424,7 +498,7 @@ class TopicServiceTest {
             doNothing().when(meetingValidator)
                     .validateMeetingInGathering(meetingId, gatheringId);
 
-            doThrow(new MeetingException(MeetingErrorCode.MEETING_ALREADY_CONFIRMED))
+            doThrow(new MeetingException(MeetingErrorCode.MEETING_NOT_CONFIRMED))
                     .when(meetingValidator)
                     .validateMeetingStatus(meetingId);
 
@@ -432,7 +506,7 @@ class TopicServiceTest {
                     topicService.createTopic(gatheringId, meetingId, testRequest))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode",
-                            MeetingErrorCode.MEETING_ALREADY_CONFIRMED);
+                            MeetingErrorCode.MEETING_NOT_CONFIRMED);
 
             verify(meetingValidator, never()).getMeetingMember(any(), any());
             verify(topicRepository, never()).save(any());
@@ -530,35 +604,54 @@ class TopicServiceTest {
                 doNothing().when(meetingValidator)
                         .validateMeetingInGathering(meetingId, gatheringId);
 
+                given(topicRepository.canConfirmTopic(meetingId, userId))
+                        .willReturn(false);
+
+                given(topicRepository.canSuggestTopic(meetingId, userId))
+                        .willReturn(true);
+
                 given(topicRepository.findTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(topics);
 
                 given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
                         .willReturn(Set.of(1L));
 
+                given(topicLikeRepository.findLikedTopicIds(any(), eq(userId)))
+                        .willReturn(Set.of(1L));
+
+                given(topicRepository.countByMeetingIdAndDeletedAtIsNull(meetingId))
+                        .willReturn(2L);
+
                 TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.page().items()).hasSize(2);
-                assertThat(response.page().pageSize()).isEqualTo(10);
-                assertThat(response.page().hasNext()).isFalse();
-                assertThat(response.page().nextCursor()).isNull();
+                assertThat(response.items()).hasSize(2);
+                assertThat(response.pageSize()).isEqualTo(10);
+                assertThat(response.hasNext()).isFalse();
+                assertThat(response.nextCursor()).isNull();
+                assertThat(response.totalCount()).isEqualTo(2);
 
-                assertThat(response.page().items().get(0).title()).isEqualTo("의미 있는 이름 짓기");
-                assertThat(response.page().items().get(0).likeCount()).isEqualTo(5);
-                assertThat(response.page().items().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
-                assertThat(response.page().items().get(0).canDelete()).isTrue();
+                assertThat(response.actions().canConfirm()).isFalse();
+                assertThat(response.actions().canSuggest()).isTrue();
 
-                assertThat(response.page().items().get(1).title()).isEqualTo("함수 작성 원칙");
-                assertThat(response.page().items().get(1).likeCount()).isEqualTo(3);
-                assertThat(response.page().items().get(1).canDelete()).isFalse();
+                assertThat(response.items().get(0).title()).isEqualTo("의미 있는 이름 짓기");
+                assertThat(response.items().get(0).likeCount()).isEqualTo(5);
+                assertThat(response.items().get(0).topicType()).isEqualTo(TopicType.DISCUSSION);
+                assertThat(response.items().get(0).canDelete()).isTrue();
+                assertThat(response.items().get(0).isLiked()).isTrue();
+
+                assertThat(response.items().get(1).title()).isEqualTo("함수 작성 원칙");
+                assertThat(response.items().get(1).likeCount()).isEqualTo(3);
+                assertThat(response.items().get(1).canDelete()).isFalse();
+                assertThat(response.items().get(1).isLiked()).isFalse();
 
                 verify(gatheringValidator).validateGathering(gatheringId);
                 verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
                 verify(topicRepository).findTopicsFirstPage(eq(meetingId), any(Pageable.class));
                 verify(topicRepository).findDeletableTopicIds(any(), eq(userId));
+                verify(topicLikeRepository).findLikedTopicIds(any(), eq(userId));
             }
         }
 
@@ -598,18 +691,32 @@ class TopicServiceTest {
                 doNothing().when(meetingValidator)
                         .validateMeetingInGathering(meetingId, gatheringId);
 
+                given(topicRepository.canConfirmTopic(meetingId, null))
+                        .willReturn(false);
+
+                given(topicRepository.canSuggestTopic(meetingId, null))
+                        .willReturn(false);
+
                 given(topicRepository.findTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(topics);
+
+                given(topicRepository.countByMeetingIdAndDeletedAtIsNull(meetingId))
+                        .willReturn(1L);
 
                 TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.page().items()).hasSize(1);
-                assertThat(response.page().items().get(0).canDelete()).isFalse();
+                assertThat(response.items()).hasSize(1);
+                assertThat(response.items().get(0).canDelete()).isFalse();
+                assertThat(response.items().get(0).isLiked()).isFalse();
+                assertThat(response.totalCount()).isEqualTo(1);
+                assertThat(response.actions().canConfirm()).isFalse();
+                assertThat(response.actions().canSuggest()).isFalse();
 
                 verify(topicRepository, never()).findDeletableTopicIds(any(), any());
+                verify(topicLikeRepository, never()).findLikedTopicIds(any(), any());
             }
         }
 
@@ -631,23 +738,34 @@ class TopicServiceTest {
                 doNothing().when(meetingValidator)
                         .validateMeetingInGathering(meetingId, gatheringId);
 
+                given(topicRepository.canConfirmTopic(meetingId, userId))
+                        .willReturn(false);
+
+                given(topicRepository.canSuggestTopic(meetingId, userId))
+                        .willReturn(false);
+
                 given(topicRepository.findTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(List.of());
+
+                given(topicRepository.countByMeetingIdAndDeletedAtIsNull(meetingId))
+                        .willReturn(0L);
 
                 TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.page().items()).isEmpty();
-                assertThat(response.page().pageSize()).isEqualTo(10);
-                assertThat(response.page().hasNext()).isFalse();
-                assertThat(response.page().nextCursor()).isNull();
+                assertThat(response.items()).isEmpty();
+                assertThat(response.pageSize()).isEqualTo(10);
+                assertThat(response.hasNext()).isFalse();
+                assertThat(response.nextCursor()).isNull();
+                assertThat(response.totalCount()).isEqualTo(0);
 
                 verify(gatheringValidator).validateGathering(gatheringId);
                 verify(meetingValidator).validateMeetingInGathering(meetingId, gatheringId);
                 verify(topicRepository).findTopicsFirstPage(eq(meetingId), any(Pageable.class));
                 verify(topicRepository, never()).findDeletableTopicIds(any(), any());
+                verify(topicLikeRepository, never()).findLikedTopicIds(any(), any());
             }
         }
 
@@ -700,22 +818,36 @@ class TopicServiceTest {
                 doNothing().when(meetingValidator)
                         .validateMeetingInGathering(meetingId, gatheringId);
 
+                given(topicRepository.canConfirmTopic(meetingId, userId))
+                        .willReturn(false);
+
+                given(topicRepository.canSuggestTopic(meetingId, userId))
+                        .willReturn(true);
+
                 given(topicRepository.findTopicsFirstPage(eq(meetingId), any(Pageable.class)))
                         .willReturn(topics);
 
                 given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
                         .willReturn(Set.of());
 
+                given(topicLikeRepository.findLikedTopicIds(any(), eq(userId)))
+                        .willReturn(Set.of());
+
+                given(topicRepository.countByMeetingIdAndDeletedAtIsNull(meetingId))
+                        .willReturn(10L);
+
                 TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, null, null
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.page().items()).hasSize(2);
-                assertThat(response.page().hasNext()).isTrue();
-                assertThat(response.page().nextCursor()).isNotNull();
-                assertThat(response.page().nextCursor().likeCount()).isEqualTo(5);
-                assertThat(response.page().nextCursor().topicId()).isEqualTo(2L);
+                assertThat(response.items()).hasSize(2);
+                assertThat(response.pageSize()).isEqualTo(2);
+                assertThat(response.hasNext()).isTrue();
+                assertThat(response.nextCursor()).isNotNull();
+                assertThat(response.nextCursor().likeCount()).isEqualTo(5);
+                assertThat(response.nextCursor().topicId()).isEqualTo(2L);
+                assertThat(response.totalCount()).isEqualTo(10);
 
                 verify(topicRepository).findTopicsFirstPage(eq(meetingId), any(Pageable.class));
             }
@@ -753,6 +885,12 @@ class TopicServiceTest {
                 doNothing().when(meetingValidator)
                         .validateMeetingInGathering(meetingId, gatheringId);
 
+                given(topicRepository.canConfirmTopic(meetingId, userId))
+                        .willReturn(false);
+
+                given(topicRepository.canSuggestTopic(meetingId, userId))
+                        .willReturn(true);
+
                 given(topicRepository.findTopicsAfterCursor(
                         eq(meetingId), eq(cursorLikeCount), eq(cursorTopicId), any(Pageable.class)
                 )).willReturn(topics);
@@ -760,19 +898,25 @@ class TopicServiceTest {
                 given(topicRepository.findDeletableTopicIds(any(), eq(userId)))
                         .willReturn(Set.of());
 
+                given(topicLikeRepository.findLikedTopicIds(any(), eq(userId)))
+                        .willReturn(Set.of(3L));
+
                 TopicsWithActionsResponse response = topicService.getTopics(
                         gatheringId, meetingId, pageSize, cursorLikeCount, cursorTopicId
                 );
 
                 assertThat(response).isNotNull();
-                assertThat(response.page().items()).hasSize(1);
-                assertThat(response.page().hasNext()).isFalse();
-                assertThat(response.page().nextCursor()).isNull();
+                assertThat(response.items()).hasSize(1);
+                assertThat(response.hasNext()).isFalse();
+                assertThat(response.nextCursor()).isNull();
+                assertThat(response.totalCount()).isNull();
+                assertThat(response.items().get(0).isLiked()).isTrue();
 
                 verify(topicRepository).findTopicsAfterCursor(
                         eq(meetingId), eq(cursorLikeCount), eq(cursorTopicId), any(Pageable.class)
                 );
                 verify(topicRepository, never()).findTopicsFirstPage(any(), any());
+                verify(topicRepository, never()).countByMeetingIdAndDeletedAtIsNull(any());
             }
         }
 

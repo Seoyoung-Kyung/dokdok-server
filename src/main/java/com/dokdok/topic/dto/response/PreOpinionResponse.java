@@ -1,7 +1,9 @@
 package com.dokdok.topic.dto.response;
 
+import com.dokdok.book.entity.KeywordType;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
+import com.dokdok.topic.entity.TopicType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -22,13 +24,17 @@ public record PreOpinionResponse(
             Long topicId,
 
             @Schema(description = "주제명", example = "책의 주요 메시지")
-            String topicName,
+            String title,
 
             @Schema(description = "주제 설명", example = "이 책에서 전달하고자 하는 핵심 메시지는 무엇인가요?")
-            String topicDescription,
+            String description,
 
-            @Schema(description = "주제 타입", example = "토론")
-            String topicType,
+            @Schema(description = "주제 타입", example = "DISCUSSION",
+                    allowableValues = {"FREE", "DISCUSSION", "EMOTION", "EXPERIENCE", "CHARACTER_ANALYSIS", "COMPARISON", "STRUCTURE", "IN_DEPTH", "CREATIVE", "CUSTOM"})
+            TopicType topicType,
+
+            @Schema(description = "주제 타입 라벨", example = "토론형")
+            String topicTypeLabel,
 
             @Schema(description = "주제 순서", example = "1")
             Integer confirmOrder
@@ -38,6 +44,7 @@ public record PreOpinionResponse(
                     topic.getId(),
                     topic.getTitle(),
                     topic.getDescription(),
+                    topic.getTopicType(),
                     topic.getTopicType().getDisplayName(),
                     topic.getConfirmOrder()
             );
@@ -53,23 +60,34 @@ public record PreOpinionResponse(
             BookReviewInfo bookReview,
 
             @Schema(description = "주제별 의견 목록")
-            List<TopicOpinion> topicOpinions
+            List<TopicOpinion> topicOpinions,
+
+            @Schema(description = "답변 제출 여부")
+            Boolean isSubmitted
     ) {
     }
 
     @Schema(description = "멤버 정보")
     public record MemberInfo(
-            @Schema(description = "멤버 ID", example = "1")
-            Long memberId,
+            @Schema(description = "사용자 ID", example = "1")
+            Long userId,
 
             @Schema(description = "닉네임", example = "독서왕")
             String nickname,
 
             @Schema(description = "프로필 이미지 URL", example = "https://example.com/profile.jpg")
-            String profileImage
+            String profileImage,
+
+            @Schema(description = "역할", example = "MEMBER")
+            String role
     ) {
-        public static MemberInfo of(Long memberId, String nickname, String profileImage) {
-            return new MemberInfo(memberId, nickname, profileImage);
+        public static MemberInfo of(
+                Long userId,
+                String nickname,
+                String profileImage,
+                String role
+        ) {
+            return new MemberInfo(userId, nickname, profileImage, role);
         }
     }
 
@@ -79,17 +97,32 @@ public record PreOpinionResponse(
             BigDecimal rating,
 
             @Schema(description = "책 키워드 목록", example = "[\"성장\", \"관계\"]")
-            List<String> bookKeywords,
-
-            @Schema(description = "인상 키워드 목록", example = "[\"여운이 남는\", \"즐거운\"]")
-            List<String> impressionKeywords
+            List<KeywordInfo> keywordInfo
     ) {
         public static BookReviewInfo of(
                 BigDecimal rating,
-                List<String> bookKeywords,
-                List<String> impressionKeywords
+                List<KeywordInfo> keywordInfo
         ) {
-            return new BookReviewInfo(rating, bookKeywords, impressionKeywords);
+            return new BookReviewInfo(rating, keywordInfo);
+        }
+    }
+
+    @Schema(description = "리뷰 키워드 정보")
+    public record KeywordInfo(
+            @Schema(description = "키워드 ID", example = "3")
+            Long id,
+            @Schema(description = "키워드 이름", example = "판타지")
+            String name,
+            @Schema(description = "키워드 타입", example = "BOOK")
+            KeywordType type
+    ) {
+
+        public static KeywordInfo of(
+                Long id,
+                String name,
+                KeywordType type
+        ) {
+            return new KeywordInfo(id, name, type);
         }
     }
 

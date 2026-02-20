@@ -42,7 +42,7 @@ public record MeetingRetrospectiveResponse(
                 .build();
     }
 
-    @Schema(description = "주제 회고 정보")
+    @Schema(description = "약속 회고 AI요약")
     @Builder
     public record TopicResponse(
             @Schema(description = "주제 ID", example = "1")
@@ -56,14 +56,11 @@ public record MeetingRetrospectiveResponse(
             @Schema(description = "핵심 요약", example = "참여자들은 『데미안』 속 싱클레어가...")
             String summary,
             @Schema(description = "주요 포인트 목록")
-            List<KeyPointResponse> keyPoints,
-            @Schema(description = "코멘트 목록")
-            List<CommentResponse> comments
+            List<KeyPointResponse> keyPoints
     ){
         public static TopicResponse from(
                 Topic topic,
-                TopicRetrospectiveSummary summary,
-                List<CommentResponse> comments
+                TopicRetrospectiveSummary summary
         ) {
             return TopicResponse.builder()
                     .topicId(topic.getId())
@@ -76,7 +73,6 @@ public record MeetingRetrospectiveResponse(
                             .map(KeyPointResponse::from)
                             .toList()
                             : null)
-                    .comments(comments)
                     .build();
         }
     }
@@ -100,8 +96,8 @@ public record MeetingRetrospectiveResponse(
     @Schema(description = "모임 회고 코멘트")
     @Builder
     public record CommentResponse(
-            @Schema(description = "모임 회고 ID", example = "1")
-            Long meetingRetrospectiveId,
+            @Schema(description = "코멘트 ID", example = "1")
+            Long commentId,
             @Schema(description = "작성자 사용자 ID", example = "1")
             Long userId,
             @Schema(description = "닉네임", example = "독서왕")
@@ -114,12 +110,12 @@ public record MeetingRetrospectiveResponse(
             LocalDateTime createdAt
     ) {
 
-        public static CommentResponse from(MeetingRetrospective retrospective) {
+        public static CommentResponse from(MeetingRetrospective retrospective, String presignedProfileImageUrl) {
             return CommentResponse.builder()
-                    .meetingRetrospectiveId(retrospective.getId())
+                    .commentId(retrospective.getId())
                     .userId(retrospective.getCreatedBy().getId())
                     .nickname(retrospective.getCreatedBy().getNickname())
-                    .profileImageUrl(retrospective.getCreatedBy().getProfileImageUrl())
+                    .profileImageUrl(presignedProfileImageUrl)
                     .comment(retrospective.getComment())
                     .createdAt(retrospective.getCreatedAt())
                     .build();

@@ -25,6 +25,38 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             TopicStatus topicStatus
     );
 
+    @Query("SELECT t " +
+            "FROM Topic t " +
+            "JOIN FETCH t.proposedBy p " +
+            "JOIN FETCH t.meeting m " +
+            "JOIN FETCH m.gathering g " +
+            "WHERE t.meeting.id = :meetingId " +
+            "AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED " +
+            "AND t.deletedAt IS NULL " +
+            "ORDER BY t.confirmOrder ASC, t.id ASC")
+    List<Topic> findConfirmedTopicsFirstPage(
+            @Param("meetingId") Long meetingId,
+            Pageable pageable
+    );
+
+    @Query("SELECT t " +
+            "FROM Topic t " +
+            "JOIN FETCH t.proposedBy p " +
+            "JOIN FETCH t.meeting m " +
+            "JOIN FETCH m.gathering g " +
+            "WHERE t.meeting.id = :meetingId " +
+            "AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED " +
+            "AND t.deletedAt IS NULL " +
+            "AND (t.confirmOrder > :cursorConfirmOrder " +
+            "     OR (t.confirmOrder = :cursorConfirmOrder AND t.id > :cursorTopicId)) " +
+            "ORDER BY t.confirmOrder ASC, t.id ASC")
+    List<Topic> findConfirmedTopicsAfterCursor(
+            @Param("meetingId") Long meetingId,
+            @Param("cursorConfirmOrder") Integer cursorConfirmOrder,
+            @Param("cursorTopicId") Long cursorTopicId,
+            Pageable pageable
+    );
+
     @Query("""
                     SELECT t
                     FROM Topic t
@@ -183,6 +215,31 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             @Param("meetingId") Long meetingId
     );
 
+    long countByMeetingIdAndTopicStatusAndDeletedAtIsNull(Long meetingId, TopicStatus topicStatus);
+
+    @Query("""
+            SELECT t
+            FROM Topic t
+            WHERE t.meeting.id IN :meetingIds
+            AND t.topicStatus = com.dokdok.topic.entity.TopicStatus.CONFIRMED
+            ORDER BY t.meeting.id, t.confirmOrder, t.id
+            """)
+    List<Topic> findTopicsInfoByMeetingIds(
+            @Param("meetingIds") List<Long> meetingIds
+    );
+
+    @Query("""
+            SELECT MAX(t.updatedAt)
+            FROM Topic t
+            WHERE t.meeting.id = :meetingId
+            AND t.topicStatus = :status
+            AND t.deletedAt IS NULL
+            """)
+    LocalDateTime findConfirmedTopicDateByMeetingId(
+            @Param("meetingId") Long meetingId,
+            @Param("status") TopicStatus status
+    );
+
     /**
      * 확정된 주제가 없고, 약속장 혹은 모임장일 경우 true
      */
@@ -234,5 +291,5 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             """)
     boolean canSuggestTopic(Long meetingId, Long userId);
 
-
+    long countByMeetingIdAndDeletedAtIsNull(Long meetingId);
 }

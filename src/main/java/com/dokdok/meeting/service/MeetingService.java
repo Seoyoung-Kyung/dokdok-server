@@ -5,7 +5,6 @@ import com.dokdok.book.entity.Book;
 import com.dokdok.book.exception.BookErrorCode;
 import com.dokdok.book.exception.BookException;
 import com.dokdok.book.repository.BookRepository;
-import com.dokdok.book.service.BookService;
 import com.dokdok.book.service.BookValidator;
 import com.dokdok.book.service.PersonalBookService;
 import com.dokdok.gathering.entity.Gathering;
@@ -27,9 +26,12 @@ import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
 import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
+import com.dokdok.topic.service.TopicService;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.user.entity.User;
 import com.dokdok.user.service.UserValidator;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,8 @@ public class MeetingService {
     private final MeetingMemberRepository meetingMemberRepository;
     private final TopicRepository topicRepository;
     private final TopicAnswerRepository topicAnswerRepository;
+    private final TopicService topicService;
+    private final StorageService storageService;
     private final GatheringRepository gatheringRepository;
     private final GatheringMemberRepository gatheringMemberRepository;
     private final GatheringValidator gatheringValidator;
@@ -74,8 +78,41 @@ public class MeetingService {
         gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
         List<MeetingMember> meetingMembers = meetingMemberRepository.findAllByMeetingId(meetingId);
+        Map<Long, String> profileImageUrlMap = buildProfileImageUrlMap(meetingMembers);
 
-        return MeetingDetailResponse.from(meeting, meetingMembers, userId);
+        LocalDateTime confirmedTopicDate = topicRepository.findConfirmedTopicDateByMeetingId(
+                meetingId,
+                TopicStatus.CONFIRMED
+        );
+        boolean confirmedTopic = confirmedTopicDate != null;
+
+        return MeetingDetailResponse.from(
+                meeting,
+                meetingMembers,
+                userId,
+                confirmedTopic,
+                confirmedTopicDate,
+                profileImageUrlMap
+        );
+    }
+
+    /**
+     * 약속 멤버들의 프로필 이미지 presigned URL Map 생성
+     */
+    private Map<Long, String> buildProfileImageUrlMap(List<MeetingMember> members) {
+        Map<Long, String> profileImageUrlMap = new HashMap<>();
+
+        members.forEach(member -> {
+            User user = member.getUser();
+            if (user == null || user.getId() == null) {
+                return;
+            }
+            String profileImageUrl = user.getProfileImageUrl();
+            String presignedUrl = storageService.getPresignedProfileImage(profileImageUrl);
+            profileImageUrlMap.put(user.getId(), presignedUrl);
+        });
+
+        return profileImageUrlMap;
     }
 
     /**
@@ -93,8 +130,17 @@ public class MeetingService {
         Gathering gathering = gatheringRepository.findById(request.gatheringId())
                 .orElseThrow(() -> new GatheringException(GatheringErrorCode.GATHERING_NOT_FOUND));
 
-        Book book = bookRepository.findById(request.bookId())
-                .orElseThrow(() -> new BookException(BookErrorCode.BOOK_NOT_FOUND));
+        Book book = bookRepository.findByIsbn(request.book().isbn())
+                .orElseGet(() -> {
+                    BookCreateRequest bookCreateRequest = new BookCreateRequest(
+                            request.book().title(),
+                            request.book().authors(),
+                            request.book().publisher(),
+                            request.book().isbn(),
+                            request.book().thumbnail()
+                    );
+                    return bookRepository.save(bookCreateRequest.of());
+                });
 
         User user = userValidator.findUserOrThrow(userId);
 
@@ -103,6 +149,8 @@ public class MeetingService {
             maxParticipants = gatheringMemberRepository
                     .countByGatheringIdAndRemovedAtIsNull(gathering.getId());
         }
+
+        validateMeetingDatesRequired(request.meetingStartDate(), request.meetingEndDate());
 
         // 최대 참가 인원 검증
         validateMaxParticipants(maxParticipants, gathering.getId());
@@ -131,6 +179,8 @@ public class MeetingService {
         ensureLeaderMember(meeting);
 
         meeting.changeStatus(MeetingStatus.CONFIRMED);
+        saveMeetingBookForUser(meeting, meeting.getGathering(), meeting.getMeetingLeader().getId());
+        topicService.createDefaultTopic(meeting);
 
         return MeetingStatusResponse.from(meeting);
     }
@@ -179,11 +229,22 @@ public class MeetingService {
      */
     private void validateConfirmable(Meeting meeting) {
         Long gatheringId = meeting.getGathering().getId();
-        boolean hasConfirmedMeeting = meetingRepository
-                .existsByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.CONFIRMED);
-        if (hasConfirmedMeeting) {
+        LocalDateTime startDate = meeting.getMeetingStartDate();
+        LocalDateTime endDate = meeting.getMeetingEndDate();
+        if (startDate == null || endDate == null) {
+            throw new MeetingException(MeetingErrorCode.MEETING_DATE_REQUIRED,
+                    "약속 시작/종료 일시는 필수입니다.");
+        }
+        boolean hasOverlappingMeeting = meetingRepository.existsOverlappingMeeting(
+                gatheringId,
+                MeetingStatus.CONFIRMED,
+                meeting.getId(),
+                startDate,
+                endDate
+        );
+        if (hasOverlappingMeeting) {
             throw new MeetingException(MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
-                    "이미 확정된 약속이 존재합니다.");
+                    "동일 시간에 확정된 약속이 존재합니다.");
         }
     }
 
@@ -220,6 +281,8 @@ public class MeetingService {
 
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
 
+        validateJoinableMeetingStartDate(meeting);
+
         gatheringValidator.validateMembership(meeting.getGathering().getId(), userId);
 
         if (restoreCanceledMemberIfExists(meetingId, userId, meeting.getMaxParticipants())) {
@@ -241,12 +304,19 @@ public class MeetingService {
      * 약속 참가 신청 성공 시 책장에 등록한다.
      */
     private void saveMeetingBook(Meeting meeting, Gathering gathering) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        saveMeetingBookForUser(meeting, gathering, userId);
+    }
+
+    /**
+     * 특정 사용자 책장에 약속 책을 등록한다.
+     */
+    private void saveMeetingBookForUser(Meeting meeting, Gathering gathering, Long userId) {
         Book book = meeting.getBook();
         if (book == null) {
             throw new BookException(BookErrorCode.BOOK_NOT_FOUND);
         }
 
-        Long userId = SecurityUtil.getCurrentUserId();
         if (bookValidator.isDuplicatePersonalBook(userId, book.getId())) {
             return;
         }
@@ -382,6 +452,7 @@ public class MeetingService {
         meetingValidator.validateMeetingLeader(meeting, userId);
 
         validateUpdatableStatus(meeting);
+        validateUpdatableMeetingStartDate(meeting);
 
         Long gatheringId = meeting.getGathering().getId();
         validateMaxParticipants(request.maxParticipants(), gatheringId);
@@ -420,6 +491,28 @@ public class MeetingService {
     }
 
     /**
+     * 약속 시작 24시간 이내면 수정 불가
+     */
+    private void validateUpdatableMeetingStartDate(Meeting meeting) {
+        LocalDateTime meetingStartDate = meeting.getMeetingStartDate();
+        if (meetingStartDate != null
+                && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24))) {
+            throw new MeetingException(MeetingErrorCode.MEETING_UPDATE_NOT_ALLOWED);
+        }
+    }
+
+    /**
+     * 약속 시작 24시간 이내면 참가 신청 불가
+     */
+    private void validateJoinableMeetingStartDate(Meeting meeting) {
+        LocalDateTime meetingStartDate = meeting.getMeetingStartDate();
+        if (meetingStartDate != null
+                && meetingStartDate.isBefore(LocalDateTime.now().plusHours(24))) {
+            throw new MeetingException(MeetingErrorCode.MEETING_JOIN_NOT_ALLOWED);
+        }
+    }
+
+    /**
      * 종료 일시가 시작 일시보다 이전인지 확인한다.
      */
     private void validateMeetingDates(MeetingUpdateRequest request, Meeting meeting) {
@@ -429,10 +522,20 @@ public class MeetingService {
         LocalDateTime endDate = request.endDate() != null
                 ? request.endDate()
                 : meeting.getMeetingEndDate();
+        validateMeetingDatesRequired(startDate, endDate);
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new MeetingException(
                     MeetingErrorCode.INVALID_MEETING_STATUS_CHANGE,
                     "종료 일시는 시작 일시보다 이전일 수 없습니다."
+            );
+        }
+    }
+
+    private void validateMeetingDatesRequired(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null || endDate == null) {
+            throw new MeetingException(
+                    MeetingErrorCode.MEETING_DATE_REQUIRED,
+                    "약속 시작/종료 일시는 필수입니다."
             );
         }
     }
@@ -445,24 +548,22 @@ public class MeetingService {
      * 내가 참여한 약속 : 완전히 끝난 약속 중 내가 참여한 약속
      * @param gatheringId 모임 식별자
      * @param filter 약속 리스트 필터
-     * @param size 페이지 크기
-     * @param cursor 커서
-     * @return CursorResponse
+     * @param pageable 페이지 정보
+     * @return PageResponse
      */
-    public CursorResponse<MeetingListItemResponse, MeetingListCursor> meetingList(
+    public PageResponse<MeetingListItemResponse> meetingList(
             Long gatheringId,
             MeetingListFilter filter,
-            int size,
-            MeetingListCursor cursor
+            Pageable pageable
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
         gatheringValidator.validateMembership(gatheringId, userId);
 
         return switch (filter) {
-            case ALL -> getAllMeetings(gatheringId, size, cursor, userId);
-            case UPCOMING -> getUpcomingMeetings(gatheringId, size, cursor, userId);
-            case DONE -> getDoneMeetings(gatheringId, size, cursor, userId);
-            case JOINED -> getJoinedMeetings(gatheringId, size, cursor, userId);
+            case ALL -> getAllMeetingsPage(gatheringId, pageable, userId);
+            case UPCOMING -> getUpcomingMeetingsPage(gatheringId, pageable, userId);
+            case DONE -> getDoneMeetingsPage(gatheringId, pageable, userId);
+            case JOINED -> getJoinedMeetingsPage(gatheringId, pageable, userId);
         };
 
     }
@@ -581,7 +682,27 @@ public class MeetingService {
             );
         };
 
-        return buildMyMeetingListResponse(meetings, size, userId);
+        Integer totalCount = null;
+        if (cursor == null) {
+            totalCount = switch (safeFilter) {
+                case UPCOMING -> meetingMemberRepository.countMyUpcomingMeetings(
+                        userId,
+                        MeetingStatus.CONFIRMED,
+                        now,
+                        now.plusDays(3)
+                );
+                case DONE -> meetingMemberRepository.countMyMeetingsByStatus(
+                        userId,
+                        MeetingStatus.DONE
+                );
+                case ALL -> meetingMemberRepository.countMyMeetingsByStatuses(
+                        userId,
+                        List.of(MeetingStatus.CONFIRMED, MeetingStatus.DONE)
+                );
+            };
+        }
+
+        return buildMyMeetingListResponse(meetings, size, userId, totalCount);
     }
 
     /**
@@ -616,116 +737,88 @@ public class MeetingService {
     }
 
     /**
-     * 모임의 약속 중 확정된 리스트를 전부 반환한다.
+     * 모임의 약속 중 확정된 리스트를 페이지로 반환한다.
      */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> getAllMeetings(
+    private PageResponse<MeetingListItemResponse> getAllMeetingsPage(
             Long gatheringId,
-            int size,
-            MeetingListCursor cursor,
+            Pageable pageable,
             Long userId
     ) {
-        Pageable pageable = cursorPageable(size);
-        List<Meeting> meetings = meetingRepository.findByGatheringIdAndMeetingStatusAfterCursor(
+        Page<Meeting> meetingPage = meetingRepository.findByGatheringIdAndMeetingStatus(
                 gatheringId,
                 MeetingStatus.CONFIRMED,
-                cursorStartDateTime(cursor),
-                cursorMeetingId(cursor),
                 pageable
         );
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        return buildMeetingPageResponse(meetingPage, userId, gatheringId);
     }
 
     /**
-     * 다가오는 약속 리스트를 반환한다.
+     * 다가오는 약속 리스트를 페이지로 반환한다.
      */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> getUpcomingMeetings(
+    private PageResponse<MeetingListItemResponse> getUpcomingMeetingsPage(
             Long gatheringId,
-            int size,
-            MeetingListCursor cursor,
+            Pageable pageable,
             Long userId
     ) {
         LocalDateTime now = LocalDateTime.now();
-        Pageable pageable = cursorPageable(size);
-
-        List<Meeting> meetings = meetingRepository
-                .findByGatheringIdAndMeetingStatusAndMeetingStartDateBetweenAfterCursor(
-                        gatheringId,
-                        MeetingStatus.CONFIRMED,
-                        now,
-                        now.plusDays(3),
-                        cursorStartDateTime(cursor),
-                        cursorMeetingId(cursor),
-                        pageable
-                );
-
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
-    }
-
-    /**
-     * 완료된 약속 리스트를 반환한다.
-     */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> getDoneMeetings(
-            Long gatheringId,
-            int size,
-            MeetingListCursor cursor,
-            Long userId
-    ) {
-        Pageable pageable = cursorPageable(size);
-        List<Meeting> meetings = meetingRepository.findByGatheringIdAndMeetingStatusAfterCursor(
+        Page<Meeting> meetingPage = meetingRepository.findByGatheringIdAndMeetingStatusAndMeetingStartDateBetween(
                 gatheringId,
-                MeetingStatus.DONE,
-                cursorStartDateTime(cursor),
-                cursorMeetingId(cursor),
+                MeetingStatus.CONFIRMED,
+                now,
+                now.plusDays(3),
                 pageable
         );
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        return buildMeetingPageResponse(meetingPage, userId, gatheringId);
     }
 
     /**
-     * 완료된 약속 중 내가 참여했던 약속 리스트를 반환한다.
+     * 완료된 약속 리스트를 페이지로 반환한다.
      */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> getJoinedMeetings(
+    private PageResponse<MeetingListItemResponse> getDoneMeetingsPage(
             Long gatheringId,
-            int size,
-            MeetingListCursor cursor,
+            Pageable pageable,
             Long userId
     ) {
-        Pageable pageable = cursorPageable(size);
-        List<Meeting> meetings = meetingMemberRepository.findMeetingsByUserIdAndStatusAfterCursor(
+        Page<Meeting> meetingPage = meetingRepository.findByGatheringIdAndMeetingStatus(
+                gatheringId,
+                MeetingStatus.DONE,
+                pageable
+        );
+        return buildMeetingPageResponse(meetingPage, userId, gatheringId);
+    }
+
+    /**
+     * 완료된 약속 중 내가 참여했던 약속 리스트를 페이지로 반환한다.
+     */
+    private PageResponse<MeetingListItemResponse> getJoinedMeetingsPage(
+            Long gatheringId,
+            Pageable pageable,
+            Long userId
+    ) {
+        Page<Meeting> meetingPage = meetingMemberRepository.findMeetingsByUserIdAndStatus(
                 userId,
                 gatheringId,
                 MeetingStatus.DONE,
-                cursorStartDateTime(cursor),
-                cursorMeetingId(cursor),
                 pageable
         );
-        return buildMeetingListResponse(meetings, size, userId, gatheringId);
+        return buildMeetingPageResponse(meetingPage, userId, gatheringId);
     }
 
     /**
-     * 약속 리스트 커서 응답을 구성한다.
+     * 약속 리스트 페이지 응답을 구성한다.
      */
-    private CursorResponse<MeetingListItemResponse, MeetingListCursor> buildMeetingListResponse(
-            List<Meeting> meetingCandidates,
-            int size,
+    private PageResponse<MeetingListItemResponse> buildMeetingPageResponse(
+            Page<Meeting> meetingPage,
             Long userId,
             Long gatheringId
     ) {
-        boolean hasNext = meetingCandidates.size() > size;
-        List<Meeting> meetings = hasNext ? meetingCandidates.subList(0, size) : meetingCandidates;
-        if (meetings.isEmpty()) {
-            return CursorResponse.of(List.of(), size, false, null);
-        }
-
-        List<MeetingListItemResponse> items = buildMeetingItems(meetings, userId, gatheringId);
-
-        MeetingListCursor nextCursor = null;
-        if (hasNext) {
-            Meeting last = meetings.get(meetings.size() - 1);
-            nextCursor = new MeetingListCursor(last.getMeetingStartDate(), last.getId());
-        }
-
-        return CursorResponse.of(items, size, hasNext, nextCursor);
+        List<MeetingListItemResponse> items = buildMeetingItems(meetingPage.getContent(), userId, gatheringId);
+        return PageResponse.of(
+                items,
+                meetingPage.getTotalElements(),
+                meetingPage.getNumber(),
+                meetingPage.getSize()
+        );
     }
 
     /**
@@ -734,12 +827,13 @@ public class MeetingService {
     private CursorResponse<MyMeetingListItemResponse, MeetingListCursor> buildMyMeetingListResponse(
             List<Meeting> meetingCandidates,
             int size,
-            Long userId
+            Long userId,
+            Integer totalCount
     ) {
         boolean hasNext = meetingCandidates.size() > size;
         List<Meeting> meetings = hasNext ? meetingCandidates.subList(0, size) : meetingCandidates;
         if (meetings.isEmpty()) {
-            return CursorResponse.of(List.of(), size, false, null);
+            return CursorResponse.of(List.of(), size, false, null, totalCount);
         }
 
         List<MyMeetingListItemResponse> items = buildMyMeetingItems(meetings, userId);
@@ -750,7 +844,7 @@ public class MeetingService {
             nextCursor = new MeetingListCursor(last.getMeetingStartDate(), last.getId());
         }
 
-        return CursorResponse.of(items, size, hasNext, nextCursor);
+        return CursorResponse.of(items, size, hasNext, nextCursor, totalCount);
     }
 
     /**

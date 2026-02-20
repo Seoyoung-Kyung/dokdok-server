@@ -5,6 +5,7 @@ import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
 import com.dokdok.gathering.dto.request.JoinGatheringMemberRequest;
 import com.dokdok.gathering.dto.response.*;
+import com.dokdok.gathering.entity.GatheringMemberStatus;
 import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.response.PageResponse;
@@ -258,7 +259,7 @@ public interface GatheringApi {
                     description = "조회 성공",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MyGatheringListResponse.class),
+                            schema = @Schema(implementation = MyGatheringCursorResponse.class),
                             examples = @ExampleObject(value = """
                                     {
                                       "code": "SUCCESS",
@@ -278,7 +279,8 @@ public interface GatheringApi {
                                         ],
                                         "pageSize": 10,
                                         "hasNext": false,
-                                        "nextCursor": null
+                                        "nextCursor": null,
+                                        "totalCount": 1
                                       }
                                     }
                                     """)
@@ -974,5 +976,108 @@ public interface GatheringApi {
 
             @Parameter(description = "페이지 크기", example = "10")
             @RequestParam(defaultValue = "10") int size
+    );
+
+    @Operation(
+            summary = "모임 멤버 목록 조회 (developer: 오주현)",
+            description = """                                                                                                                                                      
+                  모임의 멤버 목록을 상태별로 조회합니다.
+                  - 모임장만 조회할 수 있습니다.
+                  - 커서 기반 무한 스크롤을 지원합니다.
+                  - ID 내림차순으로 정렬됩니다.
+                  - 첫 페이지: cursorId 없이 호출
+                  - 다음 페이지: 응답의 nextCursor.gatheringMemberId 값을 cursorId로 전달
+                  ENUM
+                  - status: PENDING(가입요청), ACTIVE(가입승인)
+                  - role: LEADER(모임장), MEMBER(모임원)
+                  - memberStatus: PENDING(가입요청), ACTIVE(가입승인), REJECTED(가입거절)
+                  """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = GatheringMemberCursorResponse.class),
+                            examples = @ExampleObject(value = """                                                                                                                  
+                                      {
+                                        "code": "SUCCESS",
+                                        "message": "모임 멤버 목록 조회 성공",
+                                        "data": {
+                                          "items": [
+                                            {
+                                              "gatheringMemberId": 10,
+                                              "userId": 1,
+                                              "nickname": "독서왕",
+                                              "profileImageUrl": "https://example.com/profile.jpg",
+                                              "role": "MEMBER",
+                                              "memberStatus": "PENDING",
+                                              "joinedAt": null
+                                            }
+                                          ],
+                                          "pageSize": 10,
+                                          "hasNext": false,
+                                          "nextCursor": null,
+                                          "totalCount": 1
+                                        }
+                                      }
+                                      """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 - 로그인이 필요합니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """                                                                                                                  
+                                      {"code": "G102", "message": "인증이 필요합니다.", "data": null}
+                                      """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 - 모임장만 조회할 수 있습니다.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """                                                                                                                  
+                                      {"code": "GA003", "message": "리더만 가능한 작업입니다.", "data": null}
+                                      """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모임을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """                                                                                                                  
+                                      {"code": "GA001", "message": "모임을 찾을 수 없습니다.", "data": null}
+                                      """)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(value = """                                                                                                                  
+                                      {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
+                                      """)
+                    )
+            )
+    })
+    @GetMapping("/{gatheringId}/members")
+    ResponseEntity<ApiResponse<CursorResponse<GatheringMemberResponse, GatheringMemberCursor>>> getGatheringMembers(
+            @Parameter(description = "모임 ID", required = true, example = "1")
+            @PathVariable Long gatheringId,
+
+            @Parameter(description = "멤버 상태 (PENDING: 승인대기, ACTIVE: 승인됨)", required = true, example = "PENDING")
+            @RequestParam GatheringMemberStatus status,
+
+            @Parameter(description = "페이지 크기", example = "10")
+            @RequestParam(defaultValue = "10") int pageSize,
+
+            @Parameter(description = "커서 - 마지막 항목의 모임 멤버 ID", example = "127")
+            @RequestParam(required = false) Long cursorId
     );
 }

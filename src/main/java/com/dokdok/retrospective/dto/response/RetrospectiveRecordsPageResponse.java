@@ -14,13 +14,14 @@ public record RetrospectiveRecordsPageResponse() {
             List<RetrospectiveRecordResponse> items,
             int pageSize,
             boolean hasNext,
-            PersonalMeetingRetrospective lastRetrospective
+            PersonalMeetingRetrospective lastRetrospective,
+            Integer totalCount
     ) {
         RetrospectiveRecordsCursor cursor = null;
         if (hasNext && lastRetrospective != null) {
             cursor = RetrospectiveRecordsCursor.from(lastRetrospective);
         }
 
-        return CursorResponse.of(items, pageSize, hasNext, cursor);
+        return CursorResponse.of(items, pageSize, hasNext, cursor, totalCount);
     }
 }

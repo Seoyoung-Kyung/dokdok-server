@@ -1,6 +1,5 @@
 package com.dokdok.gathering.service;
 
-import com.dokdok.book.entity.Book;
 import com.dokdok.book.repository.BookReviewRepository;
 import com.dokdok.gathering.dto.request.GatheringCreateRequest;
 import com.dokdok.gathering.dto.request.GatheringUpdateRequest;
@@ -9,16 +8,17 @@ import com.dokdok.gathering.dto.response.*;
 import com.dokdok.gathering.entity.*;
 import com.dokdok.gathering.exception.GatheringErrorCode;
 import com.dokdok.gathering.exception.GatheringException;
+import com.dokdok.gathering.repository.GatheringCountProjection;
 import com.dokdok.gathering.repository.GatheringMemberRepository;
 import com.dokdok.gathering.repository.GatheringRepository;
 import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.response.PageResponse;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.gathering.util.InvitationCodeGenerator;
-import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.entity.MeetingStatus;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.storage.service.StorageService;
 import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,11 +27,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +45,7 @@ public class GatheringService {
     private final GatheringBookRepository gatheringBookRepository;
     private final BookReviewRepository bookReviewRepository;
     private final MeetingMemberRepository meetingMemberRepository;
+    private final StorageService storageService;
 
     /**
      * 모임을 생성합니다.
@@ -130,12 +130,19 @@ public class GatheringService {
 
         List<GatheringMember> favoriteMembers = gatheringMemberRepository.findFavoriteGatheringsByUserId(userId);
 
+        List<Long> gatheringIds = favoriteMembers.stream()
+                .map(gm -> gm.getGathering().getId())
+                .toList();
+
+        Map<Long, Integer> memberCountMap = getActiveMemberCountMap(gatheringIds);
+        Map<Long, Integer> meetingCountMap = getMeetingCountMap(gatheringIds);
+
         List<GatheringListItemResponse> gatheringResponses = favoriteMembers.stream()
-                .map(gatheringMember -> {
-                    Gathering gathering = gatheringMember.getGathering();
-                    int totalMembers = getActiveMemberCount(gathering.getId());
-                    int totalMeetings = getMeetingCount(gathering.getId());
-                    return GatheringListItemResponse.from(gatheringMember, totalMembers, totalMeetings, gatheringMember.getRole());
+                .map(gm -> {
+                    Long gatheringId = gm.getGathering().getId();
+                    int totalMembers = memberCountMap.getOrDefault(gatheringId, 0);
+                    int totalMeetings = meetingCountMap.getOrDefault(gatheringId, 0);
+                    return GatheringListItemResponse.from(gm, totalMembers, totalMeetings, gm.getRole());
                 })
                 .toList();
 
@@ -151,9 +158,11 @@ public class GatheringService {
         Pageable pageable = PageRequest.of(0, pageSize + 1);
 
         List<GatheringMember> members;
+        Integer totalCount = null;
         if (cursorJoinedAt == null || cursorId == null) {
             // 첫 페이지
             members = gatheringMemberRepository.findMyGatheringsFirstPage(userId, pageable);
+            totalCount = gatheringMemberRepository.countMyGatherings(userId);
         } else {
             // 다음 페이지
             members = gatheringMemberRepository.findMyGatheringsAfterCursor(userId, cursorJoinedAt, cursorId, pageable);
@@ -162,18 +171,26 @@ public class GatheringService {
         boolean hasNext = members.size() > pageSize;
         List<GatheringMember> pageMembers = hasNext ? members.subList(0, pageSize) : members;
 
+        List<Long> gatheringIds = pageMembers.stream()
+                .map(gm -> gm.getGathering().getId())
+                .toList();
+
+        Map<Long, Integer> memberCountMap = getActiveMemberCountMap(gatheringIds);
+        Map<Long, Integer> meetingCountMap = getMeetingCountMap(gatheringIds);
+
         List<GatheringListItemResponse> items = pageMembers.stream()
-                .map(gm -> GatheringListItemResponse.from(
-                        gm,
-                        getActiveMemberCount(gm.getGathering().getId()),
-                        getMeetingCount(gm.getGathering().getId()),
-                        gm.getRole()))
+                .map(gm ->{
+                    Long gatheringId = gm.getGathering().getId();
+                    int totalMembers = memberCountMap.getOrDefault(gatheringId, 0);
+                    int totalMeetings = meetingCountMap.getOrDefault(gatheringId, 0);
+                    return GatheringListItemResponse.from(gm, totalMembers, totalMeetings, gm.getRole());
+                })
                 .toList();
 
         GatheringMember lastMember = pageMembers.isEmpty() ? null : pageMembers.get(pageMembers.size() - 1);
         MyGatheringCursor nextCursor = hasNext && lastMember != null ? MyGatheringCursor.from(lastMember) : null;
 
-        return CursorResponse.of(items, pageSize, hasNext, nextCursor);
+        return CursorResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
     }
 
     /**
@@ -192,11 +209,29 @@ public class GatheringService {
         // 총 약속 수
         int totalMeetings = meetingRepository.countByGatheringIdAndMeetingStatus(gathering.getId(), MeetingStatus.DONE);
 
+        Map<Long, String> profileImageUrlMap = buildProfileImageUrlMap(allMember);
+
         return GatheringDetailResponse.from(
                 currentMember,
                 allMember,
-                totalMeetings
+                totalMeetings,
+                profileImageUrlMap
         );
+    }
+
+    /**
+     * 멤버들의 프로필 이미지 presigned URL Map 생성
+     */
+    private Map<Long, String> buildProfileImageUrlMap(List<GatheringMember> members) {
+        Map<Long, String> profileImageUrlMap = new HashMap<>();
+
+        members.forEach(member -> {
+            String profileImageUrl = member.getUser().getProfileImageUrl();
+            String presignedUrl = storageService.getPresignedProfileImage(profileImageUrl);
+            profileImageUrlMap.put(member.getUser().getId(), presignedUrl);
+        });
+
+        return profileImageUrlMap;
     }
 
     /**
@@ -325,6 +360,55 @@ public class GatheringService {
     }
 
     /**
+     * 모임 멤버 관리 목록을 상태별로 조회합니다. (커시 기반 무한 스크롤)
+     */
+    public CursorResponse<GatheringMemberResponse, GatheringMemberCursor> getGatheringMembers(
+            Long gatheringId,
+            GatheringMemberStatus status,
+            int pageSize,
+            Long cursorId
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+
+        // 모임 존재 여부 및 리더 권한 검증
+        gatheringValidator.validateAndGetGathering(gatheringId);
+        gatheringValidator.validateLeader(gatheringId, userId);
+
+        Pageable pageable = PageRequest.of(0, pageSize +1);
+
+        List<GatheringMember> members;
+        Integer totalCount = null;
+
+        if (cursorId == null) {
+            // 첫 페이지
+            members = gatheringMemberRepository.findMembersByStatusFirstPage(gatheringId, status, pageable);
+            totalCount = gatheringMemberRepository.countMembersByStatus(gatheringId, status);
+        } else {
+            // 다음 페이지
+            members = gatheringMemberRepository.findMembersByStatusAfterCursor(gatheringId, status, cursorId, pageable);
+        }
+
+        boolean hasNext = members.size() > pageSize;
+        List<GatheringMember> pageMembers = hasNext ? members.subList(0, pageSize) : members;
+
+        List<GatheringMemberResponse> items = pageMembers.stream()
+                .map(member -> {
+                    String presignedUrl = storageService.getPresignedProfileImage(
+                            member.getUser().getProfileImageUrl()
+                    );
+                    return GatheringMemberResponse.from(member, presignedUrl);
+                })
+                .toList();
+
+        GatheringMember lastMember = pageMembers.isEmpty() ? null : pageMembers.get(pageMembers.size() - 1);
+        GatheringMemberCursor nextCursor = hasNext && lastMember != null
+                ? GatheringMemberCursor.from(lastMember)
+                : null;
+
+        return CursorResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
+    }
+
+    /**
      * 공통 메서드
      * 모임 멤버를 추가합니다.
      */
@@ -351,4 +435,33 @@ public class GatheringService {
         return meetingRepository.countByGatheringIdAndMeetingStatus(gatheringId, MeetingStatus.DONE);
     }
 
+    /**
+     * 여러 모임의 활성 멤버 수를 Map으로 조회
+     */
+    private Map<Long, Integer> getActiveMemberCountMap(List<Long> gatheringIds) {
+        if(gatheringIds.isEmpty()) {
+            return Map.of();
+        }
+        return gatheringMemberRepository.countActiveMembersByGatherings(gatheringIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        GatheringCountProjection::getGatheringId,
+                        p -> p.getCount().intValue()
+                ));
+    }
+
+    /**
+     * 여러 모임의 완료된 미팅 수를 Map으로 조회
+     */
+    private Map<Long, Integer> getMeetingCountMap(List<Long> gatheringIds) {
+        if (gatheringIds.isEmpty()) {
+            return Map.of();
+        }
+        return meetingRepository.countByGatheringIdsAndStatus(gatheringIds, MeetingStatus.DONE)
+                .stream()
+                .collect(Collectors.toMap(
+                        GatheringCountProjection::getGatheringId,
+                        p -> p.getCount().intValue()
+                ));
+    }
 }

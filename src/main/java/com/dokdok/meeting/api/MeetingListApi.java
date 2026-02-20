@@ -1,14 +1,10 @@
 package com.dokdok.meeting.api;
 
 import com.dokdok.global.response.ApiResponse;
-import com.dokdok.global.response.CursorResponse;
 import com.dokdok.global.response.PageResponse;
 import com.dokdok.meeting.dto.MeetingListFilter;
-import com.dokdok.meeting.dto.MeetingListItemCursorResponse;
 import com.dokdok.meeting.dto.MeetingListItemPageResponse;
 import com.dokdok.meeting.dto.MeetingListItemResponse;
-import com.dokdok.meeting.dto.MeetingListCursor;
-import com.dokdok.meeting.dto.MeetingListCursorRequest;
 import com.dokdok.meeting.entity.MeetingStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -51,7 +47,7 @@ public interface MeetingListApi {
                     responseCode = "200",
                     description = "약속 리스트 조회 성공",
                     content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MeetingListItemCursorResponse.class),
+                            schema = @Schema(implementation = MeetingListItemPageResponse.class),
                             examples = @ExampleObject(value = """
                                     {
                                       "code": "SUCCESS",
@@ -68,12 +64,10 @@ public interface MeetingListApi {
                                             "meetingStatus": "CONFIRMED"
                                           }
                                         ],
-                                        "pageSize": 4,
-                                        "hasNext": true,
-                                        "nextCursor": {
-                                          "meetingId": 2,
-                                          "startDateTime": "2025-02-03T14:00:00"
-                                        }
+                                        "totalCount": 12,
+                                        "currentPage": 0,
+                                        "pageSize": 5,
+                                        "totalPages": 3
                                       }
                                     }
                                     """))
@@ -99,11 +93,11 @@ public interface MeetingListApi {
                                     {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
                                     """)))
     })
-    ResponseEntity<ApiResponse<CursorResponse<MeetingListItemResponse, MeetingListCursor>>> getMeetingList(
+    ResponseEntity<ApiResponse<PageResponse<MeetingListItemResponse>>> getMeetingList(
             @PathVariable Long gatheringId,
             @RequestParam MeetingListFilter filter,
-            @ParameterObject MeetingListCursorRequest cursor,
-            @RequestParam(defaultValue = "4") int size
+            @ParameterObject
+            @PageableDefault(size = 5, sort = {"meetingStartDate", "id"}) Pageable pageable
     );
 
     @Operation(
