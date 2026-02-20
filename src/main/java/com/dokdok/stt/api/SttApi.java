@@ -24,7 +24,7 @@ public interface SttApi {
 
     @Operation(
             summary = "STT 작업 생성",
-            description = "오디오 파일을 업로드하여 STT 작업을 생성합니다.",
+            description = "오디오 파일 업로드 또는 사전의견만으로 STT 요약 작업을 생성합니다.",
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true)
             }
@@ -44,7 +44,7 @@ public interface SttApi {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<SttJobResponse>> createJob(
             @PathVariable Long meetingId,
-            @RequestPart("file") MultipartFile file
+            @RequestPart(value = "file", required = false) MultipartFile file
     );
 
     @Operation(

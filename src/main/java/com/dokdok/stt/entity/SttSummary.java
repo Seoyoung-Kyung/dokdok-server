@@ -43,8 +43,4 @@ public class SttSummary extends BaseTimeEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "highlights", columnDefinition = "jsonb")
     private List<String> highlights;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "keywords", columnDefinition = "jsonb")
-    private List<String> keywords;
 }

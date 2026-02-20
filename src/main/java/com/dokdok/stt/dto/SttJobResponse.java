@@ -12,10 +12,8 @@ public record SttJobResponse(
         Long meetingId,
         Long userId,
         SttJobStatus status,
-        String resultText,
         String summary,
         List<String> highlights,
-        List<String> keywords,
         String errorMessage,
         LocalDateTime createdAt
 ) {
@@ -25,10 +23,8 @@ public record SttJobResponse(
                 job.getMeeting().getId(),
                 job.getUser().getId(),
                 job.getStatus(),
-                job.getResultText(),
                 summary != null ? summary.getSummary() : null,
                 summary != null ? summary.getHighlights() : null,
-                summary != null ? summary.getKeywords() : null,
                 job.getErrorMessage(),
                 job.getCreatedAt()
         );

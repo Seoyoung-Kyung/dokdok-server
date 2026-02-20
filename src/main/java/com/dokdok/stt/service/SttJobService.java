@@ -2,18 +2,25 @@ package com.dokdok.stt.service;
 
 import com.dokdok.ai.client.AiSttClient;
 import com.dokdok.ai.dto.SttRequest;
-import com.dokdok.ai.dto.SttResponse;
+import com.dokdok.global.response.ApiResponse;
 import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
 import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.service.MeetingValidator;
+import com.dokdok.retrospective.dto.response.RetrospectiveSummaryResponse;
+import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
+import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.stt.dto.SttJobResponse;
 import com.dokdok.stt.entity.SttJob;
 import com.dokdok.stt.entity.SttJobStatus;
 import com.dokdok.stt.entity.SttSummary;
 import com.dokdok.stt.repository.SttJobRepository;
 import com.dokdok.stt.repository.SttSummaryRepository;
+import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicAnswer;
+import com.dokdok.topic.repository.TopicRepository;
+import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +51,9 @@ public class SttJobService {
     private final MeetingValidator meetingValidator;
     private final SttJobRepository sttJobRepository;
     private final SttSummaryRepository sttSummaryRepository;
+    private final TopicRepository topicRepository;
+    private final TopicRetrospectiveSummaryRepository topicRetrospectiveSummaryRepository;
+    private final TopicAnswerRepository topicAnswerRepository;
     private final AiSttClient aiSttClient;
 
     @Value("${stt.temp-dir:}")
@@ -55,41 +65,72 @@ public class SttJobService {
         meetingValidator.validateMeeting(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
 
-        validateFile(file);
-
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
         User user = SecurityUtil.getCurrentUserEntity();
 
-        Path tempFilePath = saveToTemp(file);
+        if (file != null && file.isEmpty()) {
+            throw new GlobalException(GlobalErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        List<SttRequest.PreAnswer> preAnswers = buildPreAnswers(meetingId);
+        if (file == null && preAnswers.isEmpty()) {
+            throw new GlobalException(GlobalErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        Path tempFilePath = null;
+        if (file != null) {
+            validateFile(file);
+            tempFilePath = saveToTemp(file);
+        }
         SttJob job = SttJob.builder()
                 .meeting(meeting)
                 .user(user)
-                .originalFilename(file.getOriginalFilename())
-                .contentType(file.getContentType())
-                .fileSize(file.getSize())
-                .tempFilePath(tempFilePath.toString())
+                .originalFilename(file != null ? file.getOriginalFilename() : null)
+                .contentType(file != null ? file.getContentType() : null)
+                .fileSize(file != null ? file.getSize() : null)
+                .tempFilePath(tempFilePath != null ? tempFilePath.toString() : null)
                 .status(SttJobStatus.PROCESSING)
                 .build();
         sttJobRepository.save(job);
 
         SttSummary summary = null;
         try {
-            SttResponse response = aiSttClient.requestStt(
-                    new SttRequest(job.getId(), tempFilePath.toString(), "ko-KR")
+            log.info("STT pre-answers count: {}", preAnswers.size());
+            ApiResponse<RetrospectiveSummaryResponse> apiResponse = aiSttClient.requestStt(
+                    new SttRequest(
+                            job.getId(),
+                            meetingId,
+                            tempFilePath != null ? tempFilePath.toString() : null,
+                            "ko-KR",
+                            preAnswers
+                    )
             );
-            if (response == null) {
+            RetrospectiveSummaryResponse response = apiResponse != null ? apiResponse.data() : null;
+            if (apiResponse == null) {
                 job.markFailed("STT response is empty");
-            } else if ("FAILED".equalsIgnoreCase(response.status())) {
-                job.markFailed(response.errorMessage() == null ? "STT failed" : response.errorMessage());
-            } else if (isEmptyResponse(response)) {
+            } else if (!"SUCCESS".equalsIgnoreCase(apiResponse.code())) {
+                String message = apiResponse.message() == null ? "STT failed" : apiResponse.message();
+                job.markFailed(message);
+            } else if (response == null) {
                 job.markFailed("STT response is empty");
             } else {
-                job.markDone(response.text());
+                int topicCount = response.topics() == null ? 0 : response.topics().size();
+                List<Long> topicIds = response.topics() == null
+                        ? List.of()
+                        : response.topics().stream().map(RetrospectiveSummaryResponse.TopicSummaryResponse::topicId).toList();
+                log.info("STT summary topics count: {}, topicIds={}", topicCount, topicIds);
+                job.markDone();
                 summary = saveSummary(job, response);
+                saveRetrospectiveSummaries(meetingId, response);
             }
         } catch (WebClientResponseException e) {
             job.markFailed("AI STT error: " + e.getStatusCode());
-            log.error("AI STT request failed: {}", e.getMessage(), e);
+            log.error(
+                    "AI STT request failed: status={}, body={}",
+                    e.getStatusCode(),
+                    e.getResponseBodyAsString(),
+                    e
+            );
         } catch (Exception e) {
             job.markFailed("AI STT error");
             log.error("AI STT request failed", e);
@@ -172,29 +213,101 @@ public class SttJobService {
         }
     }
 
-    private SttSummary saveSummary(SttJob job, SttResponse response) {
-        List<String> highlights = response.mainPoints() != null ? response.mainPoints() : response.highlights();
-        if (response.summary() == null
-                && (highlights == null || highlights.isEmpty())
-                && (response.keywords() == null || response.keywords().isEmpty())
-                && response.text() == null) {
+    private SttSummary saveSummary(SttJob job, RetrospectiveSummaryResponse response) {
+        RetrospectiveSummaryResponse.TopicSummaryResponse topicSummary = extractTopicSummary(response);
+        if (topicSummary == null) {
             return null;
         }
+        String summaryText = topicSummary.summary();
+        List<String> highlights = topicSummary.keyPoints() == null
+                ? null
+                : topicSummary.keyPoints().stream()
+                .map(RetrospectiveSummaryResponse.KeyPointResponse::title)
+                .toList();
+
+        if ((summaryText == null || summaryText.isBlank())
+                && (highlights == null || highlights.isEmpty())) {
+            return null;
+        }
+
         SttSummary summary = SttSummary.builder()
                 .sttJob(job)
-                .summary(response.summary())
+                .summary(summaryText)
                 .highlights(highlights)
-                .keywords(response.keywords())
                 .build();
         return sttSummaryRepository.save(summary);
     }
 
-    private boolean isEmptyResponse(SttResponse response) {
-        boolean noText = response.text() == null || response.text().isBlank();
-        boolean noSummary = response.summary() == null || response.summary().isBlank();
-        boolean noHighlights = (response.mainPoints() == null || response.mainPoints().isEmpty())
-                && (response.highlights() == null || response.highlights().isEmpty());
-        boolean noKeywords = response.keywords() == null || response.keywords().isEmpty();
-        return noText && noSummary && noHighlights && noKeywords;
+    private RetrospectiveSummaryResponse.TopicSummaryResponse extractTopicSummary(
+            RetrospectiveSummaryResponse response
+    ) {
+        if (response.topics() == null || response.topics().isEmpty()) {
+            return null;
+        }
+        return response.topics().get(0);
+    }
+
+    private void saveRetrospectiveSummaries(
+            Long meetingId,
+            RetrospectiveSummaryResponse response
+    ) {
+        if (response.topics() == null || response.topics().isEmpty()) {
+            return;
+        }
+
+        RetrospectiveSummaryResponse.TopicSummaryResponse baseSummary = response.topics().stream()
+                .filter(topic -> topic.topicId() == null)
+                .findFirst()
+                .orElse(null);
+        if (baseSummary != null) {
+            List<Topic> topics = topicRepository.findConfirmedTopics(meetingId);
+            for (Topic topic : topics) {
+                upsertTopicSummary(topic, baseSummary);
+            }
+            return;
+        }
+
+        for (RetrospectiveSummaryResponse.TopicSummaryResponse topicResponse : response.topics()) {
+            Long topicId = topicResponse.topicId();
+            if (topicId == null) {
+                continue;
+            }
+            Topic topic = topicRepository.findById(topicId).orElse(null);
+            if (topic == null || !meetingId.equals(topic.getMeeting().getId())) {
+                continue;
+            }
+            upsertTopicSummary(topic, topicResponse);
+        }
+    }
+
+    private void upsertTopicSummary(
+            Topic topic,
+            RetrospectiveSummaryResponse.TopicSummaryResponse topicResponse
+    ) {
+        List<TopicRetrospectiveSummary.KeyPoint> keyPoints = topicResponse.keyPoints() == null
+                ? List.of()
+                : topicResponse.keyPoints().stream()
+                .map(kp -> new TopicRetrospectiveSummary.KeyPoint(kp.title(), kp.details()))
+                .toList();
+        TopicRetrospectiveSummary summary = topicRetrospectiveSummaryRepository
+                .findByTopicId(topic.getId())
+                .orElseGet(() -> TopicRetrospectiveSummary.builder()
+                        .topic(topic)
+                        .build());
+        summary.update(topicResponse.summary(), keyPoints);
+        topicRetrospectiveSummaryRepository.save(summary);
+    }
+
+    private List<SttRequest.PreAnswer> buildPreAnswers(Long meetingId) {
+        List<TopicAnswer> answers = topicAnswerRepository.findByMeetingId(meetingId);
+        return answers.stream()
+                .filter(answer -> answer.getContent() != null && !answer.getContent().isBlank())
+                .map(answer -> new SttRequest.PreAnswer(
+                        answer.getTopic() != null ? answer.getTopic().getId() : null,
+                        answer.getTopic() != null ? answer.getTopic().getTitle() : null,
+                        answer.getUser() != null ? answer.getUser().getId() : null,
+                        answer.getContent()
+                ))
+                .toList();
     }
 }

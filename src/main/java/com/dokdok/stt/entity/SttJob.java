@@ -33,9 +33,6 @@ public class SttJob extends BaseTimeEntity {
     @Builder.Default
     private SttJobStatus status = SttJobStatus.PENDING;
 
-    @Column(name = "result_text", columnDefinition = "TEXT")
-    private String resultText;
-
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
@@ -59,9 +56,8 @@ public class SttJob extends BaseTimeEntity {
         this.status = SttJobStatus.PROCESSING;
     }
 
-    public void markDone(String resultText) {
+    public void markDone() {
         this.status = SttJobStatus.DONE;
-        this.resultText = resultText;
         this.errorMessage = null;
     }
 
