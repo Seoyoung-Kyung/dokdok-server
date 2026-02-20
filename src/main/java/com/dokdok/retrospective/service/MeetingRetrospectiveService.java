@@ -18,7 +18,6 @@ import com.dokdok.topic.entity.TopicAnswer;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
-import com.dokdok.topic.service.TopicValidator;
 import com.dokdok.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -41,7 +40,6 @@ public class MeetingRetrospectiveService {
     private final TopicRetrospectiveSummaryRepository topicRetrospectiveSummaryRepository;
     private final RetrospectiveRepository retrospectiveRepository;
     private final MeetingValidator meetingValidator;
-    private final TopicValidator topicValidator;
     private final StorageService storageService;
     private final TopicAnswerRepository topicAnswerRepository;
 
@@ -115,11 +113,11 @@ public class MeetingRetrospectiveService {
     }
 
     @Transactional
-    public void deleteMeetingRetrospective(Long meetingId, Long meetingRetrospectiveId) {
+    public void deleteMeetingRetrospective(Long meetingId, Long commentId) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         MeetingRetrospective retrospective = retrospectiveRepository
-                .findByIdAndMeetingId(meetingRetrospectiveId, meetingId)
+                .findByIdAndMeetingId(commentId, meetingId)
                 .orElseThrow(() -> new RetrospectiveException(RetrospectiveErrorCode.MEETING_RETROSPECTIVE_NOT_FOUND));
 
         retrospectiveValidator.validateMeetingRetrospectiveDeletePermission(retrospective, userId);
@@ -151,8 +149,8 @@ public class MeetingRetrospectiveService {
         boolean isFirstPage = cursorCreatedAt == null || cursorCommentId == null;
 
         List<MeetingRetrospective> comments = isFirstPage
-                ? retrospectiveRepository.findByTopicIdFirstPage(meetingId, pageable)
-                : retrospectiveRepository.findByTopicIdAfterCursor(meetingId, cursorCreatedAt, cursorCommentId, pageable);
+                ? retrospectiveRepository.findByMeetingIdFirstPage(meetingId, pageable)
+                : retrospectiveRepository.findByMeetingIdAfterCursor(meetingId, cursorCreatedAt, cursorCommentId, pageable);
 
         boolean hasNext = comments.size() > pageSize;
         List<MeetingRetrospective> pageComments = hasNext
@@ -164,7 +162,7 @@ public class MeetingRetrospectiveService {
                 .toList();
 
         CommentCursor nextCursor = buildNextCursor(pageComments, hasNext);
-        Integer totalCount = isFirstPage ? retrospectiveRepository.countByTopicId(meetingId) : null;
+        Integer totalCount = isFirstPage ? retrospectiveRepository.countByMeetingId(meetingId) : null;
 
         return CursorResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
     }

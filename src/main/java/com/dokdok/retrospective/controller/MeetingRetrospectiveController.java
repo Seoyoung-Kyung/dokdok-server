@@ -59,12 +59,12 @@ public class MeetingRetrospectiveController implements MeetingRetrospectiveApi {
     }
 
     @Override
-    @DeleteMapping("/{meetingRetrospectiveId}")
+    @DeleteMapping("/{commentId}")
     public ResponseEntity<ApiResponse<Void>> deleteMeetingRetrospective(
             @PathVariable Long meetingId,
-            @PathVariable Long meetingRetrospectiveId
+            @PathVariable Long commentId
     ) {
-        meetingRetrospectiveService.deleteMeetingRetrospective(meetingId, meetingRetrospectiveId);
+        meetingRetrospectiveService.deleteMeetingRetrospective(meetingId, commentId);
 
         return ApiResponse.deleted("공동 회고 코멘트 삭제 완료");
     }
