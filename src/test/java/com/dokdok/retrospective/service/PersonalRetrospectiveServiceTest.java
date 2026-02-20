@@ -709,6 +709,14 @@ class PersonalRetrospectiveServiceTest {
         Long retrospectiveId = 100L;
         Long userId = 3L;
 
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
         List<RetrospectiveChangedThought> changedThoughts = List.of();
         List<RetrospectiveOthersPerspective> othersPerspectives = List.of();
         List<RetrospectiveFreeText> freeTexts = List.of();
@@ -727,7 +735,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(retrospective);
             when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
                     .thenReturn(changedThoughts);
             when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))
@@ -743,7 +751,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when
             PersonalRetrospectiveEditResponse response =
-                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId);
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId);
 
             // then
             assertThat(response.retrospectiveId()).isEqualTo(retrospectiveId);
@@ -753,7 +761,7 @@ class PersonalRetrospectiveServiceTest {
 
             verify(meetingValidator).validateMeeting(meetingId);
             verify(meetingValidator).validateMeetingMember(meetingId, userId);
-            verify(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            verify(retrospectiveValidator).getRetrospectiveByMeetingAndUser(meetingId, userId);
             verify(changedThoughtRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(othersPerspectiveRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(freeTextRepository).findByPersonalMeetingRetrospective_Id(retrospectiveId);
@@ -770,6 +778,14 @@ class PersonalRetrospectiveServiceTest {
         Long meetingId = 1L;
         Long retrospectiveId = 100L;
         Long userId = 3L;
+
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
 
         List<RetrospectiveChangedThought> changedThoughts = List.of();
         List<RetrospectiveOthersPerspective> othersPerspectives = List.of();
@@ -791,7 +807,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(retrospective);
             when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
                     .thenReturn(changedThoughts);
             when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))
@@ -805,7 +821,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when
             PersonalRetrospectiveEditResponse response =
-                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId);
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId);
 
             // then
             assertThat(response.retrospective().changedThoughts()).isEmpty();
@@ -819,7 +835,6 @@ class PersonalRetrospectiveServiceTest {
     void getPersonalRetrospectiveEditForm_throwsWhenMeetingNotFound() {
         // given
         Long meetingId = 999L;
-        Long retrospectiveId = 100L;
         Long userId = 3L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -830,7 +845,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId))
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.MEETING_NOT_FOUND);
 
@@ -843,7 +858,6 @@ class PersonalRetrospectiveServiceTest {
     void getPersonalRetrospectiveEditForm_throwsWhenNotMeetingMember() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 100L;
         Long userId = 999L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -855,7 +869,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId))
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.NOT_MEETING_MEMBER);
 
@@ -868,7 +882,6 @@ class PersonalRetrospectiveServiceTest {
     void getPersonalRetrospectiveEditForm_throwsWhenRetrospectiveNotFound() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 999L;
         Long userId = 3L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -876,12 +889,12 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND))
-                    .when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId))
+                    .thenThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId))
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId))
                     .isInstanceOf(RetrospectiveException.class)
                     .hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
 
@@ -894,7 +907,6 @@ class PersonalRetrospectiveServiceTest {
     void getPersonalRetrospectiveEditForm_throwsWhenUnauthenticated() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 100L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId)
@@ -902,7 +914,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId, retrospectiveId))
+                    personalRetrospectiveService.getPersonalRetrospectiveEditForm(meetingId))
                     .isInstanceOf(GlobalException.class)
                     .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
 
@@ -971,7 +983,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(topicId, meetingId)).thenReturn(topic);
             when(topicAnswerRepository.findPreOpinion(topicId, userId)).thenReturn(topicAnswer);
             when(topicRepository.findById(topicId)).thenReturn(Optional.of(topic));
@@ -980,7 +992,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when
             PersonalRetrospectiveResponse response =
-                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request);
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, request);
 
             // then
             assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(retrospectiveId);
@@ -989,7 +1001,7 @@ class PersonalRetrospectiveServiceTest {
 
             verify(meetingValidator).validateMeeting(meetingId);
             verify(meetingValidator).validateMeetingMember(meetingId, userId);
-            verify(retrospectiveValidator).getRetrospective(retrospectiveId, userId);
+            verify(retrospectiveValidator).getRetrospectiveByMeetingAndUser(meetingId, userId);
             verify(topicValidator).getTopicInMeeting(topicId, meetingId);
             verify(topicAnswerRepository).findPreOpinion(topicId, userId);
             verify(topicRepository).findById(topicId);
@@ -1032,12 +1044,12 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(existingRetrospective);
             when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
 
             // when
             PersonalRetrospectiveResponse response =
-                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request);
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, request);
 
             // then
             assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(retrospectiveId);
@@ -1100,7 +1112,7 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(10L, meetingId)).thenReturn(topic1);
             when(topicValidator.getTopicInMeeting(20L, meetingId)).thenReturn(topic2);
             when(topicAnswerRepository.findPreOpinion(anyLong(), eq(userId))).thenReturn(null);
@@ -1112,7 +1124,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when
             PersonalRetrospectiveResponse response =
-                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request);
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, request);
 
             // then
             assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(retrospectiveId);
@@ -1131,7 +1143,6 @@ class PersonalRetrospectiveServiceTest {
     void editPersonalRetrospective_throwsWhenMeetingNotFound() {
         // given
         Long meetingId = 999L;
-        Long retrospectiveId = 100L;
         Long userId = 3L;
         PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(null, null, null);
 
@@ -1143,7 +1154,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, request))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.MEETING_NOT_FOUND);
 
@@ -1156,7 +1167,6 @@ class PersonalRetrospectiveServiceTest {
     void editPersonalRetrospective_throwsWhenNotMeetingMember() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 100L;
         Long userId = 999L;
         PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(null, null, null);
 
@@ -1169,7 +1179,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, request))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.NOT_MEETING_MEMBER);
 
@@ -1182,7 +1192,6 @@ class PersonalRetrospectiveServiceTest {
     void editPersonalRetrospective_throwsWhenRetrospectiveNotFound() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 999L;
         Long userId = 3L;
         PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(null, null, null);
 
@@ -1191,12 +1200,12 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId))
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId))
                     .thenThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, request))
                     .isInstanceOf(RetrospectiveException.class)
                     .hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
 
@@ -1209,7 +1218,6 @@ class PersonalRetrospectiveServiceTest {
     void editPersonalRetrospective_throwsWhenUnauthenticated() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 100L;
         PersonalRetrospectiveRequest request = new PersonalRetrospectiveRequest(null, null, null);
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -1218,7 +1226,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, request))
                     .isInstanceOf(GlobalException.class)
                     .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
 
@@ -1260,13 +1268,13 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(existingRetrospective);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(topicId, meetingId))
                     .thenThrow(new TopicException(TopicErrorCode.TOPIC_NOT_FOUND));
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.editPersonalRetrospective(meetingId, retrospectiveId, request))
+                    personalRetrospectiveService.editPersonalRetrospective(meetingId, request))
                     .isInstanceOf(TopicException.class)
                     .hasFieldOrPropertyWithValue("errorCode", TopicErrorCode.TOPIC_NOT_FOUND);
 
@@ -1443,15 +1451,15 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId)).thenReturn(retrospective);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(retrospective);
 
             // when
-            personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId);
+            personalRetrospectiveService.deletePersonalRetrospective(meetingId);
 
             // then
             verify(meetingValidator).validateMeeting(meetingId);
             verify(meetingValidator).validateMeetingMember(meetingId, userId);
-            verify(retrospectiveValidator).getRetrospective(retrospectiveId, userId);
+            verify(retrospectiveValidator).getRetrospectiveByMeetingAndUser(meetingId, userId);
         }
     }
 
@@ -1460,7 +1468,6 @@ class PersonalRetrospectiveServiceTest {
     void deletePersonalRetrospective_throwsWhenMeetingNotFound() {
         // given
         Long meetingId = 999L;
-        Long retrospectiveId = 100L;
         Long userId = 3L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -1471,11 +1478,11 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId))
+                    personalRetrospectiveService.deletePersonalRetrospective(meetingId))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.MEETING_NOT_FOUND);
 
-            verify(retrospectiveValidator, never()).getRetrospective(any(), any());
+            verify(retrospectiveValidator, never()).getRetrospectiveByMeetingAndUser(any(), any());
         }
     }
 
@@ -1484,7 +1491,6 @@ class PersonalRetrospectiveServiceTest {
     void deletePersonalRetrospective_throwsWhenNotMeetingMember() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 100L;
         Long userId = 999L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -1496,11 +1502,11 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId))
+                    personalRetrospectiveService.deletePersonalRetrospective(meetingId))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.NOT_MEETING_MEMBER);
 
-            verify(retrospectiveValidator, never()).getRetrospective(any(), any());
+            verify(retrospectiveValidator, never()).getRetrospectiveByMeetingAndUser(any(), any());
         }
     }
 
@@ -1509,7 +1515,6 @@ class PersonalRetrospectiveServiceTest {
     void deletePersonalRetrospective_throwsWhenRetrospectiveNotFound() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 999L;
         Long userId = 3L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -1517,12 +1522,12 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            when(retrospectiveValidator.getRetrospective(retrospectiveId, userId))
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId))
                     .thenThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId))
+                    personalRetrospectiveService.deletePersonalRetrospective(meetingId))
                     .isInstanceOf(RetrospectiveException.class)
                     .hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
         }
@@ -1533,7 +1538,6 @@ class PersonalRetrospectiveServiceTest {
     void deletePersonalRetrospective_throwsWhenUnauthenticated() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 100L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId)
@@ -1541,7 +1545,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.deletePersonalRetrospective(meetingId, retrospectiveId))
+                    personalRetrospectiveService.deletePersonalRetrospective(meetingId))
                     .isInstanceOf(GlobalException.class)
                     .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
 
@@ -1596,13 +1600,20 @@ class PersonalRetrospectiveServiceTest {
                 List.of(new PersonalRetrospectiveDetailResponse.FreeText("자유 서술 제목", "자유 서술 내용"))
         );
 
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
-            doNothing().when(retrospectiveValidator).validateRetrospectiveByUser(retrospectiveId, userId);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(retrospective);
             when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
                     .thenReturn(changedThoughts);
             when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))
@@ -1614,7 +1625,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when
             PersonalRetrospectiveDetailResponse response =
-                    personalRetrospectiveService.getPersonalRetrospective(meetingId, retrospectiveId);
+                    personalRetrospectiveService.getPersonalRetrospective(meetingId);
 
             // then
             assertThat(response.retrospectiveId()).isEqualTo(retrospectiveId);
@@ -1624,8 +1635,7 @@ class PersonalRetrospectiveServiceTest {
 
             verify(meetingValidator).validateMeeting(meetingId);
             verify(meetingValidator).validateMeetingMember(meetingId, userId);
-            verify(retrospectiveValidator).validateRetrospective(retrospectiveId);
-            verify(retrospectiveValidator).validateRetrospectiveByUser(retrospectiveId, userId);
+            verify(retrospectiveValidator).getRetrospectiveByMeetingAndUser(meetingId, userId);
             verify(changedThoughtRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(othersPerspectiveRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(freeTextRepository).findByPersonalMeetingRetrospective_Id(retrospectiveId);
@@ -1652,13 +1662,20 @@ class PersonalRetrospectiveServiceTest {
                 List.of()
         );
 
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
-            doNothing().when(retrospectiveValidator).validateRetrospectiveByUser(retrospectiveId, userId);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(retrospective);
             when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
                     .thenReturn(changedThoughts);
             when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))
@@ -1670,7 +1687,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when
             PersonalRetrospectiveDetailResponse response =
-                    personalRetrospectiveService.getPersonalRetrospective(meetingId, retrospectiveId);
+                    personalRetrospectiveService.getPersonalRetrospective(meetingId);
 
             // then
             assertThat(response.retrospective().changedThoughts()).isEmpty();
@@ -1684,7 +1701,6 @@ class PersonalRetrospectiveServiceTest {
     void getPersonalRetrospective_throwsWhenMeetingNotFound() {
         // given
         Long meetingId = 999L;
-        Long retrospectiveId = 100L;
         Long userId = 3L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -1695,7 +1711,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.getPersonalRetrospective(meetingId, retrospectiveId))
+                    personalRetrospectiveService.getPersonalRetrospective(meetingId))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.MEETING_NOT_FOUND);
 
@@ -1708,7 +1724,6 @@ class PersonalRetrospectiveServiceTest {
     void getPersonalRetrospective_throwsWhenNotMeetingMember() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 100L;
         Long userId = 999L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -1720,7 +1735,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.getPersonalRetrospective(meetingId, retrospectiveId))
+                    personalRetrospectiveService.getPersonalRetrospective(meetingId))
                     .isInstanceOf(MeetingException.class)
                     .hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.NOT_MEETING_MEMBER);
 
@@ -1733,7 +1748,6 @@ class PersonalRetrospectiveServiceTest {
     void getPersonalRetrospective_throwsWhenRetrospectiveNotFound() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 999L;
         Long userId = 3L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
@@ -1741,12 +1755,12 @@ class PersonalRetrospectiveServiceTest {
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND))
-                    .when(retrospectiveValidator).validateRetrospective(retrospectiveId);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId))
+                    .thenThrow(new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND));
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.getPersonalRetrospective(meetingId, retrospectiveId))
+                    personalRetrospectiveService.getPersonalRetrospective(meetingId))
                     .isInstanceOf(RetrospectiveException.class)
                     .hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_NOT_FOUND);
 
@@ -1759,7 +1773,6 @@ class PersonalRetrospectiveServiceTest {
     void getPersonalRetrospective_throwsWhenUnauthenticated() {
         // given
         Long meetingId = 1L;
-        Long retrospectiveId = 100L;
 
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId)
@@ -1767,7 +1780,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when & then
             assertThatThrownBy(() ->
-                    personalRetrospectiveService.getPersonalRetrospective(meetingId, retrospectiveId))
+                    personalRetrospectiveService.getPersonalRetrospective(meetingId))
                     .isInstanceOf(GlobalException.class)
                     .hasFieldOrPropertyWithValue("errorCode", GlobalErrorCode.UNAUTHORIZED);
 
@@ -1819,13 +1832,20 @@ class PersonalRetrospectiveServiceTest {
                 List.of()
         );
 
+        Meeting meeting = Meeting.builder().id(meetingId).build();
+        User user = User.builder().id(userId).build();
+        PersonalMeetingRetrospective retrospective = PersonalMeetingRetrospective.builder()
+                .id(retrospectiveId)
+                .meeting(meeting)
+                .user(user)
+                .build();
+
         try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
             securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
 
             doNothing().when(meetingValidator).validateMeeting(meetingId);
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
-            doNothing().when(retrospectiveValidator).validateRetrospective(retrospectiveId);
-            doNothing().when(retrospectiveValidator).validateRetrospectiveByUser(retrospectiveId, userId);
+            when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(retrospective);
             when(changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId))
                     .thenReturn(changedThoughts);
             when(othersPerspectiveRepository.findByPersonalMeetingRetrospective(retrospectiveId))
@@ -1837,7 +1857,7 @@ class PersonalRetrospectiveServiceTest {
 
             // when
             PersonalRetrospectiveDetailResponse response =
-                    personalRetrospectiveService.getPersonalRetrospective(meetingId, retrospectiveId);
+                    personalRetrospectiveService.getPersonalRetrospective(meetingId);
 
             // then
             assertThat(response.retrospective().othersPerspectives()).hasSize(2);
