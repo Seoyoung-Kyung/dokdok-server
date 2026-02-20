@@ -78,9 +78,8 @@ public class MeetingRetrospectiveService {
     /**
      * 토픽별 코멘트 조회 (무한 스크롤)
      */
-    public CursorResponse<MeetingRetrospectiveResponse.CommentResponse, CommentCursor> getTopicComments(
+    public CursorResponse<MeetingRetrospectiveResponse.CommentResponse, CommentCursor> getComments(
             Long meetingId,
-            Long topicId,
             int pageSize,
             LocalDateTime cursorCreatedAt,
             Long cursorCommentId
@@ -90,9 +89,7 @@ public class MeetingRetrospectiveService {
 
         retrospectiveValidator.validateMeetingRetrospectiveAccess(meeting.getGathering().getId(), meetingId, userId);
 
-        topicValidator.getTopicInMeeting(topicId, meetingId);
-
-        return fetchComments(topicId, pageSize, cursorCreatedAt, cursorCommentId);
+        return fetchComments(meetingId, pageSize, cursorCreatedAt, cursorCommentId);
     }
 
     @Transactional
@@ -110,11 +107,8 @@ public class MeetingRetrospectiveService {
         // 권한 검증
         retrospectiveValidator.validateMeetingRetrospectiveAccess(meeting.getGathering().getId(),meetingId,userId);
 
-        // Topic 조회
-        Topic topic = topicValidator.getTopicInMeeting(request.topicId(), meetingId);
-
         // save
-        MeetingRetrospective retrospective = MeetingRetrospective.of(meeting, user, topic, request.comment());
+        MeetingRetrospective retrospective = MeetingRetrospective.of(meeting, user, request.comment());
         MeetingRetrospective saved = retrospectiveRepository.save(retrospective);
 
         return buildCommentResponse(saved);
@@ -148,7 +142,7 @@ public class MeetingRetrospectiveService {
     }
 
     private CursorResponse<MeetingRetrospectiveResponse.CommentResponse, CommentCursor> fetchComments(
-            Long topicId,
+            Long meetingId,
             int pageSize,
             LocalDateTime cursorCreatedAt,
             Long cursorCommentId
@@ -157,8 +151,8 @@ public class MeetingRetrospectiveService {
         boolean isFirstPage = cursorCreatedAt == null || cursorCommentId == null;
 
         List<MeetingRetrospective> comments = isFirstPage
-                ? retrospectiveRepository.findByTopicIdFirstPage(topicId, pageable)
-                : retrospectiveRepository.findByTopicIdAfterCursor(topicId, cursorCreatedAt, cursorCommentId, pageable);
+                ? retrospectiveRepository.findByTopicIdFirstPage(meetingId, pageable)
+                : retrospectiveRepository.findByTopicIdAfterCursor(meetingId, cursorCreatedAt, cursorCommentId, pageable);
 
         boolean hasNext = comments.size() > pageSize;
         List<MeetingRetrospective> pageComments = hasNext
@@ -170,7 +164,7 @@ public class MeetingRetrospectiveService {
                 .toList();
 
         CommentCursor nextCursor = buildNextCursor(pageComments, hasNext);
-        Integer totalCount = isFirstPage ? retrospectiveRepository.countByTopicId(topicId) : null;
+        Integer totalCount = isFirstPage ? retrospectiveRepository.countByTopicId(meetingId) : null;
 
         return CursorResponse.of(items, pageSize, hasNext, nextCursor, totalCount);
     }
