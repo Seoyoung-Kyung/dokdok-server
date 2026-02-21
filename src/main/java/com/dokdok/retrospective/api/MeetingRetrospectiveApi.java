@@ -52,6 +52,7 @@ public interface MeetingRetrospectiveApi {
                                           "meetingName": "데미안을 읽어보아요",
                                           "meetingDate": "2026-01-15",
                                           "meetingTime": "19:00-20:00",
+                                          "meetingLeaderId": 123,
                                           "gathering": {
                                             "gatheringId": 1,
                                             "gatheringName": "독서 모임"
@@ -285,11 +286,11 @@ public interface MeetingRetrospectiveApi {
             summary = "공동 회고 코멘트 삭제 (developer: 오주현)",
             description = """
             약속에 대한 공동 회고 코멘트를 삭제합니다.
-            - 권한: 작성자 또는 모임장
+            - 권한: 작성자 또는 약속장
             """,
             parameters = {
                     @Parameter(name = "meetingId", description = "약속 식별자", in = ParameterIn.PATH, required = true),
-                    @Parameter(name = "meetingRetrospectiveId", description = "공동 회고 식별자", in = ParameterIn.PATH, required = true)
+                    @Parameter(name = "commentId", description = "코멘트 식별자", in = ParameterIn.PATH, required = true)
             }
     )
     @ApiResponses({
@@ -315,10 +316,10 @@ public interface MeetingRetrospectiveApi {
                                     {"code": "E000", "message": "서버 에러가 발생했습니다. 담당자에게 문의 바랍니다.", "data": null}
                                     """)))
     })
-    @DeleteMapping(path = "/{meetingRetrospectiveId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(path = "/{commentId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<Void>> deleteMeetingRetrospective(
             @PathVariable Long meetingId,
-            @PathVariable Long meetingRetrospectiveId
+            @PathVariable Long commentId
     );
 
     @Operation(

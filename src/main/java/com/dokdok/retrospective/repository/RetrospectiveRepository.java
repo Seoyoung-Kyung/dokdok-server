@@ -20,7 +20,7 @@ public interface RetrospectiveRepository extends JpaRepository<MeetingRetrospect
             "JOIN FETCH mr.createdBy " +
             "WHERE mr.meeting.id = :meetingId " +
             "ORDER BY mr.createdAt DESC, mr.id DESC")
-    List<MeetingRetrospective> findByTopicIdFirstPage(
+    List<MeetingRetrospective> findByMeetingIdFirstPage(
             @Param("meetingId") Long meetingId,
             Pageable pageable
     );
@@ -31,7 +31,7 @@ public interface RetrospectiveRepository extends JpaRepository<MeetingRetrospect
             "AND (mr.createdAt < :cursorCreatedAt " +
             "     OR (mr.createdAt = :cursorCreatedAt AND mr.id < :cursorCommentId)) " +
             "ORDER BY mr.createdAt DESC, mr.id DESC")
-    List<MeetingRetrospective> findByTopicIdAfterCursor(
+    List<MeetingRetrospective> findByMeetingIdAfterCursor(
             @Param("meetingId") Long meetingId,
             @Param("cursorCreatedAt") LocalDateTime cursorCreatedAt,
             @Param("cursorCommentId") Long cursorCommentId,
@@ -39,5 +39,5 @@ public interface RetrospectiveRepository extends JpaRepository<MeetingRetrospect
     );
 
     @Query("SELECT COUNT(mr) FROM MeetingRetrospective mr WHERE mr.meeting.id = :meetingId")
-    int countByTopicId(@Param("meetingId") Long meetingId);
+    int countByMeetingId(@Param("meetingId") Long meetingId);
 }
