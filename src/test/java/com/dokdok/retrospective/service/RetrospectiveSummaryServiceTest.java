@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -92,7 +93,7 @@ class RetrospectiveSummaryServiceTest {
 
             when(meetingValidator.findMeetingOrThrow(meetingId)).thenReturn(meeting);
             doNothing().when(retrospectiveValidator)
-                    .validateMeetingRetrospectiveAccess(gatheringId, meetingId, userId);
+                    .validateSummaryUpdatePermission(gatheringId, meetingId, userId);
             when(topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(meetingId, TopicStatus.CONFIRMED))
                     .thenReturn(List.of(topic));
             when(topicRetrospectiveSummaryRepository.findAllByTopicIdIn(List.of(topic.getId())))
@@ -101,6 +102,7 @@ class RetrospectiveSummaryServiceTest {
             RetrospectiveSummaryResponse response = retrospectiveSummaryService.getRetrospectiveSummary(meetingId);
 
             assertThat(response.meetingId()).isEqualTo(meetingId);
+            assertThat(response.isPublished()).isFalse();
             assertThat(response.topics()).hasSize(1);
             assertThat(response.topics().get(0).topicId()).isEqualTo(topic.getId());
             assertThat(response.topics().get(0).summary()).isEqualTo("기존 요약");
@@ -145,7 +147,55 @@ class RetrospectiveSummaryServiceTest {
             assertThat(response.topics().get(0).summary()).isEqualTo("수정 요약");
             assertThat(response.topics().get(0).keyPoints()).hasSize(1);
             assertThat(response.topics().get(0).keyPoints().get(0).title()).isEqualTo("수정 포인트");
-            verify(retrospectiveValidator).validateSummaryUpdatePermission(gatheringId, meetingId, userId);
+            // update에서 1번, 내부 getRetrospectiveSummary에서 1번 = 총 2번 호출
+            verify(retrospectiveValidator, times(2)).validateSummaryUpdatePermission(gatheringId, meetingId, userId);
+        }
+    }
+
+    @Nested
+    @DisplayName("약속 회고 생성(퍼블리시)")
+    class PublishRetrospectiveTest {
+
+        @Test
+        @DisplayName("약속 회고 생성 시 isPublished가 true로 변경된다")
+        void publishRetrospective_success() {
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+                when(meetingValidator.findMeetingOrThrow(meetingId)).thenReturn(meeting);
+                doNothing().when(retrospectiveValidator)
+                        .validateSummaryUpdatePermission(gatheringId, meetingId, userId);
+                when(topicRepository.findByMeetingIdAndTopicStatusOrderByConfirmOrderAsc(meetingId, TopicStatus.CONFIRMED))
+                        .thenReturn(List.of(topic));
+                when(topicRetrospectiveSummaryRepository.findAllByTopicIdIn(List.of(topic.getId())))
+                        .thenReturn(List.of(summary));
+
+                RetrospectiveSummaryResponse response = retrospectiveSummaryService.publishRetrospective(meetingId);
+
+                assertThat(meeting.isRetrospectivePublished()).isTrue();
+                assertThat(meeting.getRetrospectivePublishedAt()).isNotNull();
+                assertThat(response.isPublished()).isTrue();
+                assertThat(response.publishedAt()).isNotNull();
+            }
+        }
+
+        @Test
+        @DisplayName("이미 생성된 약속 회고를 다시 생성하려고 하면 예외가 발생한다")
+        void publishRetrospective_alreadyPublished_throwsException() {
+            // 이미 퍼블리시된 상태로 설정
+            meeting.publishRetrospective();
+
+            try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+                securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+                when(meetingValidator.findMeetingOrThrow(meetingId)).thenReturn(meeting);
+                doNothing().when(retrospectiveValidator)
+                        .validateSummaryUpdatePermission(gatheringId, meetingId, userId);
+
+                assertThatThrownBy(() -> retrospectiveSummaryService.publishRetrospective(meetingId))
+                        .isInstanceOf(RetrospectiveException.class)
+                        .hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_ALREADY_PUBLISHED);
+            }
         }
     }
 }

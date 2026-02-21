@@ -97,7 +97,11 @@ class MeetingRetrospectiveServiceTest {
 		Long gatheringId = 1L;
 
 		Gathering gathering = Gathering.builder().id(gatheringId).build();
-		Meeting meeting = Meeting.builder().id(meetingId).gathering(gathering).build();
+		Meeting meeting = Meeting.builder()
+				.id(meetingId)
+				.gathering(gathering)
+				.retrospectivePublished(true)
+				.build();
 
 		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
 			securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -120,7 +124,11 @@ class MeetingRetrospectiveServiceTest {
 		Long gatheringId = 1L;
 
 		Gathering gathering = Gathering.builder().id(gatheringId).build();
-		Meeting meeting = Meeting.builder().id(meetingId).gathering(gathering).build();
+		Meeting meeting = Meeting.builder()
+				.id(meetingId)
+				.gathering(gathering)
+				.retrospectivePublished(true)
+				.build();
 
 		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
 			securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -132,6 +140,31 @@ class MeetingRetrospectiveServiceTest {
 			assertThatThrownBy(() -> meetingRetrospectiveService.getMeetingRetrospective(meetingId))
 					.isInstanceOf(MeetingException.class)
 					.hasFieldOrPropertyWithValue("errorCode", MeetingErrorCode.NOT_GATHERING_MEETING);
+		}
+	}
+
+	@Test
+	@DisplayName("퍼블리시되지 않은 약속 회고 조회 시 예외가 발생한다")
+	void getMeetingRetrospective_throwsWhenNotPublished() {
+		Long meetingId = 1L;
+		Long userId = 1L;
+		Long gatheringId = 1L;
+
+		Gathering gathering = Gathering.builder().id(gatheringId).build();
+		Meeting meeting = Meeting.builder()
+				.id(meetingId)
+				.gathering(gathering)
+				.retrospectivePublished(false)
+				.build();
+
+		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+			securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+
+			when(meetingValidator.findMeetingOrThrow(meetingId)).thenReturn(meeting);
+
+			assertThatThrownBy(() -> meetingRetrospectiveService.getMeetingRetrospective(meetingId))
+					.isInstanceOf(RetrospectiveException.class)
+					.hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_NOT_PUBLISHED);
 		}
 	}
 
@@ -151,6 +184,7 @@ class MeetingRetrospectiveServiceTest {
 				.meetingName("모임")
 				.meetingStartDate(LocalDateTime.of(2026, 1, 15, 19, 0))
 				.meetingEndDate(LocalDateTime.of(2026, 1, 15, 21, 0))
+				.retrospectivePublished(true)
 				.build();
 
 		Topic topic = Topic.builder().id(1L).meeting(meeting).title("토픽1").build();
@@ -183,6 +217,39 @@ class MeetingRetrospectiveServiceTest {
 	}
 
 	@Test
+	@DisplayName("퍼블리시되지 않은 약속에 코멘트 작성 시 예외가 발생한다")
+	void createMeetingRetrospective_throwsWhenNotPublished() {
+		Long meetingId = 1L;
+		Long userId = 1L;
+		Long gatheringId = 1L;
+
+		Gathering gathering = Gathering.builder().id(gatheringId).build();
+		Meeting meeting = Meeting.builder()
+				.id(meetingId)
+				.gathering(gathering)
+				.retrospectivePublished(false)
+				.build();
+		User user = User.builder().id(userId).build();
+		MeetingRetrospectiveRequest request = new MeetingRetrospectiveRequest("코멘트");
+
+		CustomOAuth2User customOAuth2User = mock(CustomOAuth2User.class);
+		when(customOAuth2User.getUser()).thenReturn(user);
+
+		try (MockedStatic<SecurityUtil> securityUtilMock = mockStatic(SecurityUtil.class)) {
+			securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+			securityUtilMock.when(SecurityUtil::getCurrentUser).thenReturn(customOAuth2User);
+
+			when(meetingValidator.findMeetingOrThrow(meetingId)).thenReturn(meeting);
+
+			assertThatThrownBy(() -> meetingRetrospectiveService.createMeetingRetrospective(meetingId, request))
+					.isInstanceOf(RetrospectiveException.class)
+					.hasFieldOrPropertyWithValue("errorCode", RetrospectiveErrorCode.RETROSPECTIVE_NOT_PUBLISHED);
+
+			verify(retrospectiveRepository, never()).save(any());
+		}
+	}
+
+	@Test
 	@DisplayName("공동 회고를 정상적으로 작성한다")
 	void createMeetingRetrospective_success() {
 		// given
@@ -191,7 +258,11 @@ class MeetingRetrospectiveServiceTest {
 		Long gatheringId = 1L;
 
 		Gathering gathering = Gathering.builder().id(gatheringId).build();
-		Meeting meeting = Meeting.builder().id(meetingId).gathering(gathering).build();
+		Meeting meeting = Meeting.builder()
+				.id(meetingId)
+				.gathering(gathering)
+				.retrospectivePublished(true)
+				.build();
 		User user = User.builder().id(userId).nickname("사용자1").profileImageUrl("https://image.jpg").build();
 
 		MeetingRetrospectiveRequest request = new MeetingRetrospectiveRequest("회고 코멘트입니다.");
@@ -264,7 +335,11 @@ class MeetingRetrospectiveServiceTest {
 		Long gatheringId = 1L;
 
 		Gathering gathering = Gathering.builder().id(gatheringId).build();
-		Meeting meeting = Meeting.builder().id(meetingId).gathering(gathering).build();
+		Meeting meeting = Meeting.builder()
+				.id(meetingId)
+				.gathering(gathering)
+				.retrospectivePublished(true)
+				.build();
 		User user = User.builder().id(userId).build();
 		MeetingRetrospectiveRequest request = new MeetingRetrospectiveRequest( "코멘트");
 
