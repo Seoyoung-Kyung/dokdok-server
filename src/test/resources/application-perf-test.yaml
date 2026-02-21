@@ -1,0 +1,66 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/dokdok}
+    username: ${DB_USERNAME:dokdok}
+    password: ${DB_PASSWORD:dokdok!2345678}
+    driver-class-name: org.postgresql.Driver
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: perf-test-client-id
+            client-secret: perf-test-client-secret
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            scope:
+              - account_email
+            client-name: Kakao
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  jpa:
+    hibernate:
+      ddl-auto: none  # 로컬 DB 사용 — 스키마 변경 금지
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        default_batch_fetch_size: 100
+
+  sql:
+    init:
+      mode: never
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+kakao:
+  api:
+    key: dummy
+    base-url: https://dapi.kakao.com
+
+minio:
+  internal-endpoint: http://localhost:9000
+  external-endpoint: http://localhost:9000
+  access-key: dummy
+  secret-key: dummy
+  bucket: dokdok-storage
+
+logging:
+  level:
+    root: WARN
+    com.dokdok: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

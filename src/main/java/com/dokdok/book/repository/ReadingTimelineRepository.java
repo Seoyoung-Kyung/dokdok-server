@@ -61,7 +61,7 @@ public class ReadingTimelineRepository {
                         pre.event_at AS event_at,
                         'PRE_OPINION' AS type,
                         pre.meeting_id AS source_id,
-                        1 AS type_order
+                        0 AS type_order
                     FROM (
                         SELECT
                             m.meeting_id,

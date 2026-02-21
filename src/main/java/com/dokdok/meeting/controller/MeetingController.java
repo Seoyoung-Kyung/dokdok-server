@@ -9,7 +9,9 @@ import com.dokdok.meeting.dto.MeetingStatusResponse;
 import com.dokdok.meeting.dto.MeetingTabCountsResponse;
 import com.dokdok.meeting.dto.MeetingUpdateRequest;
 import com.dokdok.meeting.dto.MeetingUpdateResponse;
+import com.dokdok.meeting.service.MeetingFetchService;
 import com.dokdok.meeting.service.MeetingService;
+import com.dokdok.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class MeetingController implements MeetingApi {
 
     private final MeetingService meetingService;
+    private final MeetingFetchService meetingFetchService;
 
     @Override
     @GetMapping(value = "/{meetingId}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -29,6 +32,15 @@ public class MeetingController implements MeetingApi {
             @PathVariable Long meetingId
     ) {
         return ApiResponse.success(meetingService.findMeeting(meetingId), "약속 상세 조회에 성공했습니다.");
+    }
+
+    /** 성능 비교용 비동기 엔드포인트 — presigned URL 병렬 조회 */
+    @GetMapping(value = "/{meetingId}/async", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<MeetingDetailResponse>> findMeetingAsync(
+            @PathVariable Long meetingId
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        return ApiResponse.success(meetingFetchService.findMeetingAsync(meetingId, userId), "약속 상세 조회(비동기)에 성공했습니다.");
     }
 
     @Override

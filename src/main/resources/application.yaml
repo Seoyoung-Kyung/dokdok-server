@@ -1,29 +1,111 @@
 spring:
-  application:
-    name: dokdok
-  servlet:
-    multipart:
-      max-file-size: 5MB
-      max-request-size: 10MB
+  # Database Configuration
   datasource:
-    hikari:
-      maximum-pool-size: 20  # 최대 커넥션 수
-      minimum-idle: 5       # 최소 유휴 커넥션
-      connection-timeout: 30000  # 커넥션 대기 시간 (30초)
-      idle-timeout: 600000   # 유휴 커넥션 유지 시간 (10분)
-      max-lifetime: 1800000  # 커넥션 최대 수명 (30분)
-      leak-detection-threshold: 60000  # 커넥션 누수 감지 (1분)
-app:
-  frontend:
-    default-url: http://localhost:5173
-    allowed-origins:
-      - http://localhost:5173
-      - localhost:5173
-      - dokdok.site
-      - https://dokdok.site
-      - https://www.dokdok.site
-      - https://dev.dokdok.site
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/dokdok}
+    username: ${DB_USERNAME:dokdok}
+    password: ${DB_PASSWORD:dokdok!2345678}
+    driver-class-name: org.postgresql.Driver
+
+  # OAuth2 Configuration
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID:ceb5ffa8cf4be3ff249a758ff1a168b1}
+            client-secret: ${KAKAO_CLIENT_SECRET:yRUSsUNOSL0tWUJNBVM7L6EiKboRnOKc}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            scope:
+              - account_email
+            client-name: Kakao
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 100
+        javax:
+          persistence:
+            schema-generation:
+              create-source: metadata
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+# Logging Configuration
+logging:
+  level:
+    com.dokdok: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # 로컬 환경에서만 DEBUG 사용 (프로덕션에서는 INFO 이상으로 설정)
+    org.springframework.security: DEBUG
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+  file:
+    name: /Users/chogunhee/Desktop/dokdok/logs/dokdok.log
+  logback:
+    rollingpolicy:
+      max-history: 30
+      max-file-size: 100MB
+
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 30m  # 세션 타임아웃 30분
+      cookie:
+        same-site: lax  # 로컬 환경에서는 lax 사용
+        secure: false   # HTTP에서도 쿠키 전송 허용
+
+# Swagger/OpenAPI Configuration
+springdoc:
+  swagger-ui:
+    servers:
+      - url: http://localhost:8080
+        description: 로컬 서버
+
+# MinIO Configuration
+minio:
+  internal-endpoint: ${MINIO_INTERNAL_ENDPOINT:http://localhost:9000}
+  external-endpoint: ${MINIO_EXTERNAL_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:dokdok-access-12!2123}
+  secret-key: ${MINIO_SECRET_KEY:dokdok-secret-12!2123}
+  bucket: ${MINIO_BUCKET:dokdok-storage}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: dokdok
+
+kakao:
+  api:
+    key: ${KAKAO_API_KEY:8f1260ebbbd18356d296fadc9bb82f58}
+    base-url: ${KAKAO_API_BASE_URL:https://dapi.kakao.com}
+
 ai:
   api:
-    base-url: ${AI_API_BASE_URL:http://localhost:8000}
-    summary-path: ${AI_API_SUMMARY_PATH:/summaries/topics}
+    base-url: http://localhost:8000
+    summary-path: /summaries/topics
+    stt-path: /stt/summary
+
+stt:
+  temp-dir: ${STT_TEMP_DIR:}
