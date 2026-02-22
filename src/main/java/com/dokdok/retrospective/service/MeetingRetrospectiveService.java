@@ -11,6 +11,7 @@ import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
 import com.dokdok.retrospective.exception.RetrospectiveErrorCode;
 import com.dokdok.retrospective.exception.RetrospectiveException;
 import com.dokdok.retrospective.repository.RetrospectiveRepository;
+import com.dokdok.gathering.entity.GatheringRole;
 import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.storage.service.StorageService;
 import com.dokdok.topic.entity.Topic;
@@ -51,7 +52,12 @@ public class MeetingRetrospectiveService {
 
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
 
-        // 권한 검증
+        // 퍼블리시 여부 확인 (퍼블리시 후에만 접근 가능)
+        if (!meeting.isRetrospectivePublished()) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_PUBLISHED);
+        }
+
+        // 권한 검증 (약속 참여자 또는 모임장)
         retrospectiveValidator.validateMeetingRetrospectiveAccess(
                 meeting.getGathering().getId(),
                 meetingId,
@@ -85,6 +91,11 @@ public class MeetingRetrospectiveService {
         Long userId = SecurityUtil.getCurrentUserId();
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
 
+        // 퍼블리시 여부 확인
+        if (!meeting.isRetrospectivePublished()) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_PUBLISHED);
+        }
+
         retrospectiveValidator.validateMeetingRetrospectiveAccess(meeting.getGathering().getId(), meetingId, userId);
 
         return fetchComments(meetingId, pageSize, cursorCreatedAt, cursorCommentId);
@@ -101,6 +112,11 @@ public class MeetingRetrospectiveService {
 
         // Meeting 조회
         Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
+
+        // 퍼블리시 여부 확인
+        if (!meeting.isRetrospectivePublished()) {
+            throw new RetrospectiveException(RetrospectiveErrorCode.RETROSPECTIVE_NOT_PUBLISHED);
+        }
 
         // 권한 검증
         retrospectiveValidator.validateMeetingRetrospectiveAccess(meeting.getGathering().getId(),meetingId,userId);
