@@ -83,7 +83,7 @@ public class PersonalRetrospectiveService {
 
         Long userId = SecurityUtil.getCurrentUserId();
 
-        meetingValidator.validateMeeting(meetingId);
+        Meeting meeting = meetingValidator.findMeetingOrThrow(meetingId);
         meetingValidator.validateMeetingMember(meetingId, userId);
         retrospectiveValidator.validateRetrospective(meetingId, userId);
 
@@ -92,7 +92,7 @@ public class PersonalRetrospectiveService {
         List<MeetingMember> meetingMembers = meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId);
 
         return assembler.assembleCreate(
-                meetingId,
+                meeting,
                 topics,
                 topicAnswers,
                 meetingMembers
@@ -110,6 +110,7 @@ public class PersonalRetrospectiveService {
         PersonalMeetingRetrospective retrospective
                 = retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId);
         Long retrospectiveId = retrospective.getId();
+        Meeting meeting = retrospective.getMeeting();
 
         List<RetrospectiveChangedThought> changedThoughts
                 = changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId);
@@ -126,6 +127,7 @@ public class PersonalRetrospectiveService {
                 = meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId);
 
         return assembler.assembleEdit(
+                meeting,
                 retrospectiveId,
                 changedThoughts,
                 othersPerspectives,
@@ -250,6 +252,7 @@ public class PersonalRetrospectiveService {
         PersonalMeetingRetrospective retrospective
                 = retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId);
         Long retrospectiveId = retrospective.getId();
+        Meeting meeting = retrospective.getMeeting();
 
         List<RetrospectiveChangedThought> changedThoughts
                 = changedThoughtRepository.findByPersonalMeetingRetrospective(retrospectiveId);
@@ -261,6 +264,7 @@ public class PersonalRetrospectiveService {
                 freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId);
 
         return assembler.assembleView(
+                meeting,
                 retrospectiveId,
                 changedThoughts,
                 othersPerspectives,
