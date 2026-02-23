@@ -24,7 +24,7 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
                     b.publisher as publisher,
                     b.author as authors,
                     (array_agg(pb.reading_status order by pb.added_at desc, pb.personal_book_id desc))[1] as bookReadingStatus,
-                    b.book_image_url as thumbnail,
+                    b.thumbnail as thumbnail,
                     max(br.rating) as rating,
                     coalesce(
                         json_agg(distinct jsonb_build_object('gatheringId', g.gathering_id, 'gatheringName', g.gathering_name))
@@ -45,7 +45,7 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
                     and pb.deleted_at is null
                     and (:gatheringId is null or g.gathering_id = :gatheringId)
                     and (:readingStatus is null or pb.reading_status = :readingStatus)
-                group by b.book_id, b.book_name, b.publisher, b.author, b.book_image_url
+                group by b.book_id, b.book_name, b.publisher, b.author, b.thumbnail
                 """,
             countQuery = """
                 select count(distinct pb.book_id)
@@ -75,7 +75,7 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
                     b.publisher as publisher,
                     b.author as authors,
                     (array_agg(pb.reading_status order by pb.added_at desc, pb.personal_book_id desc))[1] as bookReadingStatus,
-                    b.book_image_url as thumbnail,
+                    b.thumbnail as thumbnail,
                     max(br.rating) as rating,
                     coalesce(
                         json_agg(distinct jsonb_build_object('gatheringId', g.gathering_id, 'gatheringName', g.gathering_name))
@@ -96,7 +96,7 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
                     and pb.deleted_at is null
                     and (:gatheringId is null or g.gathering_id = :gatheringId)
                     and (:readingStatus is null or pb.reading_status = :readingStatus)
-                group by b.book_id, b.book_name, b.publisher, b.author, b.book_image_url
+                group by b.book_id, b.book_name, b.publisher, b.author, b.thumbnail
                 """,
             nativeQuery = true
     )

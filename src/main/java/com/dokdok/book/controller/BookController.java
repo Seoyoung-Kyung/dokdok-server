@@ -53,6 +53,8 @@ public class BookController implements BookApi {
             Long gatheringId,
             PersonalBookSortBy sortBy,
             PersonalBookSortOrder sortOrder,
+            @RequestParam(required = false) BigDecimal minRating,
+            @RequestParam(required = false) BigDecimal maxRating,
             @RequestParam(required = false) BigDecimal cursorRating,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -66,6 +68,9 @@ public class BookController implements BookApi {
                         gatheringId,
                         sortBy,
                         sortOrder,
+                        minRating,
+                        maxRating,
+                        cursorRating,
                         cursorAddedAt,
                         cursorBookId,
                         size

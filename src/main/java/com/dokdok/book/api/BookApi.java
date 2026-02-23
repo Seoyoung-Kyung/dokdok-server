@@ -218,6 +218,7 @@ public interface BookApi {
                     내 책장에 등록된 책을 커서 기반으로 조회합니다.
                     - 로그인한 사용자 기준으로 조회합니다.
                     - 독서 상태 필터 (ENUM: READING/COMPLETED/PENDING)
+                    - 별점 범위 필터: minRating/maxRating (포함 범위)
                     - 정렬 파라미터: sortBy(TIME|RATING), sortOrder(DESC|ASC)
                     - 커서 파라미터: cursorRating/cursorAddedAt/cursorBookId
                     - 책이 없는 경우에도 200 응답이며 items는 빈 배열입니다.
@@ -331,6 +332,10 @@ public interface BookApi {
             @RequestParam(required = false) PersonalBookSortBy sortBy,
             @Parameter(description = "정렬 방향 (DESC | ASC)", example = "DESC")
             @RequestParam(required = false) PersonalBookSortOrder sortOrder,
+            @Parameter(description = "별점 하한 (포함, 0.0~5.0)", example = "3.0")
+            @RequestParam(required = false) BigDecimal minRating,
+            @Parameter(description = "별점 상한 (포함, 0.0~5.0)", example = "4.5")
+            @RequestParam(required = false) BigDecimal maxRating,
             @Parameter(description = "커서 - 마지막 아이템 rating (RATING 정렬 시 사용, null 가능)", example = "4.5")
             @RequestParam(required = false) BigDecimal cursorRating,
             @Parameter(
