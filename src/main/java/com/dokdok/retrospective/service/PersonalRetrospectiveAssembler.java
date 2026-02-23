@@ -1,5 +1,6 @@
 package com.dokdok.retrospective.service;
 
+import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
 import com.dokdok.retrospective.dto.projection.FreeTextProjection;
@@ -29,7 +30,7 @@ public class PersonalRetrospectiveAssembler {
     private final StorageService storageService;
 
     public PersonalRetrospectiveFormResponse assembleCreate(
-            Long meetingId,
+            Meeting meeting,
             List<Topic> topics,
             List<TopicAnswer> topicAnswers,
             List<MeetingMember> meetingMembers
@@ -58,7 +59,8 @@ public class PersonalRetrospectiveAssembler {
         List<MemberInfo> memberDtos = toMemberDtos(meetingMembers);
 
         return PersonalRetrospectiveFormResponse.of(
-                meetingId,
+                meeting.getId(),
+                MeetingHeaderInfo.from(meeting),
                 preOpinions,
                 topicDtos,
                 memberDtos
@@ -66,6 +68,7 @@ public class PersonalRetrospectiveAssembler {
     }
 
     public PersonalRetrospectiveEditResponse assembleEdit(
+            Meeting meeting,
             Long retrospectiveId,
             List<RetrospectiveChangedThought> changedThoughts,
             List<RetrospectiveOthersPerspective> othersPerspectives,
@@ -93,6 +96,7 @@ public class PersonalRetrospectiveAssembler {
 
         return PersonalRetrospectiveEditResponse.from(
                 retrospectiveId,
+                MeetingHeaderInfo.from(meeting),
                 changedThoughtList,
                 othersPerspectiveList,
                 freeTextList,
@@ -102,6 +106,7 @@ public class PersonalRetrospectiveAssembler {
     }
 
     public PersonalRetrospectiveDetailResponse assembleView(
+            Meeting meeting,
             Long retrospectiveId,
             List<RetrospectiveChangedThought> changedThoughts,
             List<RetrospectiveOthersPerspective> othersPerspectives,
@@ -129,6 +134,7 @@ public class PersonalRetrospectiveAssembler {
 
         return PersonalRetrospectiveDetailResponse.from(
                 retrospectiveId,
+                MeetingHeaderInfo.from(meeting),
                 changedThoughtList,
                 othersPerspectiveList,
                 freeTextList

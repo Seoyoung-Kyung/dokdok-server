@@ -11,6 +11,8 @@ import java.util.List;
 public record PersonalRetrospectiveDetailResponse(
         @Schema(description = "개인 회고 ID", example = "1")
         Long retrospectiveId,
+        @Schema(description = "약속 헤더 정보")
+        MeetingHeaderInfo meetingHeaderInfo,
         @Schema(description = "개인 회고 데이터")
         RetrospectiveData retrospective
 ) {
@@ -101,12 +103,14 @@ public record PersonalRetrospectiveDetailResponse(
 
     public static PersonalRetrospectiveDetailResponse from(
             Long retrospectiveId,
+            MeetingHeaderInfo meetingHeaderInfo,
             List<ChangedThought> changedThoughts,
             List<OthersPerspective> othersPerspectives,
             List<FreeText> freeTexts
     ) {
         return new PersonalRetrospectiveDetailResponse(
                 retrospectiveId,
+                meetingHeaderInfo,
                 new RetrospectiveData(changedThoughts, othersPerspectives, freeTexts)
         );
     }

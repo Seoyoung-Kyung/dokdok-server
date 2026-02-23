@@ -11,6 +11,8 @@ import java.util.List;
 public record PersonalRetrospectiveEditResponse(
         @Schema(description = "개인 회고 ID", example = "1")
         Long retrospectiveId,
+        @Schema(description = "약속 헤더 정보")
+        MeetingHeaderInfo meetingHeaderInfo,
         @Schema(description = "개인 회고 데이터")
         RetrospectiveData retrospective,  // 작성 데이터 묶음
         @Schema(description = "확정된 주제 목록")
@@ -92,6 +94,7 @@ public record PersonalRetrospectiveEditResponse(
 
     public static PersonalRetrospectiveEditResponse from(
             Long retrospectiveId,
+            MeetingHeaderInfo meetingHeaderInfo,
             List<ChangedThought> changedThoughts,
             List<OthersPerspective> othersPerspectives,
             List<FreeText> freeTexts,
@@ -100,6 +103,7 @@ public record PersonalRetrospectiveEditResponse(
     ) {
         return new PersonalRetrospectiveEditResponse(
                 retrospectiveId,
+                meetingHeaderInfo,
                 new RetrospectiveData(changedThoughts, othersPerspectives, freeTexts), // 묶어서 전달
                 topics,
                 meetingMembers
