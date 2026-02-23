@@ -28,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
@@ -108,6 +109,9 @@ public class PersonalBookService {
             Long gatheringId,
             PersonalBookSortBy sortBy,
             PersonalBookSortOrder sortOrder,
+            BigDecimal minRating,
+            BigDecimal maxRating,
+            BigDecimal cursorRating,
             OffsetDateTime cursorAddedAt,
             Long cursorBookId,
             Integer size
@@ -116,22 +120,30 @@ public class PersonalBookService {
         String readingStatus = bookReadingStatus != null ? bookReadingStatus.name() : null;
         PersonalBookSortBy resolvedSortBy = sortBy != null ? sortBy : PersonalBookSortBy.TIME;
         PersonalBookSortOrder resolvedSortOrder = sortOrder != null ? sortOrder : PersonalBookSortOrder.DESC;
+        Comparator<PersonalBookListProjection> comparator = resolveComparator(resolvedSortBy, resolvedSortOrder);
         int pageSize = resolvePageSize(size);
         LocalDateTime cursorAddedAtValue = cursorAddedAt != null ? cursorAddedAt.toLocalDateTime() : null;
 
-        List<PersonalBookListProjection> sorted = personalBookRepository
+        List<PersonalBookListProjection> filtered = personalBookRepository
                 .findPersonalBookAggregatesByUserIdAndGatheringIdAndReadingStatus(
                         userEntity.getId(),
                         gatheringId,
                         readingStatus
                 )
                 .stream()
-                .sorted(resolveComparator(resolvedSortBy, resolvedSortOrder))
+                .filter(item -> isWithinRatingRange(item.getRating(), minRating, maxRating))
+                .toList();
+
+        List<PersonalBookListProjection> sorted = filtered.stream()
+                .sorted(comparator)
                 .toList();
         long totalCount = sorted.size();
 
         List<PersonalBookListProjection> afterCursor = applyCursor(
                 sorted,
+                comparator,
+                resolvedSortBy,
+                cursorRating,
                 cursorAddedAtValue,
                 cursorBookId
         );
@@ -243,6 +255,9 @@ public class PersonalBookService {
 
     private List<PersonalBookListProjection> applyCursor(
             List<PersonalBookListProjection> sorted,
+            Comparator<PersonalBookListProjection> comparator,
+            PersonalBookSortBy sortBy,
+            BigDecimal cursorRating,
             LocalDateTime cursorAddedAt,
             Long cursorBookId
     ) {
@@ -250,21 +265,36 @@ public class PersonalBookService {
             return sorted;
         }
 
-        for (int i = 0; i < sorted.size(); i++) {
-            PersonalBookListProjection item = sorted.get(i);
-            if (isCursorMatch(item, cursorAddedAt, cursorBookId)) {
-                return sorted.subList(i + 1, sorted.size());
-            }
+        BigDecimal resolvedCursorRating = cursorRating;
+        if (sortBy == PersonalBookSortBy.RATING && resolvedCursorRating == null) {
+            resolvedCursorRating = sorted.stream()
+                    .filter(item -> cursorAddedAt.equals(item.getAddedAt()) && cursorBookId.equals(item.getBookId()))
+                    .map(PersonalBookListProjection::getRating)
+                    .findFirst()
+                    .orElse(null);
         }
-        return List.of();
+
+        PersonalBookListProjection cursor = CursorProjection.of(cursorBookId, cursorAddedAt, resolvedCursorRating);
+        return sorted.stream()
+                .filter(item -> comparator.compare(item, cursor) > 0)
+                .toList();
     }
 
-    private boolean isCursorMatch(
-            PersonalBookListProjection item,
-            LocalDateTime cursorAddedAt,
-            Long cursorBookId
+    private boolean isWithinRatingRange(
+            BigDecimal rating,
+            BigDecimal minRating,
+            BigDecimal maxRating
     ) {
-        return cursorAddedAt.equals(item.getAddedAt()) && cursorBookId.equals(item.getBookId());
+        if (minRating == null && maxRating == null) {
+            return true;
+        }
+        if (rating == null) {
+            return false;
+        }
+
+        boolean passMin = minRating == null || rating.compareTo(minRating) >= 0;
+        boolean passMax = maxRating == null || rating.compareTo(maxRating) <= 0;
+        return passMin && passMax;
     }
 
     private PersonalBookStatusCountsResponse buildStatusCounts(Long userId, Long gatheringId) {
@@ -292,5 +322,60 @@ public class PersonalBookService {
                 .pending(counts.get(BookReadingStatus.PENDING))
                 .total(total)
                 .build();
+    }
+
+    private record CursorProjection(
+            Long bookId,
+            LocalDateTime addedAt,
+            BigDecimal rating
+    ) implements PersonalBookListProjection {
+        private static CursorProjection of(Long bookId, LocalDateTime addedAt, BigDecimal rating) {
+            return new CursorProjection(bookId, addedAt, rating);
+        }
+
+        @Override
+        public Long getBookId() {
+            return bookId;
+        }
+
+        @Override
+        public LocalDateTime getAddedAt() {
+            return addedAt;
+        }
+
+        @Override
+        public BigDecimal getRating() {
+            return rating;
+        }
+
+        @Override
+        public String getTitle() {
+            return null;
+        }
+
+        @Override
+        public String getPublisher() {
+            return null;
+        }
+
+        @Override
+        public String getAuthors() {
+            return null;
+        }
+
+        @Override
+        public BookReadingStatus getBookReadingStatus() {
+            return null;
+        }
+
+        @Override
+        public String getThumbnail() {
+            return null;
+        }
+
+        @Override
+        public String getGatherings() {
+            return null;
+        }
     }
 }
