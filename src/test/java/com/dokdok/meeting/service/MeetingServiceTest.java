@@ -1438,6 +1438,8 @@ class MeetingServiceTest {
                 any(),
                 any()
         )).willReturn(List.of(myMeeting));
+        given(topicRepository.findMeetingIdsWithConfirmedTopics(List.of(myMeeting.getId())))
+                .willReturn(List.of(myMeeting.getId()));
 
         try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -1482,6 +1484,8 @@ class MeetingServiceTest {
                 any(),
                 any()
         )).willReturn(List.of(upcomingMeeting));
+        given(topicRepository.findMeetingIdsWithConfirmedTopics(List.of(upcomingMeeting.getId())))
+                .willReturn(List.of());
 
         try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -1512,8 +1516,10 @@ class MeetingServiceTest {
                 any(),
                 any()
         )).willReturn(2);
-        given(meetingMemberRepository.countMyMeetingsByStatus(userId, MeetingStatus.DONE))
-                .willReturn(3);
+        given(meetingMemberRepository.countMyMeetingsByStatusWithoutPersonalRetrospective(
+                userId,
+                MeetingStatus.DONE
+        )).willReturn(3);
 
         try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);

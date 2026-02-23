@@ -666,7 +666,7 @@ public class MeetingService {
                     cursorMeetingId(cursor),
                     pageable
             );
-            case DONE -> meetingMemberRepository.findMyMeetingsByStatusAfterCursor(
+            case DONE -> meetingMemberRepository.findMyDoneMeetingsWithoutPersonalRetrospectiveAfterCursor(
                     userId,
                     MeetingStatus.DONE,
                     cursorStartDateTime(cursor),
@@ -691,7 +691,7 @@ public class MeetingService {
                         now,
                         now.plusDays(3)
                 );
-                case DONE -> meetingMemberRepository.countMyMeetingsByStatus(
+                case DONE -> meetingMemberRepository.countMyMeetingsByStatusWithoutPersonalRetrospective(
                         userId,
                         MeetingStatus.DONE
                 );
@@ -724,7 +724,7 @@ public class MeetingService {
                 now,
                 now.plusDays(3)
         );
-        int doneCount = meetingMemberRepository.countMyMeetingsByStatus(
+        int doneCount = meetingMemberRepository.countMyMeetingsByStatusWithoutPersonalRetrospective(
                 userId,
                 MeetingStatus.DONE
         );
@@ -899,6 +899,13 @@ public class MeetingService {
         LocalDateTime now = LocalDateTime.now();
         List<MyMeetingListItemResponse> items = new ArrayList<>();
 
+        List<Long> meetingIds = meetings.stream()
+                .map(Meeting::getId)
+                .toList();
+        Set<Long> meetingIdsWithConfirmedTopics = new HashSet<>(
+                topicRepository.findMeetingIdsWithConfirmedTopics(meetingIds)
+        );
+
         for (Meeting meeting : meetings) {
             MeetingProgressStatus progressStatus = resolveProgressStatus(
                     meeting.getMeetingStartDate(),
@@ -906,6 +913,7 @@ public class MeetingService {
                     now
             );
             MeetingMyRole myRole = resolveMyMeetingRole(meeting, userId);
+            boolean preOpinionTemplateConfirmed = meetingIdsWithConfirmedTopics.contains(meeting.getId());
 
             items.add(new MyMeetingListItemResponse(
                     meeting.getId(),
@@ -918,7 +926,8 @@ public class MeetingService {
                     meeting.getMeetingEndDate(),
                     meeting.getMeetingStatus(),
                     myRole,
-                    progressStatus
+                    progressStatus,
+                    preOpinionTemplateConfirmed
             ));
         }
         return items;
