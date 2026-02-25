@@ -153,7 +153,6 @@ class PersonalRetrospectiveServiceTest {
             when(userValidator.findUserOrThrow(userId)).thenReturn(user);
             doNothing().when(retrospectiveValidator).validateRetrospective(meetingId, userId);
             when(topicValidator.getTopicInMeeting(topicId, meetingId)).thenReturn(topic);
-            when(topicAnswerRepository.findPreOpinion(topicId, userId)).thenReturn(topicAnswer);
             when(topicRepository.findById(topicId)).thenReturn(Optional.of(topic));
             when(meetingValidator.getMeetingMember(meetingId, meetingMemberId)).thenReturn(meetingMember);
             when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
@@ -170,7 +169,6 @@ class PersonalRetrospectiveServiceTest {
             verify(userValidator).findUserOrThrow(userId);
             verify(retrospectiveValidator).validateRetrospective(meetingId, userId);
             verify(topicValidator).getTopicInMeeting(topicId, meetingId);
-            verify(topicAnswerRepository).findPreOpinion(topicId, userId);
             verify(topicRepository).findById(topicId);
             verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId);
             verify(personalRetrospectiveRepository).save(any(PersonalMeetingRetrospective.class));
@@ -214,7 +212,6 @@ class PersonalRetrospectiveServiceTest {
             assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(1L);
 
             verify(topicValidator, never()).getTopic(any());
-            verify(topicAnswerRepository, never()).findPreOpinion(any(), any());
         }
     }
 
@@ -254,7 +251,6 @@ class PersonalRetrospectiveServiceTest {
             when(userValidator.findUserOrThrow(userId)).thenReturn(user);
             doNothing().when(retrospectiveValidator).validateRetrospective(meetingId, userId);
             when(topicValidator.getTopicInMeeting(topicId, meetingId)).thenReturn(topic);
-            when(topicAnswerRepository.findPreOpinion(topicId, userId)).thenReturn(null);
             when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
 
             // when
@@ -449,7 +445,6 @@ class PersonalRetrospectiveServiceTest {
             doNothing().when(retrospectiveValidator).validateRetrospective(meetingId, userId);
             when(topicValidator.getTopicInMeeting(10L, meetingId)).thenReturn(topic1);
             when(topicValidator.getTopicInMeeting(20L, meetingId)).thenReturn(topic2);
-            when(topicAnswerRepository.findPreOpinion(anyLong(), eq(userId))).thenReturn(null);
             when(topicRepository.findById(10L)).thenReturn(Optional.of(topic1));
             when(topicRepository.findById(20L)).thenReturn(Optional.of(topic2));
             when(meetingValidator.getMeetingMember(meetingId, meetingMemberId1)).thenReturn(meetingMember1);
@@ -463,7 +458,6 @@ class PersonalRetrospectiveServiceTest {
             assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(1L);
 
             verify(topicValidator, times(2)).getTopicInMeeting(anyLong(), anyLong());
-            verify(topicAnswerRepository, times(2)).findPreOpinion(anyLong(), eq(userId));
             verify(topicRepository, times(2)).findById(anyLong());
             verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId1);
             verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId2);
@@ -758,8 +752,9 @@ class PersonalRetrospectiveServiceTest {
             List<Topic> topics = List.of();
             List<MeetingMember> meetingMembers = List.of();
             when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(topics);
+            when(topicAnswerRepository.findByMeetingIdUserId(meetingId, userId)).thenReturn(List.of());
             when(meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId)).thenReturn(meetingMembers);
-            when(assembler.assembleEdit(meeting, retrospectiveId, changedThoughts, othersPerspectives, freeTexts, topics, meetingMembers))
+            when(assembler.assembleEdit(eq(meeting), eq(retrospectiveId), anyList(), eq(othersPerspectives), eq(freeTexts), eq(topics), eq(meetingMembers)))
                     .thenReturn(expectedResponse);
 
             // when
@@ -779,8 +774,9 @@ class PersonalRetrospectiveServiceTest {
             verify(othersPerspectiveRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(freeTextRepository).findByPersonalMeetingRetrospective_Id(retrospectiveId);
             verify(topicValidator).getConfirmedTopics(meetingId);
+            verify(topicAnswerRepository).findByMeetingIdUserId(meetingId, userId);
             verify(meetingMemberRepository).findOtherMembersByMeetingId(meetingId, userId);
-            verify(assembler).assembleEdit(meeting, retrospectiveId, changedThoughts, othersPerspectives, freeTexts, topics, meetingMembers);
+            verify(assembler).assembleEdit(eq(meeting), eq(retrospectiveId), anyList(), eq(othersPerspectives), eq(freeTexts), eq(topics), eq(meetingMembers));
         }
     }
 
@@ -829,8 +825,9 @@ class PersonalRetrospectiveServiceTest {
             when(freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId))
                     .thenReturn(freeTexts);
             when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(topics);
+            when(topicAnswerRepository.findByMeetingIdUserId(meetingId, userId)).thenReturn(List.of());
             when(meetingMemberRepository.findOtherMembersByMeetingId(meetingId, userId)).thenReturn(meetingMembers);
-            when(assembler.assembleEdit(meeting, retrospectiveId, changedThoughts, othersPerspectives, freeTexts, topics, meetingMembers))
+            when(assembler.assembleEdit(eq(meeting), eq(retrospectiveId), anyList(), eq(othersPerspectives), eq(freeTexts), eq(topics), eq(meetingMembers)))
                     .thenReturn(expectedResponse);
 
             // when
@@ -999,7 +996,6 @@ class PersonalRetrospectiveServiceTest {
             doNothing().when(meetingValidator).validateMeetingMember(meetingId, userId);
             when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(topicId, meetingId)).thenReturn(topic);
-            when(topicAnswerRepository.findPreOpinion(topicId, userId)).thenReturn(topicAnswer);
             when(topicRepository.findById(topicId)).thenReturn(Optional.of(topic));
             when(meetingValidator.getMeetingMember(meetingId, meetingMemberId)).thenReturn(meetingMember);
             when(personalRetrospectiveRepository.save(any(PersonalMeetingRetrospective.class))).thenReturn(saved);
@@ -1017,7 +1013,6 @@ class PersonalRetrospectiveServiceTest {
             verify(meetingValidator).validateMeetingMember(meetingId, userId);
             verify(retrospectiveValidator).getRetrospectiveByMeetingAndUser(meetingId, userId);
             verify(topicValidator).getTopicInMeeting(topicId, meetingId);
-            verify(topicAnswerRepository).findPreOpinion(topicId, userId);
             verify(topicRepository).findById(topicId);
             verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId);
             verify(personalRetrospectiveRepository).save(any(PersonalMeetingRetrospective.class));
@@ -1069,7 +1064,6 @@ class PersonalRetrospectiveServiceTest {
             assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(retrospectiveId);
 
             verify(topicValidator, never()).getTopicInMeeting(any(), any());
-            verify(topicAnswerRepository, never()).findPreOpinion(any(), any());
         }
     }
 
@@ -1129,7 +1123,6 @@ class PersonalRetrospectiveServiceTest {
             when(retrospectiveValidator.getRetrospectiveByMeetingAndUser(meetingId, userId)).thenReturn(existingRetrospective);
             when(topicValidator.getTopicInMeeting(10L, meetingId)).thenReturn(topic1);
             when(topicValidator.getTopicInMeeting(20L, meetingId)).thenReturn(topic2);
-            when(topicAnswerRepository.findPreOpinion(anyLong(), eq(userId))).thenReturn(null);
             when(topicRepository.findById(10L)).thenReturn(Optional.of(topic1));
             when(topicRepository.findById(20L)).thenReturn(Optional.of(topic2));
             when(meetingValidator.getMeetingMember(meetingId, meetingMemberId1)).thenReturn(meetingMember1);
@@ -1144,7 +1137,6 @@ class PersonalRetrospectiveServiceTest {
             assertThat(response.personalMeetingRetrospectiveId()).isEqualTo(retrospectiveId);
 
             verify(topicValidator, times(2)).getTopicInMeeting(anyLong(), anyLong());
-            verify(topicAnswerRepository, times(2)).findPreOpinion(anyLong(), eq(userId));
             verify(topicRepository, times(2)).findById(anyLong());
             verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId1);
             verify(meetingValidator).getMeetingMember(meetingId, meetingMemberId2);
@@ -1585,7 +1577,6 @@ class PersonalRetrospectiveServiceTest {
                 .id(1L)
                 .topic(topic)
                 .keyIssue("핵심 쟁점")
-                .preOpinion("사전 의견")
                 .postOpinion("사후 의견")
                 .build();
 
@@ -1635,7 +1626,9 @@ class PersonalRetrospectiveServiceTest {
                     .thenReturn(othersPerspectives);
             when(freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId))
                     .thenReturn(freeTexts);
-            when(assembler.assembleView(eq(meeting), eq(retrospectiveId), eq(changedThoughts), eq(othersPerspectives), eq(freeTexts)))
+            when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(List.of(topic));
+            when(topicAnswerRepository.findByMeetingIdUserId(meetingId, userId)).thenReturn(List.of());
+            when(assembler.assembleView(eq(meeting), eq(retrospectiveId), anyList(), eq(othersPerspectives), eq(freeTexts)))
                     .thenReturn(expectedResponse);
 
             // when
@@ -1654,7 +1647,9 @@ class PersonalRetrospectiveServiceTest {
             verify(changedThoughtRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(othersPerspectiveRepository).findByPersonalMeetingRetrospective(retrospectiveId);
             verify(freeTextRepository).findByPersonalMeetingRetrospective_Id(retrospectiveId);
-            verify(assembler).assembleView(eq(meeting), eq(retrospectiveId), eq(changedThoughts), eq(othersPerspectives), eq(freeTexts));
+            verify(topicValidator).getConfirmedTopics(meetingId);
+            verify(topicAnswerRepository).findByMeetingIdUserId(meetingId, userId);
+            verify(assembler).assembleView(eq(meeting), eq(retrospectiveId), anyList(), eq(othersPerspectives), eq(freeTexts));
         }
     }
 
@@ -1698,7 +1693,9 @@ class PersonalRetrospectiveServiceTest {
                     .thenReturn(othersPerspectives);
             when(freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId))
                     .thenReturn(freeTexts);
-            when(assembler.assembleView(eq(meeting), eq(retrospectiveId), eq(changedThoughts), eq(othersPerspectives), eq(freeTexts)))
+            when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(List.of());
+            when(topicAnswerRepository.findByMeetingIdUserId(meetingId, userId)).thenReturn(List.of());
+            when(assembler.assembleView(eq(meeting), eq(retrospectiveId), anyList(), eq(othersPerspectives), eq(freeTexts)))
                     .thenReturn(expectedResponse);
 
             // when
@@ -1869,7 +1866,9 @@ class PersonalRetrospectiveServiceTest {
                     .thenReturn(othersPerspectives);
             when(freeTextRepository.findByPersonalMeetingRetrospective_Id(retrospectiveId))
                     .thenReturn(freeTexts);
-            when(assembler.assembleView(eq(meeting), eq(retrospectiveId), eq(changedThoughts), eq(othersPerspectives), eq(freeTexts)))
+            when(topicValidator.getConfirmedTopics(meetingId)).thenReturn(List.of());
+            when(topicAnswerRepository.findByMeetingIdUserId(meetingId, userId)).thenReturn(List.of());
+            when(assembler.assembleView(eq(meeting), eq(retrospectiveId), anyList(), eq(othersPerspectives), eq(freeTexts)))
                     .thenReturn(expectedResponse);
 
             // when

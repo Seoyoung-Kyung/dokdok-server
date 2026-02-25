@@ -3,6 +3,8 @@ package com.dokdok.retrospective.dto.response;
 import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
 import com.dokdok.retrospective.entity.RetrospectiveFreeText;
 import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
+import com.dokdok.topic.entity.Topic;
+import com.dokdok.topic.entity.TopicAnswer;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -41,13 +43,13 @@ public record PersonalRetrospectiveDetailResponse(
             @Schema(description = "사후 의견", example = "토론 후 바뀐 생각")
             String postOpinion
     ) {
-        public static ChangedThought from(RetrospectiveChangedThought changedThought) {
+        public static ChangedThought of(Topic topic, RetrospectiveChangedThought ct, TopicAnswer ta) {
             return new ChangedThought(
-                    changedThought.getTopic().getId(),
-                    changedThought.getTopic().getTitle(),
-                    changedThought.getKeyIssue(),
-                    changedThought.getPreOpinion(),
-                    changedThought.getPostOpinion()
+                    topic.getId(),
+                    topic.getTitle(),
+                    ct != null ? ct.getKeyIssue() : null,
+                    ta != null ? ta.getContent() : null,
+                    ct != null ? ct.getPostOpinion() : null
             );
         }
     }
