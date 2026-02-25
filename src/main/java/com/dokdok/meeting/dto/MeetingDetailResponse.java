@@ -51,6 +51,12 @@ public record MeetingDetailResponse(
         @Schema(description = "참가자 정보")
         ParticipantsInfo participants,
 
+        @Schema(description = "약속 회고 상태", example = "AI_SUMMARY_COMPLETED")
+        MeetingRetrospectiveStatus retrospectiveStatus,
+
+        @Schema(description = "개인 회고 작성 여부", example = "true")
+        Boolean personalRetrospectiveWritten,
+
         @Schema(description = "화면 버튼 상태")
         ActionState actionState
 ) {
@@ -61,6 +67,8 @@ public record MeetingDetailResponse(
             Long requestUserId,
             Boolean confirmedTopic,
             LocalDateTime confirmedTopicDate,
+            MeetingRetrospectiveStatus retrospectiveStatus,
+            Boolean personalRetrospectiveWritten,
             Map<Long, String> profileImageUrlMap
     ) {
         List<MeetingMember> safeMembers = meetingMembers == null ? Collections.emptyList() : meetingMembers;
@@ -100,6 +108,8 @@ public record MeetingDetailResponse(
                 ScheduleInfo.from(meeting.getMeetingStartDate(), meeting.getMeetingEndDate()),
                 MeetingLocationDto.from(meeting.getLocation()),
                 participantsInfo,
+                retrospectiveStatus,
+                personalRetrospectiveWritten,
                 actionState
         );
     }
