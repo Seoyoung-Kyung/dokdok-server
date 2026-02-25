@@ -129,11 +129,17 @@ public class PersonalRetrospectiveService {
         Map<Long, TopicAnswer> taMap = topicAnswers.stream()
                 .collect(Collectors.toMap(ta -> ta.getTopic().getId(), ta -> ta));
 
-        List<PersonalRetrospectiveEditResponse.ChangedThought> mergedChangedThoughts = changedThoughts.stream()
-                .map(ct -> PersonalRetrospectiveEditResponse.ChangedThought.of(
-                        ct,
-                        taMap.get(ct.getTopic().getId())
-                ))
+        Map<Long, RetrospectiveChangedThought> ctMap = changedThoughts.stream()
+                .collect(Collectors.toMap(ct -> ct.getTopic().getId(), ct -> ct));
+
+        List<PersonalRetrospectiveEditResponse.ChangedThought> mergedChangedThoughts = topics.stream()
+                .map(topic -> {
+                    RetrospectiveChangedThought ct = ctMap.get(topic.getId());
+                    TopicAnswer ta = taMap.get(topic.getId());
+                    return ct != null
+                            ? PersonalRetrospectiveEditResponse.ChangedThought.of(ct, ta)
+                            : PersonalRetrospectiveEditResponse.ChangedThought.empty(topic.getId(), ta);
+                })
                 .toList();
 
         List<MeetingMember> meetingMembers

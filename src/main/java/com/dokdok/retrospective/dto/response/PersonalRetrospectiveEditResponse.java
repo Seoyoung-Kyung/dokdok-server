@@ -51,6 +51,15 @@ public record PersonalRetrospectiveEditResponse(
                     ct.getPostOpinion()
             );
         }
+
+        public static ChangedThought empty(Long topicId, TopicAnswer ta) {
+            return new ChangedThought(
+                    topicId,
+                    null,
+                    ta != null ? ta.getContent() : null,
+                    null
+            );
+        }
     }
 
     @Schema(description = "타인의 관점")
