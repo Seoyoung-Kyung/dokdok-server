@@ -25,6 +25,8 @@ import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
+import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
@@ -62,6 +64,8 @@ public class MeetingService {
     private final BookValidator bookValidator;
     private final UserValidator userValidator;
     private final PersonalBookService personalBookService;
+    private final TopicRetrospectiveSummaryRepository topicRetrospectiveSummaryRepository;
+    private final PersonalRetrospectiveRepository personalRetrospectiveRepository;
 
     /**
      * 특정 약속의 정보를 확인할 수 있다. 모임에 속한 사용자만 조회 가능
@@ -86,14 +90,46 @@ public class MeetingService {
         );
         boolean confirmedTopic = confirmedTopicDate != null;
 
+        MeetingRetrospectiveStatus retrospectiveStatus = resolveMeetingRetrospectiveStatus(meetingId, meeting);
+
+        // 개인 회고 작성 여부
+        boolean personalRetrospectiveWritten = personalRetrospectiveRepository
+                .existsByMeetingIdAndUserId(meetingId, userId);
+
         return MeetingDetailResponse.from(
                 meeting,
                 meetingMembers,
                 userId,
                 confirmedTopic,
                 confirmedTopicDate,
+                retrospectiveStatus,
+                personalRetrospectiveWritten,
                 profileImageUrlMap
         );
+    }
+
+    /**
+     * 약속 회고 상태를 계산한다: FINAL_PUBLISHED > AI_SUMMARY_COMPLETED > NOT_CREATED 순으로 판단.
+     *   - FINAL_PUBLISHED: meeting.isRetrospectivePublished()가 true
+     *   - AI_SUMMARY_COMPLETED: 확정 토픽이 있고, 해당 토픽 중 하나라도 TopicRetrospectiveSummary가 존재
+     *   - NOT_CREATED: 위 두 조건 모두 불충족
+     **/
+    private MeetingRetrospectiveStatus resolveMeetingRetrospectiveStatus(Long meetingId, Meeting meeting) {
+        if (meeting.isRetrospectivePublished()) {
+            return MeetingRetrospectiveStatus.FINAL_PUBLISHED;
+        }
+
+        List<Long> topicIds = topicRepository.findConfirmedTopics(meetingId).stream()
+                .map(Topic::getId)
+                .toList();
+        if (topicIds.isEmpty()) {
+            return MeetingRetrospectiveStatus.NOT_CREATED;
+        }
+
+        boolean hasSummary = !topicRetrospectiveSummaryRepository.findAllByTopicIdIn(topicIds).isEmpty();
+        return hasSummary
+                ? MeetingRetrospectiveStatus.AI_SUMMARY_COMPLETED
+                : MeetingRetrospectiveStatus.NOT_CREATED;
     }
 
     /**
