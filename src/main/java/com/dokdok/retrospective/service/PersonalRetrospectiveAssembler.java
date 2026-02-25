@@ -7,7 +7,6 @@ import com.dokdok.retrospective.dto.projection.FreeTextProjection;
 import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
 import com.dokdok.retrospective.dto.response.*;
 import com.dokdok.retrospective.entity.PersonalMeetingRetrospective;
-import com.dokdok.retrospective.entity.RetrospectiveChangedThought;
 import com.dokdok.retrospective.entity.RetrospectiveFreeText;
 import com.dokdok.retrospective.entity.RetrospectiveOthersPerspective;
 import com.dokdok.storage.service.StorageService;
@@ -70,16 +69,12 @@ public class PersonalRetrospectiveAssembler {
     public PersonalRetrospectiveEditResponse assembleEdit(
             Meeting meeting,
             Long retrospectiveId,
-            List<RetrospectiveChangedThought> changedThoughts,
+            List<PersonalRetrospectiveEditResponse.ChangedThought> changedThoughts,
             List<RetrospectiveOthersPerspective> othersPerspectives,
             List<RetrospectiveFreeText> freeTexts,
             List<Topic> topics,
             List<MeetingMember> meetingMembers
     ) {
-        List<PersonalRetrospectiveEditResponse.ChangedThought> changedThoughtList =
-                changedThoughts.stream()
-                        .map(PersonalRetrospectiveEditResponse.ChangedThought::from)
-                        .toList();
 
         List<PersonalRetrospectiveEditResponse.OthersPerspective> othersPerspectiveList =
                 othersPerspectives.stream()
@@ -97,7 +92,7 @@ public class PersonalRetrospectiveAssembler {
         return PersonalRetrospectiveEditResponse.from(
                 retrospectiveId,
                 MeetingHeaderInfo.from(meeting),
-                changedThoughtList,
+                changedThoughts,
                 othersPerspectiveList,
                 freeTextList,
                 topicDtos,
@@ -108,16 +103,11 @@ public class PersonalRetrospectiveAssembler {
     public PersonalRetrospectiveDetailResponse assembleView(
             Meeting meeting,
             Long retrospectiveId,
-            List<RetrospectiveChangedThought> changedThoughts,
+            List<PersonalRetrospectiveDetailResponse.ChangedThought> changedThoughts,
             List<RetrospectiveOthersPerspective> othersPerspectives,
             List<RetrospectiveFreeText> freeTexts
     ) {
         Map<Long, String> memberProfileImageMap = buildMemberProfileImageMap(othersPerspectives);
-
-        List<PersonalRetrospectiveDetailResponse.ChangedThought> changedThoughtList =
-                changedThoughts.stream()
-                        .map(PersonalRetrospectiveDetailResponse.ChangedThought::from)
-                        .toList();
 
         List<PersonalRetrospectiveDetailResponse.OthersPerspective> othersPerspectiveList =
                 othersPerspectives.stream()
@@ -135,7 +125,7 @@ public class PersonalRetrospectiveAssembler {
         return PersonalRetrospectiveDetailResponse.from(
                 retrospectiveId,
                 MeetingHeaderInfo.from(meeting),
-                changedThoughtList,
+                changedThoughts,
                 othersPerspectiveList,
                 freeTextList
         );
