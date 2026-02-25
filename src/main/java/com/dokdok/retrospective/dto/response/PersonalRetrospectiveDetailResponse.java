@@ -58,6 +58,8 @@ public record PersonalRetrospectiveDetailResponse(
     public record OthersPerspective(
             @Schema(description = "주제 ID", example = "1")
             Long topicId,
+            @Schema(description = "주제 제목", example = "깨끗한 코드")
+            String topicTitle,
             @Schema(description = "약속 멤버 ID", example = "10")
             Long meetingMemberId,
             @Schema(description = "프로필 이미지 URL", example = "https://example.com/profile.jpg")
@@ -77,8 +79,13 @@ public record PersonalRetrospectiveDetailResponse(
                     ? othersPerspective.getTopic().getId()
                     : null;
 
+            String topicTitle = othersPerspective.getTopic() != null
+                    ? othersPerspective.getTopic().getTitle()
+                    : null;
+
             return new OthersPerspective(
                     topicId,
+                    topicTitle,
                     othersPerspective.getMeetingMember().getId(),
                     profileImage,
                     othersPerspective.getMeetingMember().getUser().getNickname(),
