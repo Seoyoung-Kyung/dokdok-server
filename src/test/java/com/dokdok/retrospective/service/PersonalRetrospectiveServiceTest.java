@@ -1602,7 +1602,7 @@ class PersonalRetrospectiveServiceTest {
                 retrospectiveId,
                 null,
                 List.of(new PersonalRetrospectiveDetailResponse.ChangedThought(10L, "주제 제목", "핵심 쟁점", "사전 의견", "사후 의견")),
-                List.of(new PersonalRetrospectiveDetailResponse.OthersPerspective(10L, 5L, "presigned-url", "다른사용자", "타인 의견", "인상 깊었던 이유")),
+                List.of(new PersonalRetrospectiveDetailResponse.OthersPerspective(10L, "주제 제목", 5L, "presigned-url", "다른사용자", "타인 의견", "인상 깊었던 이유")),
                 List.of(new PersonalRetrospectiveDetailResponse.FreeText("자유 서술 제목", "자유 서술 내용"))
         );
 
@@ -1840,8 +1840,8 @@ class PersonalRetrospectiveServiceTest {
                 null,
                 List.of(),
                 List.of(
-                        new PersonalRetrospectiveDetailResponse.OthersPerspective(10L, 5L, "presigned-url-1", "사용자1", "타인 의견1", "이유1"),
-                        new PersonalRetrospectiveDetailResponse.OthersPerspective(10L, 6L, "presigned-url-2", "사용자2", "타인 의견2", "이유2")
+                        new PersonalRetrospectiveDetailResponse.OthersPerspective(10L, "주제 제목", 5L, "presigned-url-1", "사용자1", "타인 의견1", "이유1"),
+                        new PersonalRetrospectiveDetailResponse.OthersPerspective(10L, "주제 제목", 6L, "presigned-url-2", "사용자2", "타인 의견2", "이유2")
                 ),
                 List.of()
         );
