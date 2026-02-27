@@ -22,6 +22,8 @@ import com.dokdok.meeting.exception.MeetingErrorCode;
 import com.dokdok.meeting.exception.MeetingException;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
 import com.dokdok.meeting.repository.MeetingRepository;
+import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
+import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.entity.TopicType;
 import com.dokdok.topic.repository.TopicAnswerRepository;
@@ -49,6 +51,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -100,6 +103,12 @@ class MeetingServiceTest {
     @Mock
     private PersonalBookService personalBookService;
 
+    @Mock
+    private TopicRetrospectiveSummaryRepository topicRetrospectiveSummaryRepository;
+
+    @Mock
+    private PersonalRetrospectiveRepository personalRetrospectiveRepository;
+
     private Meeting meeting;
     private Long meetingId;
     private Gathering gathering;
@@ -128,6 +137,12 @@ class MeetingServiceTest {
                 .gathering(gathering)
                 .book(sampleBook())
                 .build();
+
+        lenient().when(topicRepository.findConfirmedTopics(anyLong())).thenReturn(List.of());
+        lenient().when(topicRetrospectiveSummaryRepository.findAllByTopicIdIn(any()))
+                .thenReturn(List.of());
+        lenient().when(personalRetrospectiveRepository.existsByMeetingIdAndUserId(eq(meetingId), any()))
+                .thenReturn(false);
     }
 
     private Book sampleBook() {
@@ -1438,6 +1453,8 @@ class MeetingServiceTest {
                 any(),
                 any()
         )).willReturn(List.of(myMeeting));
+        given(topicRepository.findMeetingIdsWithConfirmedTopics(List.of(myMeeting.getId())))
+                .willReturn(List.of(myMeeting.getId()));
 
         try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -1482,6 +1499,8 @@ class MeetingServiceTest {
                 any(),
                 any()
         )).willReturn(List.of(upcomingMeeting));
+        given(topicRepository.findMeetingIdsWithConfirmedTopics(List.of(upcomingMeeting.getId())))
+                .willReturn(List.of());
 
         try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
@@ -1512,8 +1531,10 @@ class MeetingServiceTest {
                 any(),
                 any()
         )).willReturn(2);
-        given(meetingMemberRepository.countMyMeetingsByStatus(userId, MeetingStatus.DONE))
-                .willReturn(3);
+        given(meetingMemberRepository.countMyMeetingsByStatusWithoutPersonalRetrospective(
+                userId,
+                MeetingStatus.DONE
+        )).willReturn(3);
 
         try (MockedStatic<SecurityUtil> mock = mockStatic(SecurityUtil.class)) {
             mock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);

@@ -4,15 +4,19 @@ import lombok.Getter;
 
 @Getter
 public enum ReadingTimelineType {
-    PRE_OPINION(0),
-    MEETING_RETROSPECTIVE(1),
-    PERSONAL_RETROSPECTIVE(2),
-    READING_RECORD(3);
+    READING_RECORD(4),
+    PERSONAL_RETROSPECTIVE(3),
+    GROUP_RETROSPECTIVE(2),
+    PRE_OPINION(1);
 
     private final int order;
 
     ReadingTimelineType(int order) {
         this.order = order;
+    }
+
+    public int getOrder() {
+        return order;
     }
 
     public static ReadingTimelineType from(String value) {

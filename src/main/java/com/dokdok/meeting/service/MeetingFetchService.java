@@ -65,6 +65,7 @@ public class MeetingFetchService {
                 profileImageUrlMap
         );
     }
+
     /**
      * 멤버 전체 presigned URL 병렬 생성
      * self.fetchPresignedUrlAsync()로 호출해 Spring 프록시를 통과시킨다.
