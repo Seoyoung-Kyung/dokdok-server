@@ -2,10 +2,14 @@ package com.dokdok.meeting.service;
 
 import com.dokdok.gathering.service.GatheringValidator;
 import com.dokdok.meeting.dto.MeetingDetailResponse;
+import com.dokdok.meeting.dto.MeetingRetrospectiveStatus;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.entity.MeetingMember;
 import com.dokdok.meeting.repository.MeetingMemberRepository;
+import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
+import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.storage.service.StorageService;
+import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.repository.TopicRepository;
 import com.dokdok.user.entity.User;
@@ -31,6 +35,8 @@ public class MeetingFetchService {
     private final GatheringValidator gatheringValidator;
     private final MeetingMemberRepository meetingMemberRepository;
     private final TopicRepository topicRepository;
+    private final TopicRetrospectiveSummaryRepository topicRetrospectiveSummaryRepository;
+    private final PersonalRetrospectiveRepository personalRetrospectiveRepository;
     private final StorageService storageService;
 
     // @Async self-invocation: 같은 클래스 내 직접 호출은 Spring 프록시를 우회하므로
@@ -56,14 +62,39 @@ public class MeetingFetchService {
                 .findConfirmedTopicDateByMeetingId(meetingId, TopicStatus.CONFIRMED);
         boolean confirmedTopic = confirmedTopicDate != null;
 
+        MeetingRetrospectiveStatus retrospectiveStatus = resolveMeetingRetrospectiveStatus(meetingId, meeting);
+
+        boolean personalRetrospectiveWritten = personalRetrospectiveRepository
+                .existsByMeetingIdAndUserId(meetingId, userId);
+
         return MeetingDetailResponse.from(
                 meeting,
                 meetingMembers,
                 userId,
                 confirmedTopic,
                 confirmedTopicDate,
+                retrospectiveStatus,
+                personalRetrospectiveWritten,
                 profileImageUrlMap
         );
+    }
+
+    private MeetingRetrospectiveStatus resolveMeetingRetrospectiveStatus(Long meetingId, Meeting meeting) {
+        if (meeting.isRetrospectivePublished()) {
+            return MeetingRetrospectiveStatus.FINAL_PUBLISHED;
+        }
+
+        List<Long> topicIds = topicRepository.findConfirmedTopics(meetingId).stream()
+                .map(Topic::getId)
+                .toList();
+        if (topicIds.isEmpty()) {
+            return MeetingRetrospectiveStatus.NOT_CREATED;
+        }
+
+        boolean hasSummary = !topicRetrospectiveSummaryRepository.findAllByTopicIdIn(topicIds).isEmpty();
+        return hasSummary
+                ? MeetingRetrospectiveStatus.AI_SUMMARY_COMPLETED
+                : MeetingRetrospectiveStatus.NOT_CREATED;
     }
 
     /**

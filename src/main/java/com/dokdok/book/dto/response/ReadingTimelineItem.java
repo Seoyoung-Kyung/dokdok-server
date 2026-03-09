@@ -68,6 +68,7 @@ public record ReadingTimelineItem(
                 sourceId,
                 null,
                 retrospective,
+                null,
                 null
         );
     }

@@ -16,14 +16,18 @@ import com.dokdok.retrospective.dto.projection.ChangedThoughtProjection;
 import com.dokdok.retrospective.dto.projection.FreeTextProjection;
 import com.dokdok.retrospective.dto.projection.OtherPerspectiveProjection;
 import com.dokdok.retrospective.dto.response.RetrospectiveRecordResponse;
+import com.dokdok.retrospective.dto.response.RetrospectiveSummaryResponse;
 import com.dokdok.retrospective.entity.PersonalMeetingRetrospective;
+import com.dokdok.retrospective.entity.TopicRetrospectiveSummary;
 import com.dokdok.retrospective.repository.ChangedThoughtRepository;
 import com.dokdok.retrospective.repository.FreeTextRepository;
 import com.dokdok.retrospective.repository.OthersPerspectiveRepository;
 import com.dokdok.retrospective.repository.PersonalRetrospectiveRepository;
+import com.dokdok.retrospective.repository.TopicRetrospectiveSummaryRepository;
 import com.dokdok.retrospective.service.PersonalRetrospectiveAssembler;
 import com.dokdok.topic.entity.Topic;
 import com.dokdok.topic.entity.TopicAnswer;
+import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +39,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 
@@ -54,6 +59,7 @@ public class ReadingTimelineService {
     private final TopicRepository topicRepository;
     private final TopicAnswerRepository topicAnswerRepository;
     private final MeetingRepository meetingRepository;
+    private final TopicRetrospectiveSummaryRepository topicRetrospectiveSummaryRepository;
     private final BookValidator bookValidator;
     private final PersonalRetrospectiveAssembler personalRetrospectiveAssembler;
 
@@ -117,6 +123,10 @@ public class ReadingTimelineService {
                 .filter(row -> ReadingTimelineType.PRE_OPINION.name().equals(row.type()))
                 .map(ReadingTimelineIndexRow::sourceId)
                 .toList();
+        List<Long> meetingRetrospectiveMeetingIds = pageRows.stream()
+                .filter(row -> ReadingTimelineType.MEETING_RETROSPECTIVE.name().equals(row.type()))
+                .map(ReadingTimelineIndexRow::sourceId)
+                .toList();
 
         Map<Long, PersonalReadingRecordListResponse> readingRecordMap =
                 fetchReadingRecords(readingRecordIds, personalBookId, userId);
@@ -126,6 +136,8 @@ public class ReadingTimelineService {
                 fetchGroupRetrospectives(groupRetrospectiveMeetingIds);
         Map<Long, ReadingTimelinePreOpinionResponse> preOpinionMap =
                 fetchPreOpinions(meetingIds, userId);
+        Map<Long, RetrospectiveSummaryResponse> meetingRetrospectiveSummaryMap =
+                fetchMeetingRetrospectiveSummaries(meetingRetrospectiveMeetingIds);
 
         List<ReadingTimelineItem> items = pageRows.stream()
                 .map(row -> {
@@ -150,6 +162,11 @@ public class ReadingTimelineService {
                                 row.eventAt(),
                                 row.sourceId(),
                                 preOpinionMap.get(row.sourceId())
+                        );
+                        case MEETING_RETROSPECTIVE -> ReadingTimelineItem.meetingRetrospective(
+                                row.eventAt(),
+                                row.sourceId(),
+                                meetingRetrospectiveSummaryMap.get(row.sourceId())
                         );
                     };
                 })
@@ -328,6 +345,55 @@ public class ReadingTimelineService {
         }
 
         return map;
+    }
+
+    private Map<Long, RetrospectiveSummaryResponse> fetchMeetingRetrospectiveSummaries(List<Long> meetingIds) {
+        if (meetingIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Meeting> meetings = meetingRepository.findByIdInWithGathering(meetingIds);
+        Map<Long, Meeting> meetingMap = new HashMap<>();
+        for (Meeting meeting : meetings) {
+            meetingMap.put(meeting.getId(), meeting);
+        }
+
+        List<Topic> confirmedTopics = topicRepository.findTopicsInfoByMeetingIds(meetingIds)
+                .stream()
+                .filter(t -> TopicStatus.CONFIRMED.equals(t.getTopicStatus()))
+                .toList();
+
+        Map<Long, List<Topic>> topicsByMeeting = confirmedTopics.stream()
+                .collect(groupingBy(t -> t.getMeeting().getId()));
+
+        List<Long> topicIds = confirmedTopics.stream().map(Topic::getId).toList();
+
+        Map<Long, TopicRetrospectiveSummary> summaryByTopic =
+                topicRetrospectiveSummaryRepository.findAllByTopicIdIn(topicIds)
+                        .stream()
+                        .collect(Collectors.toMap(s -> s.getTopic().getId(), s -> s));
+
+        Map<Long, RetrospectiveSummaryResponse> result = new HashMap<>();
+        for (Long meetingId : meetingIds) {
+            Meeting meeting = meetingMap.get(meetingId);
+            if (meeting == null) {
+                continue;
+            }
+            List<Topic> meetingTopics = topicsByMeeting.getOrDefault(meetingId, List.of())
+                    .stream()
+                    .sorted(Comparator.comparing(Topic::getConfirmOrder,
+                            Comparator.nullsLast(Integer::compareTo)))
+                    .toList();
+
+            List<RetrospectiveSummaryResponse.TopicSummaryResponse> topicResponses =
+                    meetingTopics.stream()
+                            .map(t -> RetrospectiveSummaryResponse.TopicSummaryResponse
+                                    .from(t, summaryByTopic.get(t.getId())))
+                            .toList();
+
+            result.put(meetingId, RetrospectiveSummaryResponse.from(meeting, topicResponses));
+        }
+        return result;
     }
 
     private int resolvePageSize(Integer size) {

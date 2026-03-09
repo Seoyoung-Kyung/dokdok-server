@@ -7,6 +7,7 @@ public enum ReadingTimelineType {
     READING_RECORD(4),
     PERSONAL_RETROSPECTIVE(3),
     GROUP_RETROSPECTIVE(2),
+    MEETING_RETROSPECTIVE(2),
     PRE_OPINION(1);
 
     private final int order;

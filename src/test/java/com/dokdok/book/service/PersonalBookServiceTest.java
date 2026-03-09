@@ -46,6 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -644,15 +646,19 @@ class PersonalBookServiceTest {
                 .build();
 
         LocalDateTime now = LocalDateTime.now();
-        PersonalBookListProjection high = projection(3L, "별점 5점", new BigDecimal("5.0"), now.minusDays(1));
         PersonalBookListProjection mid = projection(2L, "별점 3.5점", new BigDecimal("3.5"), now.minusDays(2));
-        PersonalBookListProjection low = projection(1L, "별점 2점", new BigDecimal("2.0"), now.minusDays(3));
-        PersonalBookListProjection unrated = projection(4L, "별점 없음", null, now.minusDays(4));
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(personalBookRepository.findPersonalBookAggregatesByUserIdAndGatheringIdAndReadingStatus(userId, null, null))
-                .thenReturn(List.of(high, mid, low, unrated));
+        when(personalBookRepository.findWithCursorRatingDesc(
+                eq(userId), isNull(), isNull(),
+                eq(new BigDecimal("3.0")), eq(new BigDecimal("4.0")),
+                isNull(), isNull(), isNull(), eq(11)))
+                .thenReturn(List.of(mid));
+        when(personalBookRepository.countByUserIdAndFilters(
+                eq(userId), isNull(), isNull(),
+                eq(new BigDecimal("3.0")), eq(new BigDecimal("4.0"))))
+                .thenReturn(1L);
         when(personalBookRepository.countPersonalBookStatusByUserIdAndGatheringId(userId, null)).thenReturn(List.of());
 
         // when
@@ -688,18 +694,21 @@ class PersonalBookServiceTest {
                 .nickname("tester")
                 .build();
 
-        LocalDateTime firstAddedAt = LocalDateTime.of(2026, 2, 1, 10, 0);
         LocalDateTime secondAddedAt = LocalDateTime.of(2026, 1, 25, 10, 0);
         LocalDateTime thirdAddedAt = LocalDateTime.of(2026, 1, 20, 10, 0);
 
-        PersonalBookListProjection first = projection(30L, "별점 5점", new BigDecimal("5.0"), firstAddedAt);
-        PersonalBookListProjection second = projection(20L, "별점 4점", new BigDecimal("4.0"), secondAddedAt);
         PersonalBookListProjection third = projection(10L, "별점 3점", new BigDecimal("3.0"), thirdAddedAt);
 
         securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
         when(userValidator.findUserOrThrow(userId)).thenReturn(user);
-        when(personalBookRepository.findPersonalBookAggregatesByUserIdAndGatheringIdAndReadingStatus(userId, null, null))
-                .thenReturn(List.of(first, second, third));
+        when(personalBookRepository.findWithCursorRatingDesc(
+                eq(userId), isNull(), isNull(),
+                isNull(), isNull(),
+                eq(new BigDecimal("4.0")), eq(secondAddedAt), eq(20L), eq(11)))
+                .thenReturn(List.of(third));
+        when(personalBookRepository.countByUserIdAndFilters(
+                eq(userId), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(3L);
         when(personalBookRepository.countPersonalBookStatusByUserIdAndGatheringId(userId, null)).thenReturn(List.of());
 
         // when

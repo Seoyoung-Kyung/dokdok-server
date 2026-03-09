@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -104,6 +106,284 @@ public interface PersonalBookRepository extends JpaRepository<PersonalBook, Long
             @Param("userId") Long userId,
             @Param("gatheringId") Long gatheringId,
             @Param("readingStatus") String readingStatus
+    );
+
+    @Query(
+            value = """
+                WITH aggregated AS (
+                    SELECT
+                        b.book_id AS bookId,
+                        b.book_name AS title,
+                        b.publisher AS publisher,
+                        b.author AS authors,
+                        (array_agg(pb.reading_status ORDER BY pb.added_at DESC, pb.personal_book_id DESC))[1] AS bookReadingStatus,
+                        b.thumbnail AS thumbnail,
+                        max(br.rating) AS rating,
+                        coalesce(
+                            json_agg(DISTINCT jsonb_build_object('gatheringId', g.gathering_id, 'gatheringName', g.gathering_name))
+                                FILTER (WHERE g.gathering_id IS NOT NULL),
+                            '[]'::json
+                        )::text AS gatherings,
+                        max(pb.added_at) AS addedAt
+                    FROM personal_book pb
+                    JOIN book b ON pb.book_id = b.book_id
+                    LEFT JOIN gathering g
+                        ON pb.gathering_id = g.gathering_id AND g.deleted_at IS NULL
+                    LEFT JOIN book_review br
+                        ON br.book_id = b.book_id AND br.user_id = :userId AND br.deleted_at IS NULL
+                    WHERE pb.user_id = :userId
+                        AND pb.deleted_at IS NULL
+                        AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId)
+                        AND (:readingStatus IS NULL OR pb.reading_status = :readingStatus)
+                    GROUP BY b.book_id, b.book_name, b.publisher, b.author, b.thumbnail
+                )
+                SELECT * FROM aggregated
+                WHERE ((:minRating IS NULL AND :maxRating IS NULL)
+                       OR (rating IS NOT NULL
+                           AND (:minRating IS NULL OR rating >= :minRating)
+                           AND (:maxRating IS NULL OR rating <= :maxRating)))
+                    AND (
+                        CAST(:cursorAddedAt AS timestamp) IS NULL
+                        OR addedat < CAST(:cursorAddedAt AS timestamp)
+                        OR (addedat = CAST(:cursorAddedAt AS timestamp) AND bookid < :cursorBookId)
+                    )
+                ORDER BY addedat DESC, bookid DESC
+                LIMIT :limit
+                """,
+            nativeQuery = true
+    )
+    List<PersonalBookListProjection> findWithCursorTimeDesc(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId,
+            @Param("readingStatus") String readingStatus,
+            @Param("minRating") BigDecimal minRating,
+            @Param("maxRating") BigDecimal maxRating,
+            @Param("cursorAddedAt") LocalDateTime cursorAddedAt,
+            @Param("cursorBookId") Long cursorBookId,
+            @Param("limit") int limit
+    );
+
+    @Query(
+            value = """
+                WITH aggregated AS (
+                    SELECT
+                        b.book_id                                                                         AS bookId,
+                        b.book_name                                                                       AS title,
+                        b.publisher                                                                       AS publisher,
+                        b.author                                                                          AS authors,
+                        (array_agg(pb.reading_status ORDER BY pb.added_at DESC, pb.personal_book_id DESC))[1] AS bookReadingStatus,
+                        b.thumbnail                                                                       AS thumbnail,
+                        max(br.rating)                                                                    AS rating,
+                        coalesce(
+                            json_agg(DISTINCT jsonb_build_object('gatheringId', g.gathering_id, 'gatheringName', g.gathering_name))
+                                FILTER (WHERE g.gathering_id IS NOT NULL),
+                            '[]'::json
+                        )::text                                                                           AS gatherings,
+                        max(pb.added_at)                                                                  AS addedAt
+                    FROM personal_book pb
+                    JOIN book b ON pb.book_id = b.book_id
+                    LEFT JOIN gathering g
+                        ON pb.gathering_id = g.gathering_id AND g.deleted_at IS NULL
+                    LEFT JOIN book_review br
+                        ON br.book_id = b.book_id AND br.user_id = :userId AND br.deleted_at IS NULL
+                    WHERE pb.user_id = :userId
+                        AND pb.deleted_at IS NULL
+                        AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId)
+                        AND (:readingStatus IS NULL OR pb.reading_status = :readingStatus)
+                    GROUP BY b.book_id, b.book_name, b.publisher, b.author, b.thumbnail
+                )
+                SELECT * FROM aggregated
+                WHERE ((:minRating IS NULL AND :maxRating IS NULL)
+                       OR (rating IS NOT NULL
+                           AND (:minRating IS NULL OR rating >= :minRating)
+                           AND (:maxRating IS NULL OR rating <= :maxRating)))
+                    AND (
+                        CAST(:cursorAddedAt AS timestamp) IS NULL
+                        OR addedat > CAST(:cursorAddedAt AS timestamp)
+                        OR (addedat = CAST(:cursorAddedAt AS timestamp) AND bookid > :cursorBookId)
+                    )
+                ORDER BY addedat ASC, bookid ASC
+                LIMIT :limit
+                """,
+            nativeQuery = true
+    )
+    List<PersonalBookListProjection> findWithCursorTimeAsc(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId,
+            @Param("readingStatus") String readingStatus,
+            @Param("minRating") BigDecimal minRating,
+            @Param("maxRating") BigDecimal maxRating,
+            @Param("cursorAddedAt") LocalDateTime cursorAddedAt,
+            @Param("cursorBookId") Long cursorBookId,
+            @Param("limit") int limit
+    );
+
+    @Query(
+            value = """
+                WITH aggregated AS (
+                    SELECT
+                        b.book_id                                                                         AS bookId,
+                        b.book_name                                                                       AS title,
+                        b.publisher                                                                       AS publisher,
+                        b.author                                                                          AS authors,
+                        (array_agg(pb.reading_status ORDER BY pb.added_at DESC, pb.personal_book_id DESC))[1] AS bookReadingStatus,
+                        b.thumbnail                                                                       AS thumbnail,
+                        max(br.rating)                                                                    AS rating,
+                        coalesce(
+                            json_agg(DISTINCT jsonb_build_object('gatheringId', g.gathering_id, 'gatheringName', g.gathering_name))
+                                FILTER (WHERE g.gathering_id IS NOT NULL),
+                            '[]'::json
+                        )::text                                                                           AS gatherings,
+                        max(pb.added_at)                                                                  AS addedAt
+                    FROM personal_book pb
+                    JOIN book b ON pb.book_id = b.book_id
+                    LEFT JOIN gathering g
+                        ON pb.gathering_id = g.gathering_id AND g.deleted_at IS NULL
+                    LEFT JOIN book_review br
+                        ON br.book_id = b.book_id AND br.user_id = :userId AND br.deleted_at IS NULL
+                    WHERE pb.user_id = :userId
+                        AND pb.deleted_at IS NULL
+                        AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId)
+                        AND (:readingStatus IS NULL OR pb.reading_status = :readingStatus)
+                    GROUP BY b.book_id, b.book_name, b.publisher, b.author, b.thumbnail
+                )
+                SELECT * FROM aggregated
+                WHERE ((:minRating IS NULL AND :maxRating IS NULL)
+                       OR (rating IS NOT NULL
+                           AND (:minRating IS NULL OR rating >= :minRating)
+                           AND (:maxRating IS NULL OR rating <= :maxRating)))
+                    AND (
+                        CAST(:cursorAddedAt AS timestamp) IS NULL
+                        OR (
+                            :cursorRating IS NOT NULL AND (
+                                rating IS NULL
+                                OR rating < :cursorRating
+                                OR (rating = :cursorRating AND addedat < CAST(:cursorAddedAt AS timestamp))
+                                OR (rating = :cursorRating AND addedat = CAST(:cursorAddedAt AS timestamp) AND bookid < :cursorBookId)
+                            )
+                        )
+                        OR (
+                            :cursorRating IS NULL AND rating IS NULL AND (
+                                addedat < CAST(:cursorAddedAt AS timestamp)
+                                OR (addedat = CAST(:cursorAddedAt AS timestamp) AND bookid < :cursorBookId)
+                            )
+                        )
+                    )
+                ORDER BY rating DESC NULLS LAST, addedat DESC, bookid DESC
+                LIMIT :limit
+                """,
+            nativeQuery = true
+    )
+    List<PersonalBookListProjection> findWithCursorRatingDesc(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId,
+            @Param("readingStatus") String readingStatus,
+            @Param("minRating") BigDecimal minRating,
+            @Param("maxRating") BigDecimal maxRating,
+            @Param("cursorRating") BigDecimal cursorRating,
+            @Param("cursorAddedAt") LocalDateTime cursorAddedAt,
+            @Param("cursorBookId") Long cursorBookId,
+            @Param("limit") int limit
+    );
+
+    @Query(
+            value = """
+                WITH aggregated AS (
+                    SELECT
+                        b.book_id                                                                         AS bookId,
+                        b.book_name                                                                       AS title,
+                        b.publisher                                                                       AS publisher,
+                        b.author                                                                          AS authors,
+                        (array_agg(pb.reading_status ORDER BY pb.added_at DESC, pb.personal_book_id DESC))[1] AS bookReadingStatus,
+                        b.thumbnail                                                                       AS thumbnail,
+                        max(br.rating)                                                                    AS rating,
+                        coalesce(
+                            json_agg(DISTINCT jsonb_build_object('gatheringId', g.gathering_id, 'gatheringName', g.gathering_name))
+                                FILTER (WHERE g.gathering_id IS NOT NULL),
+                            '[]'::json
+                        )::text                                                                           AS gatherings,
+                        max(pb.added_at)                                                                  AS addedAt
+                    FROM personal_book pb
+                    JOIN book b ON pb.book_id = b.book_id
+                    LEFT JOIN gathering g
+                        ON pb.gathering_id = g.gathering_id AND g.deleted_at IS NULL
+                    LEFT JOIN book_review br
+                        ON br.book_id = b.book_id AND br.user_id = :userId AND br.deleted_at IS NULL
+                    WHERE pb.user_id = :userId
+                        AND pb.deleted_at IS NULL
+                        AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId)
+                        AND (:readingStatus IS NULL OR pb.reading_status = :readingStatus)
+                    GROUP BY b.book_id, b.book_name, b.publisher, b.author, b.thumbnail
+                )
+                SELECT * FROM aggregated
+                WHERE ((:minRating IS NULL AND :maxRating IS NULL)
+                       OR (rating IS NOT NULL
+                           AND (:minRating IS NULL OR rating >= :minRating)
+                           AND (:maxRating IS NULL OR rating <= :maxRating)))
+                    AND (
+                        CAST(:cursorAddedAt AS timestamp) IS NULL
+                        OR (
+                            :cursorRating IS NOT NULL AND (
+                                rating IS NULL
+                                OR rating > :cursorRating
+                                OR (rating = :cursorRating AND addedat > CAST(:cursorAddedAt AS timestamp))
+                                OR (rating = :cursorRating AND addedat = CAST(:cursorAddedAt AS timestamp) AND bookid > :cursorBookId)
+                            )
+                        )
+                        OR (
+                            :cursorRating IS NULL AND rating IS NULL AND (
+                                addedat > CAST(:cursorAddedAt AS timestamp)
+                                OR (addedat = CAST(:cursorAddedAt AS timestamp) AND bookid > :cursorBookId)
+                            )
+                        )
+                    )
+                ORDER BY rating ASC NULLS LAST, addedat ASC, bookid ASC
+                LIMIT :limit
+                """,
+            nativeQuery = true
+    )
+    List<PersonalBookListProjection> findWithCursorRatingAsc(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId,
+            @Param("readingStatus") String readingStatus,
+            @Param("minRating") BigDecimal minRating,
+            @Param("maxRating") BigDecimal maxRating,
+            @Param("cursorRating") BigDecimal cursorRating,
+            @Param("cursorAddedAt") LocalDateTime cursorAddedAt,
+            @Param("cursorBookId") Long cursorBookId,
+            @Param("limit") int limit
+    );
+
+    @Query(
+            value = """
+                WITH aggregated AS (
+                    SELECT b.book_id, max(br.rating) AS rating
+                    FROM personal_book pb
+                    JOIN book b ON pb.book_id = b.book_id
+                    LEFT JOIN gathering g
+                        ON pb.gathering_id = g.gathering_id AND g.deleted_at IS NULL
+                    LEFT JOIN book_review br
+                        ON br.book_id = b.book_id AND br.user_id = :userId AND br.deleted_at IS NULL
+                    WHERE pb.user_id = :userId
+                        AND pb.deleted_at IS NULL
+                        AND (:gatheringId IS NULL OR g.gathering_id = :gatheringId)
+                        AND (:readingStatus IS NULL OR pb.reading_status = :readingStatus)
+                    GROUP BY b.book_id
+                )
+                SELECT count(*) FROM aggregated
+                WHERE (:minRating IS NULL AND :maxRating IS NULL)
+                   OR (rating IS NOT NULL
+                       AND (:minRating IS NULL OR rating >= :minRating)
+                       AND (:maxRating IS NULL OR rating <= :maxRating))
+                """,
+            nativeQuery = true
+    )
+    Long countByUserIdAndFilters(
+            @Param("userId") Long userId,
+            @Param("gatheringId") Long gatheringId,
+            @Param("readingStatus") String readingStatus,
+            @Param("minRating") BigDecimal minRating,
+            @Param("maxRating") BigDecimal maxRating
     );
 
     @Query(

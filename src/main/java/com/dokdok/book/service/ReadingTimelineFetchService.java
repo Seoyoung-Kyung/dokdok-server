@@ -3,6 +3,7 @@ package com.dokdok.book.service;
 import com.dokdok.book.dto.response.PersonalReadingRecordListResponse;
 import com.dokdok.book.dto.response.ReadingTimelinePreOpinionResponse;
 import com.dokdok.book.entity.PersonalReadingRecord;
+import com.dokdok.book.entity.ReflectionRecordType;
 import com.dokdok.book.repository.PersonalReadingRecordRepository;
 import com.dokdok.meeting.entity.Meeting;
 import com.dokdok.meeting.repository.MeetingRepository;
@@ -25,7 +26,6 @@ import com.dokdok.topic.entity.TopicStatus;
 import com.dokdok.topic.repository.TopicAnswerRepository;
 import com.dokdok.topic.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +33,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -54,15 +53,6 @@ public class ReadingTimelineFetchService {
     private final TopicRetrospectiveSummaryRepository topicRetrospectiveSummaryRepository;
     private final PersonalRetrospectiveAssembler personalRetrospectiveAssembler;
 
-    @Async("timelineExecutor")
-    public CompletableFuture<Map<Long, PersonalReadingRecordListResponse>> fetchReadingRecordsAsync(
-            List<Long> recordIds,
-            Long personalBookId,
-            Long userId
-    ) {
-        return CompletableFuture.completedFuture(fetchReadingRecords(recordIds, personalBookId, userId));
-    }
-
     public Map<Long, PersonalReadingRecordListResponse> fetchReadingRecords(
             List<Long> recordIds,
             Long personalBookId,
@@ -80,14 +70,6 @@ public class ReadingTimelineFetchService {
             map.put(record.getId(), PersonalReadingRecordListResponse.from(record));
         }
         return map;
-    }
-
-    @Async("timelineExecutor")
-    public CompletableFuture<Map<Long, RetrospectiveRecordResponse>> fetchRetrospectivesAsync(
-            List<Long> retrospectiveIds,
-            Long userId
-    ) {
-        return CompletableFuture.completedFuture(fetchRetrospectives(retrospectiveIds, userId));
     }
 
     public Map<Long, RetrospectiveRecordResponse> fetchRetrospectives(
@@ -136,14 +118,6 @@ public class ReadingTimelineFetchService {
             map.put(response.retrospectiveId(), response);
         }
         return map;
-    }
-
-    @Async("timelineExecutor")
-    public CompletableFuture<Map<Long, ReadingTimelinePreOpinionResponse>> fetchPreOpinionsAsync(
-            List<Long> meetingIds,
-            Long userId
-    ) {
-        return CompletableFuture.completedFuture(fetchPreOpinions(meetingIds, userId));
     }
 
     public Map<Long, ReadingTimelinePreOpinionResponse> fetchPreOpinions(
@@ -212,11 +186,27 @@ public class ReadingTimelineFetchService {
         return map;
     }
 
-    @Async("timelineExecutor")
-    public CompletableFuture<Map<Long, RetrospectiveSummaryResponse>> fetchMeetingRetrospectiveSummariesAsync(
-            List<Long> meetingIds
-    ) {
-        return CompletableFuture.completedFuture(fetchMeetingRetrospectiveSummaries(meetingIds));
+    public Map<Long, RetrospectiveRecordResponse> fetchGroupRetrospectives(List<Long> meetingIds) {
+        if (meetingIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Meeting> meetings = meetingRepository.findByIdInWithGathering(meetingIds);
+        Map<Long, RetrospectiveRecordResponse> map = new HashMap<>();
+        for (Meeting meeting : meetings) {
+            if (!meeting.isRetrospectivePublished() || meeting.getRetrospectivePublishedAt() == null) {
+                continue;
+            }
+            map.put(meeting.getId(), RetrospectiveRecordResponse.of(
+                    meeting.getId(),
+                    meeting.getGathering().getGatheringName(),
+                    ReflectionRecordType.MEETING_RETROSPECTIVE,
+                    meeting.getRetrospectivePublishedAt(),
+                    List.of(),
+                    List.of()
+            ));
+        }
+        return map;
     }
 
     public Map<Long, RetrospectiveSummaryResponse> fetchMeetingRetrospectiveSummaries(
@@ -225,6 +215,10 @@ public class ReadingTimelineFetchService {
         if (meetingIds.isEmpty()) {
             return Map.of();
         }
+
+        Map<Long, Meeting> meetingMap = meetingRepository.findByIdInWithGathering(meetingIds)
+                .stream()
+                .collect(Collectors.toMap(Meeting::getId, m -> m));
 
         List<Topic> confirmedTopics = topicRepository.findTopicsInfoByMeetingIds(meetingIds)
                 .stream()
@@ -243,6 +237,10 @@ public class ReadingTimelineFetchService {
 
         Map<Long, RetrospectiveSummaryResponse> result = new HashMap<>();
         for (Long meetingId : meetingIds) {
+            Meeting meeting = meetingMap.get(meetingId);
+            if (meeting == null) {
+                continue;
+            }
             List<Topic> meetingTopics = topicsByMeeting.getOrDefault(meetingId, List.of())
                     .stream()
                     .sorted(Comparator.comparing(Topic::getConfirmOrder,
@@ -255,7 +253,7 @@ public class ReadingTimelineFetchService {
                                     .from(t, summaryByTopic.get(t.getId())))
                             .toList();
 
-            result.put(meetingId, RetrospectiveSummaryResponse.from(meetingId, topicResponses));
+            result.put(meetingId, RetrospectiveSummaryResponse.from(meeting, topicResponses));
         }
         return result;
     }
