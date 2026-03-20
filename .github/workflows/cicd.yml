@@ -1,0 +1,60 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      # 1단계: 코드 체크아웃
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2단계: JDK 21 설정
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+#      # 3단계: gradlew 실행 권한 부여
+#      - name: Grant execute permission for gradlew
+#        run: chmod +x gradlew
+#
+#      # 4단계: Gradle 빌드 및 테스트
+#      - name: Build with Gradle
+#        run: ./gradlew build
+
+      # 5단계: Docker Hub 로그인
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 6단계: Docker 이미지 빌드 후 Docker Hub에 push
+      - name: Docker build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: . # 현재 디렉토리에서 Dockerfile 찾기
+          push: true # 빌드 후 Docker Hub에 push
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/app:latest # 이미지 이름:태그
+
+  deploy:
+    needs: build-and-push # build-and-push job 완료 후 실행
+    runs-on: ubuntu-latest
+    steps:
+      # 1단계: EC2에 SSH 접속해서 배포
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }} # EC2 IP
+          username: ${{ secrets.EC2_USERNAME }} # ubuntu
+          key: ${{ secrets.EC2_KEY }} # pem 키
+          script: |
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/app:latest # 최신 이미지 pull
+            docker stop app || true # 기존 컨테이너 중지
+            docker rm app || true # 기존 컨테이너 삭제
+            docker run -d --name app -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/app:latest # 새 컨테이너 실행

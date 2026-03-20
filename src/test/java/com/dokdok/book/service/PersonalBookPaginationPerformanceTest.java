@@ -129,7 +129,7 @@ class PersonalBookPaginationPerformanceTest {
         }
 
         if (rep.getCurrentRepetition() == REPEAT_COUNT) {
-            log.info("[AFTER]  DB rows={} (pageSize+1), mean={}ms",
+            log.info("[AFTER] DB rows={} (pageSize+1), mean={}ms",
                     PAGE_SIZE + 1,
                     String.format("%.2f", timer.mean(TimeUnit.MILLISECONDS)));
         }
@@ -141,7 +141,7 @@ class PersonalBookPaginationPerformanceTest {
         double afterMean  = meterRegistry.timer("bookshelf-after").mean(TimeUnit.MILLISECONDS);
 
         log.info("==================================================");
-        log.info("[BEFORE] DB rows={} (전체 조회), mean={}ms", TOTAL_BOOKS, String.format("%.2f", beforeMean));
+        log.info("[BEFORE]  DB rows={} (전체 조회), mean={}ms", TOTAL_BOOKS, String.format("%.2f", beforeMean));
         log.info("[AFTER]  DB rows={} (pageSize+1), mean={}ms", PAGE_SIZE + 1, String.format("%.2f", afterMean));
         if (beforeMean > 0 && afterMean > 0) {
             log.info("[개선율] {}x 빠름", String.format("%.1f", beforeMean / afterMean));
