@@ -28,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
@@ -108,6 +109,67 @@ public class PersonalBookService {
             Long gatheringId,
             PersonalBookSortBy sortBy,
             PersonalBookSortOrder sortOrder,
+            BigDecimal minRating,
+            BigDecimal maxRating,
+            BigDecimal cursorRating,
+            OffsetDateTime cursorAddedAt,
+            Long cursorBookId,
+            Integer size
+    ) {
+        User userEntity = userValidator.findUserOrThrow(SecurityUtil.getCurrentUserId());
+        String readingStatus = bookReadingStatus != null ? bookReadingStatus.name() : null;
+        PersonalBookSortBy resolvedSortBy = sortBy != null ? sortBy : PersonalBookSortBy.TIME;
+        PersonalBookSortOrder resolvedSortOrder = sortOrder != null ? sortOrder : PersonalBookSortOrder.DESC;
+        int pageSize = resolvePageSize(size);
+        int limit = pageSize + 1;
+        LocalDateTime cursorAddedAtValue = cursorAddedAt != null ? cursorAddedAt.toLocalDateTime() : null;
+
+        List<PersonalBookListProjection> results = switch (resolvedSortBy) {
+            case TIME -> resolvedSortOrder == PersonalBookSortOrder.DESC
+                    ? personalBookRepository.findWithCursorTimeDesc(
+                            userEntity.getId(), gatheringId, readingStatus,
+                            minRating, maxRating, cursorAddedAtValue, cursorBookId, limit)
+                    : personalBookRepository.findWithCursorTimeAsc(
+                            userEntity.getId(), gatheringId, readingStatus,
+                            minRating, maxRating, cursorAddedAtValue, cursorBookId, limit);
+            case RATING -> resolvedSortOrder == PersonalBookSortOrder.DESC
+                    ? personalBookRepository.findWithCursorRatingDesc(
+                            userEntity.getId(), gatheringId, readingStatus,
+                            minRating, maxRating, cursorRating, cursorAddedAtValue, cursorBookId, limit)
+                    : personalBookRepository.findWithCursorRatingAsc(
+                            userEntity.getId(), gatheringId, readingStatus,
+                            minRating, maxRating, cursorRating, cursorAddedAtValue, cursorBookId, limit);
+        };
+
+        long totalCount = personalBookRepository.countByUserIdAndFilters(
+                userEntity.getId(), gatheringId, readingStatus, minRating, maxRating);
+
+        boolean hasNext = results.size() > pageSize;
+        List<PersonalBookListProjection> pageResults = hasNext ? results.subList(0, pageSize) : results;
+        List<PersonalBookListResponse> items = pageResults.stream()
+                .map(PersonalBookListResponse::from)
+                .toList();
+
+        BookListCursor nextCursor = null;
+        if (hasNext && !pageResults.isEmpty()) {
+            PersonalBookListProjection last = pageResults.get(pageResults.size() - 1);
+            nextCursor = BookListCursor.from(last.getRating(), last.getAddedAt(), last.getBookId());
+        }
+
+        PersonalBookStatusCountsResponse statusCounts = buildStatusCounts(userEntity.getId(), gatheringId);
+
+        return PersonalBookCursorPageResponse.of(items, statusCounts, pageSize, hasNext, nextCursor, totalCount);
+    }
+
+    /** 성능 비교용 — 리팩토링 전 Java-side 페이지네이션 방식 */
+    public PersonalBookCursorPageResponse getPersonalBookListCursorLegacy(
+            BookReadingStatus bookReadingStatus,
+            Long gatheringId,
+            PersonalBookSortBy sortBy,
+            PersonalBookSortOrder sortOrder,
+            BigDecimal minRating,
+            BigDecimal maxRating,
+            BigDecimal cursorRating,
             OffsetDateTime cursorAddedAt,
             Long cursorBookId,
             Integer size
@@ -119,23 +181,26 @@ public class PersonalBookService {
         int pageSize = resolvePageSize(size);
         LocalDateTime cursorAddedAtValue = cursorAddedAt != null ? cursorAddedAt.toLocalDateTime() : null;
 
-        List<PersonalBookListProjection> sorted = personalBookRepository
+        // DB에서 전체 조회
+        List<PersonalBookListProjection> allResults = personalBookRepository
                 .findPersonalBookAggregatesByUserIdAndGatheringIdAndReadingStatus(
-                        userEntity.getId(),
-                        gatheringId,
-                        readingStatus
-                )
-                .stream()
+                        userEntity.getId(), gatheringId, readingStatus);
+
+        // Java-side 필터 (rating 범위)
+        List<PersonalBookListProjection> filtered = allResults.stream()
+                .filter(p -> isWithinRatingRange(p.getRating(), minRating, maxRating))
+                .toList();
+
+        // Java-side 정렬
+        List<PersonalBookListProjection> sorted = filtered.stream()
                 .sorted(resolveComparator(resolvedSortBy, resolvedSortOrder))
                 .toList();
-        long totalCount = sorted.size();
 
+        // Java-side 커서 적용
         List<PersonalBookListProjection> afterCursor = applyCursor(
-                sorted,
-                cursorAddedAtValue,
-                cursorBookId
-        );
+                sorted, resolvedSortBy, resolvedSortOrder, cursorRating, cursorAddedAtValue, cursorBookId);
 
+        long totalCount = filtered.size();
         boolean hasNext = afterCursor.size() > pageSize;
         List<PersonalBookListProjection> pageResults = hasNext ? afterCursor.subList(0, pageSize) : afterCursor;
         List<PersonalBookListResponse> items = pageResults.stream()
@@ -149,7 +214,6 @@ public class PersonalBookService {
         }
 
         PersonalBookStatusCountsResponse statusCounts = buildStatusCounts(userEntity.getId(), gatheringId);
-
         return PersonalBookCursorPageResponse.of(items, statusCounts, pageSize, hasNext, nextCursor, totalCount);
     }
 
@@ -200,71 +264,101 @@ public class PersonalBookService {
                 .ifPresent(personalBookRepository::delete);
     }
 
+    private boolean isWithinRatingRange(BigDecimal rating, BigDecimal min, BigDecimal max) {
+        if (min == null && max == null) return true;
+        if (rating == null) return false;
+        if (min != null && rating.compareTo(min) < 0) return false;
+        if (max != null && rating.compareTo(max) > 0) return false;
+        return true;
+    }
+
+    private Comparator<PersonalBookListProjection> resolveComparator(
+            PersonalBookSortBy sortBy, PersonalBookSortOrder sortOrder) {
+        return switch (sortBy) {
+            case TIME -> sortOrder == PersonalBookSortOrder.DESC
+                    ? Comparator.comparing(PersonalBookListProjection::getAddedAt,
+                              Comparator.nullsLast(Comparator.reverseOrder()))
+                              .thenComparing(PersonalBookListProjection::getBookId, Comparator.reverseOrder())
+                    : Comparator.comparing(PersonalBookListProjection::getAddedAt,
+                              Comparator.nullsLast(Comparator.naturalOrder()))
+                              .thenComparing(PersonalBookListProjection::getBookId);
+            case RATING -> sortOrder == PersonalBookSortOrder.DESC
+                    ? Comparator.comparing(PersonalBookListProjection::getRating,
+                              Comparator.nullsLast(Comparator.reverseOrder()))
+                              .thenComparing(PersonalBookListProjection::getAddedAt,
+                                      Comparator.nullsLast(Comparator.reverseOrder()))
+                              .thenComparing(PersonalBookListProjection::getBookId, Comparator.reverseOrder())
+                    : Comparator.comparing(PersonalBookListProjection::getRating,
+                              Comparator.nullsLast(Comparator.naturalOrder()))
+                              .thenComparing(PersonalBookListProjection::getAddedAt,
+                                      Comparator.nullsLast(Comparator.naturalOrder()))
+                              .thenComparing(PersonalBookListProjection::getBookId);
+        };
+    }
+
+    private List<PersonalBookListProjection> applyCursor(
+            List<PersonalBookListProjection> sorted,
+            PersonalBookSortBy sortBy,
+            PersonalBookSortOrder sortOrder,
+            BigDecimal cursorRating,
+            LocalDateTime cursorAddedAt,
+            Long cursorBookId
+    ) {
+        if (cursorAddedAt == null) return sorted;
+        return sorted.stream()
+                .filter(p -> isAfterCursor(p, sortBy, sortOrder, cursorRating, cursorAddedAt, cursorBookId))
+                .toList();
+    }
+
+    private boolean isAfterCursor(
+            PersonalBookListProjection p,
+            PersonalBookSortBy sortBy,
+            PersonalBookSortOrder sortOrder,
+            BigDecimal cursorRating,
+            LocalDateTime cursorAddedAt,
+            Long cursorBookId
+    ) {
+        if (sortBy == PersonalBookSortBy.TIME) {
+            int cmp = p.getAddedAt().compareTo(cursorAddedAt);
+            return sortOrder == PersonalBookSortOrder.DESC
+                    ? (cmp < 0 || (cmp == 0 && p.getBookId() < cursorBookId))
+                    : (cmp > 0 || (cmp == 0 && p.getBookId() > cursorBookId));
+        }
+        // RATING
+        if (sortOrder == PersonalBookSortOrder.DESC) {
+            if (cursorRating != null) {
+                BigDecimal r = p.getRating();
+                if (r == null) return true;
+                int rCmp = r.compareTo(cursorRating);
+                if (rCmp != 0) return rCmp < 0;
+                int tCmp = p.getAddedAt().compareTo(cursorAddedAt);
+                return tCmp < 0 || (tCmp == 0 && p.getBookId() < cursorBookId);
+            } else {
+                if (p.getRating() != null) return false;
+                int tCmp = p.getAddedAt().compareTo(cursorAddedAt);
+                return tCmp < 0 || (tCmp == 0 && p.getBookId() < cursorBookId);
+            }
+        } else {
+            if (cursorRating != null) {
+                BigDecimal r = p.getRating();
+                if (r == null) return false;
+                int rCmp = r.compareTo(cursorRating);
+                if (rCmp != 0) return rCmp > 0;
+                int tCmp = p.getAddedAt().compareTo(cursorAddedAt);
+                return tCmp > 0 || (tCmp == 0 && p.getBookId() > cursorBookId);
+            } else {
+                if (p.getRating() != null) return true;
+                int tCmp = p.getAddedAt().compareTo(cursorAddedAt);
+                return tCmp > 0 || (tCmp == 0 && p.getBookId() > cursorBookId);
+            }
+        }
+    }
+
     private int resolvePageSize(Integer size) {
         if (size == null || size < 1) {
             return DEFAULT_PAGE_SIZE;
         }
         return size;
-    }
-
-    private Comparator<PersonalBookListProjection> resolveComparator(
-            PersonalBookSortBy sortBy,
-            PersonalBookSortOrder sortOrder
-    ) {
-        if (sortBy == PersonalBookSortBy.RATING) {
-            return resolveRatingComparator(sortOrder);
-        }
-        return resolveTimeComparator(sortOrder);
-    }
-
-    private Comparator<PersonalBookListProjection> resolveTimeComparator(PersonalBookSortOrder sortOrder) {
-        if (sortOrder == PersonalBookSortOrder.ASC) {
-            return Comparator
-                    .comparing(PersonalBookListProjection::getAddedAt)
-                    .thenComparing(PersonalBookListProjection::getBookId);
-        }
-        return Comparator
-                .comparing(PersonalBookListProjection::getAddedAt, Comparator.reverseOrder())
-                .thenComparing(PersonalBookListProjection::getBookId, Comparator.reverseOrder());
-    }
-
-    private Comparator<PersonalBookListProjection> resolveRatingComparator(PersonalBookSortOrder sortOrder) {
-        if (sortOrder == PersonalBookSortOrder.ASC) {
-            return Comparator
-                    .comparing(PersonalBookListProjection::getRating, Comparator.nullsLast(Comparator.naturalOrder()))
-                    .thenComparing(PersonalBookListProjection::getAddedAt)
-                    .thenComparing(PersonalBookListProjection::getBookId);
-        }
-        return Comparator
-                .comparing(PersonalBookListProjection::getRating, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(PersonalBookListProjection::getAddedAt, Comparator.reverseOrder())
-                .thenComparing(PersonalBookListProjection::getBookId, Comparator.reverseOrder());
-    }
-
-    private List<PersonalBookListProjection> applyCursor(
-            List<PersonalBookListProjection> sorted,
-            LocalDateTime cursorAddedAt,
-            Long cursorBookId
-    ) {
-        if (cursorAddedAt == null || cursorBookId == null) {
-            return sorted;
-        }
-
-        for (int i = 0; i < sorted.size(); i++) {
-            PersonalBookListProjection item = sorted.get(i);
-            if (isCursorMatch(item, cursorAddedAt, cursorBookId)) {
-                return sorted.subList(i + 1, sorted.size());
-            }
-        }
-        return List.of();
-    }
-
-    private boolean isCursorMatch(
-            PersonalBookListProjection item,
-            LocalDateTime cursorAddedAt,
-            Long cursorBookId
-    ) {
-        return cursorAddedAt.equals(item.getAddedAt()) && cursorBookId.equals(item.getBookId());
     }
 
     private PersonalBookStatusCountsResponse buildStatusCounts(Long userId, Long gatheringId) {
@@ -293,4 +387,5 @@ public class PersonalBookService {
                 .total(total)
                 .build();
     }
+
 }

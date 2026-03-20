@@ -85,30 +85,11 @@ class ReadingTimelinePerformanceTest {
         SecurityContextHolder.clearContext();
     }
 
-    @DisplayName("타임라인 조회 - 동기 순차 실행")
+    @DisplayName("타임라인 조회")
     @RepeatedTest(REPEAT_COUNT)
     @Order(1)
-    void testSyncGetTimeline(RepetitionInfo rep) {
-        Timer timer = meterRegistry.timer("timeline-sync");
-
-        if (rep.getCurrentRepetition() <= WARM_UP_COUNT) {
-            readingTimelineService.getTimelineSync(
-                    personalBookId, null, null, null, 10, PreOpinionTimeType.ANSWER_CREATED);
-        } else {
-            timer.record(() -> readingTimelineService.getTimelineSync(
-                    personalBookId, null, null, null, 10, PreOpinionTimeType.ANSWER_CREATED));
-        }
-
-        if (rep.getCurrentRepetition() == REPEAT_COUNT) {
-            log.info("[SYNC]  mean = {}ms", String.format("%.2f", timer.mean(TimeUnit.MILLISECONDS)));
-        }
-    }
-
-    @DisplayName("타임라인 조회 - 비동기 병렬 실행")
-    @RepeatedTest(REPEAT_COUNT)
-    @Order(2)
-    void testAsyncGetTimeline(RepetitionInfo rep) {
-        Timer timer = meterRegistry.timer("timeline-async");
+    void testGetTimeline(RepetitionInfo rep) {
+        Timer timer = meterRegistry.timer("timeline");
 
         if (rep.getCurrentRepetition() <= WARM_UP_COUNT) {
             readingTimelineService.getTimeline(
@@ -119,21 +100,16 @@ class ReadingTimelinePerformanceTest {
         }
 
         if (rep.getCurrentRepetition() == REPEAT_COUNT) {
-            log.info("[ASYNC] mean = {}ms", String.format("%.2f", timer.mean(TimeUnit.MILLISECONDS)));
+            log.info("[timeline] mean = {}ms", String.format("%.2f", timer.mean(TimeUnit.MILLISECONDS)));
         }
     }
 
     @AfterAll
     void logComparison() {
-        double syncMean  = meterRegistry.timer("timeline-sync").mean(TimeUnit.MILLISECONDS);
-        double asyncMean = meterRegistry.timer("timeline-async").mean(TimeUnit.MILLISECONDS);
+        double mean = meterRegistry.timer("timeline").mean(TimeUnit.MILLISECONDS);
 
         log.info("========================================");
-        log.info("[SYNC]  mean = {}ms", String.format("%.2f", syncMean));
-        log.info("[ASYNC] mean = {}ms", String.format("%.2f", asyncMean));
-        if (syncMean > 0) {
-            log.info("[비율]  async / sync = {}x", String.format("%.2f", asyncMean / syncMean));
-        }
+        log.info("[timeline] mean = {}ms", String.format("%.2f", mean));
         log.info("========================================");
     }
 }

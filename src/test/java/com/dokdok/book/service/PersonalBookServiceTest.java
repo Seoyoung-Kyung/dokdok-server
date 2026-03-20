@@ -1,6 +1,9 @@
 package com.dokdok.book.service;
 
 import com.dokdok.book.dto.request.BookCreateRequest;
+import com.dokdok.book.dto.request.PersonalBookSortBy;
+import com.dokdok.book.dto.request.PersonalBookSortOrder;
+import com.dokdok.book.dto.response.PersonalBookCursorPageResponse;
 import com.dokdok.book.dto.response.PersonalBookCreateResponse;
 import com.dokdok.book.dto.response.PersonalBookDetailResponse;
 import com.dokdok.book.dto.response.PersonalBookListResponse;
@@ -32,7 +35,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,6 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -624,5 +632,158 @@ class PersonalBookServiceTest {
         // then
         verify(bookValidator, times(1)).validateInBookShelf(userId, 10L);
         verify(personalBookRepository, times(1)).delete(personalBook);
+    }
+
+    @Test
+    @DisplayName("커서 목록 조회 시 별점 범위 필터가 적용된다")
+    void getPersonalBookListCursor_FilterByRatingRange() {
+        // given
+        Long userId = 1L;
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        LocalDateTime now = LocalDateTime.now();
+        PersonalBookListProjection mid = projection(2L, "별점 3.5점", new BigDecimal("3.5"), now.minusDays(2));
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(personalBookRepository.findWithCursorRatingDesc(
+                eq(userId), isNull(), isNull(),
+                eq(new BigDecimal("3.0")), eq(new BigDecimal("4.0")),
+                isNull(), isNull(), isNull(), eq(11)))
+                .thenReturn(List.of(mid));
+        when(personalBookRepository.countByUserIdAndFilters(
+                eq(userId), isNull(), isNull(),
+                eq(new BigDecimal("3.0")), eq(new BigDecimal("4.0"))))
+                .thenReturn(1L);
+        when(personalBookRepository.countPersonalBookStatusByUserIdAndGatheringId(userId, null)).thenReturn(List.of());
+
+        // when
+        PersonalBookCursorPageResponse response = personalBookService.getPersonalBookListCursor(
+                null,
+                null,
+                PersonalBookSortBy.RATING,
+                PersonalBookSortOrder.DESC,
+                new BigDecimal("3.0"),
+                new BigDecimal("4.0"),
+                null,
+                null,
+                null,
+                10
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(1);
+        assertThat(response.getItems().getFirst().bookId()).isEqualTo(2L);
+        assertThat(response.getItems().getFirst().rating()).isEqualByComparingTo("3.5");
+        assertThat(response.getTotalCount()).isEqualTo(1L);
+        assertThat(response.isHasNext()).isFalse();
+    }
+
+    @Test
+    @DisplayName("RATING 정렬에서 cursorRating/cursorAddedAt/cursorBookId 기준으로 다음 페이지를 조회한다")
+    void getPersonalBookListCursor_ApplyRatingCursor() {
+        // given
+        Long userId = 1L;
+        User user = User.builder()
+                .id(userId)
+                .kakaoId(12345L)
+                .nickname("tester")
+                .build();
+
+        LocalDateTime secondAddedAt = LocalDateTime.of(2026, 1, 25, 10, 0);
+        LocalDateTime thirdAddedAt = LocalDateTime.of(2026, 1, 20, 10, 0);
+
+        PersonalBookListProjection third = projection(10L, "별점 3점", new BigDecimal("3.0"), thirdAddedAt);
+
+        securityUtilMock.when(SecurityUtil::getCurrentUserId).thenReturn(userId);
+        when(userValidator.findUserOrThrow(userId)).thenReturn(user);
+        when(personalBookRepository.findWithCursorRatingDesc(
+                eq(userId), isNull(), isNull(),
+                isNull(), isNull(),
+                eq(new BigDecimal("4.0")), eq(secondAddedAt), eq(20L), eq(11)))
+                .thenReturn(List.of(third));
+        when(personalBookRepository.countByUserIdAndFilters(
+                eq(userId), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(3L);
+        when(personalBookRepository.countPersonalBookStatusByUserIdAndGatheringId(userId, null)).thenReturn(List.of());
+
+        // when
+        PersonalBookCursorPageResponse response = personalBookService.getPersonalBookListCursor(
+                null,
+                null,
+                PersonalBookSortBy.RATING,
+                PersonalBookSortOrder.DESC,
+                null,
+                null,
+                new BigDecimal("4.0"),
+                OffsetDateTime.of(secondAddedAt, ZoneOffset.UTC),
+                20L,
+                10
+        );
+
+        // then
+        assertThat(response.getItems()).hasSize(1);
+        assertThat(response.getItems().getFirst().bookId()).isEqualTo(10L);
+        assertThat(response.getItems().getFirst().rating()).isEqualByComparingTo("3.0");
+        assertThat(response.getTotalCount()).isEqualTo(3L);
+        assertThat(response.isHasNext()).isFalse();
+    }
+
+    private PersonalBookListProjection projection(
+            Long bookId,
+            String title,
+            BigDecimal rating,
+            LocalDateTime addedAt
+    ) {
+        return new PersonalBookListProjection() {
+            @Override
+            public Long getBookId() {
+                return bookId;
+            }
+
+            @Override
+            public String getTitle() {
+                return title;
+            }
+
+            @Override
+            public String getPublisher() {
+                return "출판사";
+            }
+
+            @Override
+            public String getAuthors() {
+                return "저자";
+            }
+
+            @Override
+            public BookReadingStatus getBookReadingStatus() {
+                return BookReadingStatus.READING;
+            }
+
+            @Override
+            public String getThumbnail() {
+                return "thumbnail";
+            }
+
+            @Override
+            public BigDecimal getRating() {
+                return rating;
+            }
+
+            @Override
+            public String getGatherings() {
+                return "[]";
+            }
+
+            @Override
+            public LocalDateTime getAddedAt() {
+                return addedAt;
+            }
+        };
     }
 }
