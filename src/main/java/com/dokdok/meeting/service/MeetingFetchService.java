@@ -20,6 +20,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MeetingFetchService {
@@ -108,8 +111,12 @@ public class MeetingFetchService {
             if (user == null || user.getId() == null) {
                 return;
             }
-            futures.put(user.getId(),
-                    self.fetchPresignedUrlAsync(user.getProfileImageUrl()));
+            CompletableFuture<String> future = self.fetchPresignedUrlAsync(user.getProfileImageUrl())
+                    .exceptionally(ex -> {
+                        log.warn("presigned URL 생성 실패 - userId={}, error={}", user.getId(), ex.getMessage());
+                        return null;
+                    });
+            futures.put(user.getId(), future);
         });
 
         CompletableFuture.allOf(futures.values().toArray(new CompletableFuture[0])).join();
