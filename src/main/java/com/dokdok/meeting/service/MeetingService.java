@@ -144,8 +144,8 @@ public class MeetingService {
                 return;
             }
             String profileImageUrl = user.getProfileImageUrl();
-            String presignedUrl = storageService.getPresignedProfileImage(profileImageUrl);
-            profileImageUrlMap.put(user.getId(), presignedUrl);
+            String publicUrl = storageService.getPublicProfileImageUrl(profileImageUrl);
+            profileImageUrlMap.put(user.getId(), publicUrl);
         });
 
         return profileImageUrlMap;

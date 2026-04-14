@@ -31,6 +31,9 @@ public class StorageService {
 	@Value("${minio.bucket}")
 	private String bucket;
 
+	@Value("${minio.external-endpoint}")
+	private String externalEndpoint;
+
 	/**
 	 * 프로필 이미지를 미니오 스토리지에 저장 후 저장 경로를 반환합니다.
 	 */
@@ -81,6 +84,13 @@ public class StorageService {
             log.error("PresignedUrl 생성 실패: {}", e.getMessage(), e);
             throw new StorageException(StorageErrorCode.PRESIGNED_URL_GENERATION_FAILED, e);
         }
+    }
+
+    public String getPublicProfileImageUrl(String profileImageUrl) {
+        if (profileImageUrl == null || profileImageUrl.isBlank()) {
+            return null;
+        }
+        return externalEndpoint + "/" + bucket + "/" + profileImageUrl;
     }
 
     public void deleteProfileImage(String objectPath) {
