@@ -22,12 +22,15 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET:-dokdok-storage}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      JWT_SECRET: ${JWT_SECRET}
 
     ports:
       - '8080:8080'
     restart: unless-stopped
     depends_on:
       - postgres
+      - redis
     volumes:
       - app_logs:/app/logs
     networks:
@@ -47,6 +50,16 @@ services:
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dokdok-network
+
+  redis:
+    profiles: ["app", "local"]
+    image: redis:7-alpine
+    container_name: dokdok-redis
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
     networks:
       - dokdok-network
 
