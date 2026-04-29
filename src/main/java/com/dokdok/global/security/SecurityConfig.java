@@ -1,12 +1,13 @@
 package com.dokdok.global.security;
 
 import com.dokdok.global.config.FrontendProperties;
+import com.dokdok.global.jwt.JwtAuthenticationEntryPoint;
+import com.dokdok.global.jwt.JwtAuthenticationFilter;
 import com.dokdok.oauth2.handler.OAuth2AuthenticationFailureHandler;
 import com.dokdok.oauth2.handler.OAuth2AuthenticationSuccessHandler;
+import com.dokdok.oauth2.repository.CookieOAuth2AuthorizationRequestRepository;
 import com.dokdok.oauth2.resolver.CustomAuthorizationRequestResolver;
 import com.dokdok.oauth2.service.CustomOAuth2UserService;
-import com.dokdok.global.response.ApiResponse;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,12 +16,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,6 +30,13 @@ import java.util.List;
 public class SecurityConfig {
 
     private final FrontendProperties frontendProperties;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @Bean
+    public CookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository() {
+        return new CookieOAuth2AuthorizationRequestRepository();
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -38,19 +45,29 @@ public class SecurityConfig {
             OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler,
             OAuth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler,
             CustomAuthorizationRequestResolver customAuthorizationRequestResolver,
-            CorsConfigurationSource corsConfigurationSource,
-            ObjectMapper objectMapper) throws Exception {
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(e ->
+                        e.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                    .anyRequest().permitAll()
+                        .requestMatchers(
+                                "/oauth2/**",
+                                "/login/oauth2/**",
+                                "/api/auth/token",
+                                "/api/auth/logout",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(authorization -> authorization
+                                .authorizationRequestRepository(cookieOAuth2AuthorizationRequestRepository())
                                 .authorizationRequestResolver(customAuthorizationRequestResolver)
                         )
                         .userInfoEndpoint(userInfo -> userInfo
@@ -59,24 +76,9 @@ public class SecurityConfig {
                         .successHandler(oauth2AuthenticationSuccessHandler)
                         .failureHandler(oauth2AuthenticationFailureHandler)
                 )
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(HttpServletResponse.SC_OK);
-                            response.setContentType("application/json;charset=UTF-8");
-                            ApiResponse<Void> apiResponse = new ApiResponse<>("SUCCESS", "로그아웃 성공", null);
-                            try {
-                                response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
-                            } catch (IOException e) {
-                                throw new RuntimeException("로그아웃 응답 처리 중 오류", e);
-                            }
-                        })
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                );
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-
     }
 
     @Bean
