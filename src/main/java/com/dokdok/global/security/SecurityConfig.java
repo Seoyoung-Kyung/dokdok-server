@@ -61,7 +61,8 @@ public class SecurityConfig {
                                 "/api/auth/token",
                                 "/api/auth/logout",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/actuator/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -102,3 +102,9 @@ kakao:
 
 stt:
   temp-dir: ${STT_TEMP_DIR:}
+
+app:
+  frontend:
+    default-url: ${FRONTEND_DEFAULT_URL:http://localhost:3000}
+    allowed-origins:
+      - http://localhost:3000
