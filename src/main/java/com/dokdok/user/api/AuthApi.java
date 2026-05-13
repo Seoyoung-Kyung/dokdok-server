@@ -65,7 +65,7 @@ public interface AuthApi {
 
     @Operation(
             summary = "Access Token 재발급",
-            description = "HttpOnly 쿠키의 Refresh Token으로 새 Access Token을 발급합니다. Refresh Token Rotation이 적용됩니다."
+            description = "HttpOnly 쿠키의 Refresh Token으로 새 Access Token을 발급합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -91,8 +91,7 @@ public interface AuthApi {
     })
     @GetMapping(value = "/token", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ApiResponse<AccessTokenResponse>> refreshToken(
-            @CookieValue(value = "refreshToken", required = false) String refreshToken,
-            HttpServletResponse response);
+            @CookieValue(value = "refreshToken", required = false) String refreshToken);
 
     @Operation(
             summary = "로그아웃 (developer: 조건희)",

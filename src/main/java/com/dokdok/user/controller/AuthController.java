@@ -7,7 +7,6 @@ import com.dokdok.global.util.SecurityUtil;
 import com.dokdok.oauth2.CustomOAuth2User;
 import com.dokdok.user.api.AuthApi;
 import com.dokdok.user.dto.response.AccessTokenResponse;
-import com.dokdok.user.dto.response.AuthTokens;
 import com.dokdok.user.dto.response.UserInfoResponse;
 import com.dokdok.user.service.AuthService;
 import jakarta.servlet.http.Cookie;
@@ -27,8 +26,6 @@ public class AuthController implements AuthApi {
 
     private final AuthService authService;
 
-    private static final int REFRESH_TOKEN_COOKIE_MAX_AGE = 14 * 24 * 60 * 60; // 14일
-
     @Override
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUser() {
@@ -47,22 +44,15 @@ public class AuthController implements AuthApi {
     @Override
     @GetMapping("/token")
     public ResponseEntity<ApiResponse<AccessTokenResponse>> refreshToken(
-            @CookieValue(value = "refreshToken", required = false) String refreshToken,
-            HttpServletResponse response) {
+            @CookieValue(value = "refreshToken", required = false) String refreshToken) {
 
         if (!StringUtils.hasText(refreshToken)) {
             throw new GlobalException(GlobalErrorCode.REFRESH_TOKEN_NOT_FOUND);
         }
 
-        AuthTokens tokens = authService.issueToken(refreshToken);
+        String accessToken = authService.issueToken(refreshToken);
 
-        Cookie cookie = new Cookie("refreshToken", tokens.refreshToken());
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(REFRESH_TOKEN_COOKIE_MAX_AGE);
-        response.addCookie(cookie);
-
-        return ApiResponse.success(new AccessTokenResponse(tokens.accessToken()), "액세스 토큰 발급 성공");
+        return ApiResponse.success(new AccessTokenResponse(accessToken), "액세스 토큰 발급 성공");
     }
 
     @Override

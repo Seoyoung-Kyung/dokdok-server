@@ -4,7 +4,6 @@ import com.dokdok.global.exception.GlobalErrorCode;
 import com.dokdok.global.exception.GlobalException;
 import com.dokdok.global.jwt.JwtProvider;
 import com.dokdok.global.redis.RefreshTokenRepository;
-import com.dokdok.user.dto.response.AuthTokens;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +18,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    /**
-     * Refresh Token 검증 후 새 Access Token + Refresh Token 발급 (Rotation).
-     */
-    public AuthTokens issueToken(String refreshToken) {
+    public String issueToken(String refreshToken) {
         Long userId;
         try {
             userId = jwtProvider.extractUserId(refreshToken);
@@ -40,11 +36,9 @@ public class AuthService {
         }
 
         String newAccessToken = jwtProvider.generateAccessToken(userId);
-        String newRefreshToken = jwtProvider.generateRefreshToken(userId);
-        refreshTokenRepository.save(userId, newRefreshToken);
 
-        log.info("토큰 재발급 완료: userId={}", userId);
-        return new AuthTokens(newAccessToken, newRefreshToken);
+        log.info("액세스 토큰 재발급 완료: userId={}", userId);
+        return newAccessToken;
     }
 
     /**
